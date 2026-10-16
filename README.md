@@ -1,8 +1,8 @@
-# AIMES 本地治理 CLI（V0.5.3）
+# AIMES 本地治理 CLI（V0.6.0）
 
 AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具。它负责把 AIMES V1.2 治理核心部署到项目仓库，生成工具专属规则入口，检查配置与冲突，并输出部署状态。它不替代 Codex、Claude Code、Trae、ZCode 或 Copilot 执行开发任务。
 
-> 当前版本是可运行的 MVP 原型，不是生产级安装器。V0.5.3 在 V0.5.2 基础上增加无参数启动的交互式主菜单，并提供 Windows 独立 EXE 构建脚本；EXE 需要在 Windows 环境中构建和验证。自动化测试以本次构建记录为准；尚未在用户 Windows 环境和实际 IDE/Agent 运行时完成验证。
+> 当前版本是可运行的 MVP 原型，不是生产级安装器。V0.6.0 在保留原有能力的基础上增加 GitHub 仓库根目录完整镜像发布；Windows 独立 EXE 仍需在 Windows 环境中构建和验证。
 
 ## 0. 交互式启动与 Windows 独立 EXE
 
@@ -10,7 +10,16 @@ AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具
 
 Windows 独立 EXE 构建和 PATH 配置请见 [`docs/WINDOWS-EXE-DEPLOYMENT.md`](docs/WINDOWS-EXE-DEPLOYMENT.md)。独立 EXE 携带 Python 运行时，不需要激活项目 `.venv`；但必须将整个发布目录放入固定位置并配置用户 PATH。当前开发环境未在 Windows 上实际构建或验证 EXE。
 
-## 1. 锁定的工具入口
+## 1. GitHub 根目录镜像发布（V0.6.0）
+
+`aimes publish` 默认只预览；执行必须同时提供 `--apply --confirm PUBLISH`。完整镜像会删除远端根目录中本地不存在的文件，必须先检查删除清单。命令排除常见凭据/私钥、虚拟环境、依赖和缓存路径，执行前扫描常见密钥样式，并使用普通非强制推送。详细边界见 [`docs/PUBLISH-GITHUB-MIRROR.md`](docs/PUBLISH-GITHUB-MIRROR.md)。
+
+```powershell
+aimes publish --source "E:\work\my-project" --repo "owner/repository" --branch "main"
+aimes publish --source "E:\work\my-project" --repo "owner/repository" --branch "main" --apply --confirm PUBLISH
+```
+
+## 2. 锁定的工具入口
 
 1. Trae Code
 2. VS Code + Codex
@@ -23,7 +32,7 @@ Windows 独立 EXE 构建和 PATH 配置请见 [`docs/WINDOWS-EXE-DEPLOYMENT.md`
 
 VS Code 插件和独立 CLI 是不同执行上下文，必须分别验证。若它们共享 `AGENTS.md` 或 `CLAUDE.md`，治理入口可以共用，但不能假设加载行为相同。
 
-## 2. 安装（Windows PowerShell）
+## 3. 安装（Windows PowerShell）
 
 需要 Python 3.10+。安装时需能获取 PyYAML 依赖，或提前将该依赖安装到当前 Python 环境。
 
@@ -43,7 +52,7 @@ python -m pip install .
 aimes --version
 ```
 
-## 3. 第一次初始化
+## 4. 第一次初始化
 
 先预览，不写入：
 
@@ -63,7 +72,7 @@ aimes init --tools codex-cli,claude-code --scope project
 aimes init
 ```
 
-## 4. 常用命令
+## 5. 常用命令
 
 ```powershell
 aimes inspect

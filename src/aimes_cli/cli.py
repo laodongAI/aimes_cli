@@ -10,6 +10,7 @@ from .evaluation import validate_suite, validate_run, build_run_report, compare_
 from .v05 import validate_adapter_evidence, adapter_report, validate_context_pack
 from .mock_runner import run_mock
 from .audit import append_event, validate_audit
+from .publish import publish_project
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -19,6 +20,15 @@ def parser() -> argparse.ArgumentParser:
         sp.add_argument('--root', type=Path, help='Project root (defaults to current directory / upward detection)')
         sp.add_argument('--format', choices=['text','json'], default='text')
         sp.add_argument('--output', type=Path, help='Write report to a file')
+    publish=sub.add_parser('publish', help='Preview or mirror a local project to a GitHub repository root')
+    publish.add_argument('--source', type=Path, required=True, help='Local project directory to mirror')
+    publish.add_argument('--repo', required=True, help='GitHub repository as owner/repo or GitHub URL')
+    publish.add_argument('--branch', help='Target branch; defaults to the repository default branch')
+    publish.add_argument('--apply', action='store_true', help='Execute the mirror and push (preview is the default)')
+    publish.add_argument('--confirm', help='Must be exactly PUBLISH when used with --apply')
+    publish.add_argument('--message', default='chore: mirror local project with AIMES', help='Git commit message')
+    publish.add_argument('--format', choices=['text','json'], default='text')
+    publish.add_argument('--output', type=Path, help='Write report to a file')
     init=sub.add_parser('init', help='Initialize AIMES governance in the current project')
     common(init); init.add_argument('--tools', help='Comma-separated tools: trae-code,vscode-codex,vscode-claude-code,vscode-copilot,zcode,qcode,claude-code,codex-cli')
     init.add_argument('--scope', choices=['project'], default='project'); init.add_argument('--dry-run', action='store_true', help='Preview without writing files')
@@ -132,6 +142,22 @@ def emit(data, fmt='text', output: Path | None=None):
                     found = ', '.join(tool.get('commands_found', [])) or 'no matching CLI executable detected'
                     lines.append(f"  - {tool['name']}: {found} [{tool['adapter_status']}]")
                 lines.append('Detection is advisory; it does not prove extension availability or rule loading.')
+            if data.get('changes'):
+                lines.append('Mirror changes (added/updated/deleted/unchanged):')
+                for kind in ('added', 'updated', 'deleted', 'unchanged'):
+                    paths = data['changes'].get(kind, [])
+                    lines.append(f'  {kind}: {len(paths)}')
+                    for path in paths[:30]: lines.append(f'    - {path}')
+                    if len(paths) > 30: lines.append(f'    ... 另有 {len(paths) - 30} 项')
+            if data.get('excluded_preview'):
+                lines.append('Excluded sensitive/cache paths (preview up to 100):')
+                for path in data['excluded_preview']: lines.append(f'  - {path}')
+            if data.get('secret_findings'):
+                lines.append('Potential secret findings:')
+                for item in data['secret_findings']: lines.append('  - ' + str(item.get('path')) + ': ' + str(item.get('reason')))
+            if data.get('warning'): lines.append('WARNING: ' + data['warning'])
+            if data.get('commit_url'): lines.append('Commit: ' + data['commit_url'])
+            if data.get('repository_url'): lines.append('Repository: ' + data['repository_url'])
             if data.get('known_files'):
                 lines.append('Known files:')
                 for item in data['known_files']: lines.append(f"  - {item['path']} ({item['type']})")
@@ -232,6 +258,11 @@ def main(argv=None):
     args=parser().parse_args(argv)
     root=(args.root or find_root()).resolve()
     try:
+        if args.command == 'publish':
+            source = args.source.expanduser().resolve()
+            result = publish_project(source, args.repo, args.branch, args.apply, args.confirm, args.message)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 2
         if args.command in ('init','configure'):
             tools=choose_tools(args.tools)
             result=init_project(root,tools,getattr(args,'scope','project'),args.dry_run)

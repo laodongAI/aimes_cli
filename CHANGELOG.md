@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0 - GitHub root mirror publishing
+
+- Added `aimes publish` to preview and publish a local project as a complete mirror of an existing GitHub repository root.
+- Added explicit `--apply --confirm PUBLISH` execution gate; preview is the default and deletion lists are included in reports.
+- Added conservative exclusion of credentials, private-key files, symlinks, virtual environments, dependency folders and common caches.
+- Added heuristic secret scanning, branch/repository validation, temporary-clone staging, normal non-force push, and focused unit tests.
+- Added Chinese usage and safety documentation. Root mirror semantics can delete remote-only files; this is prominently documented.
+
+
 ## 0.5.2 - Prompt/runtime engineering hardening
 
 - Added shared positive/negative prompt output examples and file-selection/context budget protocol.

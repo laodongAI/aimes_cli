@@ -89,3 +89,13 @@ V0.4 的 `evaluation` 命令不执行 AI 任务或命令。运行记录由实际
 | `aimes audit validate <path>` | 检查审计 JSONL 的结构、必填字段和重复 event_id | 只读 | 0 通过；1 结构错误 |
 
 新增提示词资产：`docs/PROMPT-OUTPUT-EXAMPLES-V1.0.md`、`docs/CONTEXT-BUDGET-AND-FILE-PLAN-V1.0.md`、`docs/TOOL-FAILURE-DEGRADATION-PROTOCOL-V1.0.md`、`docs/AUDIT-TRAIL-V1.0.md`。Mock Runner 使用字面匹配，不判断语义等价性；真实模型评测仍需真实模型适配器与独立评审。
+
+
+## V0.6.0：GitHub 根目录镜像发布
+
+| 命令 | 用途 | 写入行为 | 安全边界 |
+|---|---|---|---|
+| `aimes publish --source PATH --repo OWNER/REPO` | 预览本地项目与已有 GitHub 仓库根目录的完整镜像差异 | 默认只读预览 | 显示新增、更新、删除、未变化文件 |
+| `aimes publish ... --apply --confirm PUBLISH` | 执行镜像并推送提交 | 在临时克隆中准备提交并普通推送 | 必须显式确认；不强制推送；检测到疑似密钥时阻止执行 |
+
+发布默认使用仓库默认分支；可用 `--branch` 指定分支。完整镜像会删除目标根目录中本地不存在的文件，执行前必须检查删除清单。`.git` 元数据、符号链接、常见缓存/依赖目录和凭据文件会排除。密钥扫描是启发式检查，不是完整的秘密检测保证。
