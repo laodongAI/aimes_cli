@@ -24,6 +24,8 @@ EXCLUDED_SUFFIXES = {
 }
 SECRET_PATTERNS = [re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----"), re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}\b"), re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}\b"), re.compile(r"\bAKIA[0-9A-Z]{16}\b"), re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{24,}\b")]
 MAX_SCAN_BYTES = 2 * 1024 * 1024
+# GitHub rejects a single Git blob at 2 GiB. Leave headroom for server-side limits.
+MAX_GITHUB_BLOB_BYTES = 2 * 1024 * 1024 * 1024 - 1024 * 1024
 
 def normalize_repository(value: str) -> tuple[str, str]:
     raw = value.strip()
@@ -136,9 +138,18 @@ def collect_source_files(source: Path, extra_patterns: tuple[str, ...] | list[st
             path = base / name
             rel = path.relative_to(source).as_posix()
             if path.is_symlink() or is_excluded(rel, extra_patterns=effective_patterns): excluded.append(rel); continue
+            try:
+                file_size = path.stat().st_size
+            except OSError:
+                excluded.append(rel + " (无法读取文件大小，已跳过)")
+                continue
+            if file_size >= MAX_GITHUB_BLOB_BYTES:
+                # Prevent a deterministic GitHub HTTP 422 push failure before staging/commit.
+                excluded.append(rel + " (单文件接近/超过 GitHub 2 GiB 限制，已自动排除)")
+                continue
             files[rel] = path
             try:
-                if path.stat().st_size > MAX_SCAN_BYTES: continue
+                if file_size > MAX_SCAN_BYTES: continue
                 content = path.read_bytes().decode("utf-8")
             except (OSError, UnicodeDecodeError): continue
             if any(p.search(content) for p in SECRET_PATTERNS): findings.append({"path": rel, "reason": "文件内容疑似包含访问令牌或私钥"})
