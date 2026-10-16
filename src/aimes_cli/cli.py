@@ -296,7 +296,7 @@ def run_publish_wizard(args=None) -> int:
         custom = _ask("追加排除规则（逗号分隔，可留空）", "")
         if custom: excludes.extend(x.strip() for x in custom.replace("，", ",").split(",") if x.strip())
         if not repo_value: raise ValueError("必须提供 GitHub 仓库，例如 laodongAI/my-project")
-        save_name = _ask("保存配置名称（留空不保存）", args.save_profile or args.profile or "")
+        save_name = _ask("保存配置名称（留空不保存）", args.save_profile or "")
         if save_name:
             save_profile(save_name, {"source": source_value, "repository": repo_value, "branch": branch_value, "message": message_value, "excludes": excludes})
             print(f"已保存配置：{save_name}")
