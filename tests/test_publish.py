@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from aimes_cli.publish import build_change_plan, collect_source_files, is_excluded, normalize_repository, validate_branch
+from aimes_cli.publish_profiles import config_path, load_profiles, save_profile
 from aimes_cli.cli import parser
 
 
@@ -14,10 +15,13 @@ class PublishTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def test_publish_parser_defaults_to_preview(self):
-        args = parser().parse_args(['publish', '--source', str(self.root), '--repo', 'owner/repo'])
+    def test_publish_parser_defaults_to_preview_and_supports_profiles(self):
+        args = parser().parse_args(['publish', '--source', str(self.root), '--repo', 'owner/repo', '--exclude', 'generated/**', '--save-profile', 'demo'])
         self.assertFalse(args.apply)
         self.assertIsNone(args.branch)
+        self.assertEqual(args.exclude, ['generated/**'])
+        self.assertEqual(args.save_profile, 'demo')
+        self.assertIsNone(parser().parse_args(['publish']).source)
 
     def test_normalize_repository_name_and_url(self):
         url, name = normalize_repository("laodongAI/demo")
@@ -36,9 +40,13 @@ class PublishTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(ValueError): validate_branch(value)
 
     def test_sensitive_paths_are_excluded(self):
-        for path in (".env", ".env.local", "private.pem", "id_rsa", "node_modules/pkg.js", ".git/config", "src/__pycache__/x.pyc"):
+        for path in (".env", ".env.local", "private.pem", "id_rsa", "node_modules/pkg.js", ".git/config", "src/__pycache__/x.pyc", ".venv/Lib/site-packages/x.py", ".claude/settings.local.json", ".codex/session.json", ".cursor/cache/state.json", "logs/app.log", "tmp/run.pid", "src/module.pyd"):
             self.assertTrue(is_excluded(path), path)
         self.assertFalse(is_excluded("src/main.py"))
+        self.assertFalse(is_excluded("CLAUDE.md"))
+        self.assertFalse(is_excluded("pyproject.toml"))
+        self.assertTrue(is_excluded("src/generated/client.py", extra_patterns=["src/generated/**"]))
+        self.assertTrue(is_excluded("local-fixture.json", extra_patterns=["local-fixture.json"]))
 
     def test_collect_files_excludes_sensitive_paths(self):
         (self.root / "README.md").write_text("hello", encoding="utf-8")
@@ -51,6 +59,31 @@ class PublishTests(unittest.TestCase):
         self.assertIn(".env", excluded)
         self.assertIn("private.pem", excluded)
         self.assertEqual(findings, [])
+
+    def test_collect_files_applies_custom_excludes(self):
+        (self.root / "README.md").write_text("hello", encoding="utf-8")
+        (self.root / "local-data.json").write_text("{}", encoding="utf-8")
+        (self.root / "src").mkdir()
+        (self.root / "src" / "generated.py").write_text("# generated", encoding="utf-8")
+        files, excluded, _ = collect_source_files(self.root, ["local-data.json", "src/generated.py"])
+        self.assertEqual(set(files), {"README.md"})
+        self.assertIn("local-data.json", excluded)
+        self.assertIn("src/generated.py", excluded)
+
+    def test_publish_profiles_round_trip(self):
+        import os
+        config_home = self.root / "user-config"
+        old = os.environ.get("AIMES_CONFIG_HOME")
+        os.environ["AIMES_CONFIG_HOME"] = str(config_home)
+        try:
+            save_profile("demo", {"source": str(self.root), "repository": "owner/repo", "branch": "main", "excludes": ["local.json"]})
+            profiles = load_profiles()
+            self.assertEqual(profiles["demo"]["repository"], "owner/repo")
+            self.assertEqual(profiles["demo"]["excludes"], ["local.json"])
+            self.assertTrue(config_path().is_file())
+        finally:
+            if old is None: os.environ.pop("AIMES_CONFIG_HOME", None)
+            else: os.environ["AIMES_CONFIG_HOME"] = old
 
     def test_collect_files_flags_token_like_content(self):
         (self.root / "config.txt").write_text("token=ghp_" + "A" * 30, encoding="utf-8")
