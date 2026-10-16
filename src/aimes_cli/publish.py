@@ -191,13 +191,38 @@ def publish_project(source: Path, repository: str, branch: str | None = None, ap
         raise ValueError("源文件疑似包含密钥/令牌，已阻止发布：" + ", ".join(x["path"] for x in findings[:10]) + "。请移除密钥后重新预览。")
     with tempfile.TemporaryDirectory(prefix="aimes-publish-") as temp:
         clone = Path(temp) / "repo"
-        args = ["clone", "--quiet"] + (["--branch", branch, "--single-branch"] if branch else []) + [url, str(clone)]
-        git_run(args, timeout=240)
-        actual_branch = git_run(["branch", "--show-current"], cwd=clone)
-        if branch and actual_branch != branch: raise ValueError(f"克隆到的分支与请求不一致：{actual_branch} != {branch}")
-        base_sha = git_run(["rev-parse", "HEAD"], cwd=clone)
+        # 先检查远端引用。新建但尚无提交的 GitHub 仓库没有 HEAD，不能直接 rev-parse HEAD。
+        remote_refs = git_run(["ls-remote", "--heads", url], timeout=240)
+        remote_head = git_run(["ls-remote", "--symref", url, "HEAD"], timeout=240)
+        head_match = re.search(r"^ref:\s+refs/heads/([^\s]+)\s+HEAD$", remote_head, re.MULTILINE)
+        remote_default_branch = head_match.group(1) if head_match else None
+        remote_has_refs = bool(remote_refs.strip())
+        if branch and remote_has_refs:
+            available_branches = {
+                line.split("\t", 1)[1].removeprefix("refs/heads/")
+                for line in remote_refs.splitlines() if "\trefs/heads/" in line
+            }
+            if branch not in available_branches:
+                raise ValueError(f"远端仓库不存在目标分支：{branch}。请填写已有分支，或在空仓库中指定要创建的分支。")
+        clone_args = ["clone", "--quiet"]
+        if branch and remote_has_refs:
+            clone_args += ["--branch", branch, "--single-branch"]
+        clone_args += [url, str(clone)]
+        git_run(clone_args, timeout=240)
+
+        if remote_has_refs:
+            actual_branch = git_run(["branch", "--show-current"], cwd=clone)
+            if branch and actual_branch != branch: raise ValueError(f"克隆到的分支与请求不一致：{actual_branch} != {branch}")
+            base_sha = git_run(["rev-parse", "HEAD"], cwd=clone)
+        else:
+            # 空仓库没有提交：使用用户指定分支、远端声明的默认分支，最后回退到 main。
+            actual_branch = branch or remote_default_branch or "main"
+            validate_branch(actual_branch)
+            git_run(["symbolic-ref", "HEAD", f"refs/heads/{actual_branch}"], cwd=clone)
+            base_sha = None
+
         plan = build_change_plan(source_files, _target_snapshot(clone))
-        report: dict[str, Any] = {"ok": True, "mode": "apply" if apply else "dry-run", "repository": repo_name, "branch": actual_branch, "source": str(source), "source_file_count": len(source_files), "excluded_count": len(excluded), "excluded_preview": excluded[:100], "detected_stacks": detect_project_profile(source)["stacks"], "auto_excludes": detect_project_profile(source)["rules"], "custom_excludes": extra_patterns, "secret_findings": findings, "changes": plan, "change_counts": {k: len(v) for k, v in plan.items()}, "base_commit": base_sha, "commit": None, "warning": "根目录完整镜像会删除本地源目录中不存在的远端文件；不会修改 .git 元数据，且不会强制推送。"}
+        report: dict[str, Any] = {"ok": True, "mode": "apply" if apply else "dry-run", "repository": repo_name, "branch": actual_branch, "source": str(source), "source_file_count": len(source_files), "excluded_count": len(excluded), "excluded_preview": excluded[:100], "detected_stacks": detect_project_profile(source)["stacks"], "auto_excludes": detect_project_profile(source)["rules"], "custom_excludes": extra_patterns, "secret_findings": findings, "changes": plan, "change_counts": {k: len(v) for k, v in plan.items()}, "base_commit": base_sha, "remote_empty": not remote_has_refs, "commit": None, "warning": "根目录完整镜像会删除本地源目录中不存在的远端文件；不会修改 .git 元数据，且不会强制推送。"}
         if not apply:
             report["message"] = "仅预览，未向 GitHub 推送任何更改。确认删除清单后，使用 --apply --confirm PUBLISH 执行。"
             return report
