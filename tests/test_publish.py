@@ -1,8 +1,9 @@
 import hashlib
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
-from aimes_cli.publish import build_change_plan, collect_source_files, detect_project_profile, is_excluded, normalize_repository, validate_branch
+from aimes_cli.publish import build_change_plan, collect_source_files, detect_project_profile, is_excluded, normalize_repository, publish_project, validate_branch
 from aimes_cli.publish_profiles import config_path, load_profiles, save_profile
 from aimes_cli.cli import parser
 
@@ -115,6 +116,32 @@ class PublishTests(unittest.TestCase):
         files, _, findings = collect_source_files(self.root)
         self.assertIn("config.txt", files)
         self.assertEqual(findings[0]["path"], "config.txt")
+
+    def test_publish_preview_supports_empty_remote_repository(self):
+        (self.root / "README.md").write_text("hello", encoding="utf-8")
+
+        def fake_git_run(args, cwd=None, timeout=180):
+            if args[:2] == ["ls-remote", "--heads"]:
+                return ""
+            if args[:2] == ["ls-remote", "--symref"]:
+                return ""
+            if args[0] == "clone":
+                clone = Path(args[-1])
+                clone.mkdir()
+                (clone / ".git").mkdir()
+                return ""
+            if args[0] == "symbolic-ref":
+                return ""
+            raise AssertionError(f"Unexpected git command: {args}")
+
+        with patch("aimes_cli.publish.git_run", side_effect=fake_git_run):
+            report = publish_project(self.root, "owner/repo")
+
+        self.assertTrue(report["ok"])
+        self.assertTrue(report["remote_empty"])
+        self.assertEqual(report["branch"], "main")
+        self.assertIsNone(report["base_commit"])
+        self.assertEqual(report["change_counts"]["added"], 1)
 
     def test_change_plan_reports_add_update_delete_and_unchanged(self):
         files = {}
