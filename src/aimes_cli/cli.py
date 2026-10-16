@@ -243,12 +243,12 @@ def interactive_wizard():
                 preview = init_project(root, selected, "project", True)
                 emit(preview)
                 confirm = input("预览完成。确认按上述计划执行初始化？请输入 YES：").strip()
-                if confirm != "YES":
+                if confirm.upper() != "YES":
                     print("未确认，已取消；没有写入文件。")
                     continue
             else:
                 confirm = input("将直接写入当前项目文件。确认执行？请输入 YES：").strip()
-                if confirm != "YES":
+                if confirm.upper() != "YES":
                     print("未确认，已取消；没有写入文件。")
                     continue
             result = init_project(root, selected, "project", False)
