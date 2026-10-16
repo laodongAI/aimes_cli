@@ -154,11 +154,15 @@ def emit(data, fmt='text', output: Path | None=None):
                     lines.append(f'  {kind}: {len(paths)}')
                     for path in paths[:30]: lines.append(f'    - {path}')
                     if len(paths) > 30: lines.append(f'    ... 另有 {len(paths) - 30} 项')
+            if data.get('detected_stacks'):
+                lines.append('Detected project stack: ' + ', '.join(data['detected_stacks']))
+            if data.get('auto_excludes'):
+                lines.append(f"Auto-selected exclusion rules: {len(data['auto_excludes'])} rule(s) (built-in + project markers + .gitignore)")
             if data.get('excluded_preview'):
                 lines.append('Excluded environment/cache/runtime paths (preview up to 100):')
                 for path in data['excluded_preview']: lines.append(f'  - {path}')
             if data.get('custom_excludes'):
-                lines.append('Custom exclusion rules: ' + ', '.join(data['custom_excludes']))
+                lines.append('Additional custom exclusion rules: ' + ', '.join(data['custom_excludes']))
             if data.get('secret_findings'):
                 lines.append('Potential secret findings:')
                 for item in data['secret_findings']: lines.append('  - ' + str(item.get('path')) + ': ' + str(item.get('reason')))
@@ -300,9 +304,7 @@ def run_publish_wizard(args=None) -> int:
         repo_value = _ask("GitHub 仓库（owner/repo）", repo_value)
         branch_value = _ask("目标分支（留空使用默认分支）", branch_value)
         message_value = _ask("提交说明", message_value)
-        if excludes: print("现有自定义排除规则：" + ", ".join(excludes))
-        custom = _ask("追加排除规则（逗号分隔，可留空）", "")
-        if custom: excludes.extend(x.strip() for x in custom.replace("，", ",").split(",") if x.strip())
+        if excludes: print("已加载配置中的自定义排除规则：" + ", ".join(excludes))
         if not repo_value: raise ValueError("必须提供 GitHub 仓库，例如 laodongAI/my-project")
         save_name = _ask("保存配置名称（留空不保存）", args.save_profile or "")
         if save_name:
