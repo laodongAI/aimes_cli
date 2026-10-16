@@ -1,8 +1,8 @@
-# AIMES 本地治理 CLI（V0.7.1）
+# AIMES 本地治理 CLI（V0.7.2）
 
 AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具。它负责把 AIMES V1.2 治理核心部署到项目仓库，生成工具专属规则入口，检查配置与冲突，并输出部署状态。它不替代 Codex、Claude Code、Trae、ZCode 或 Copilot 执行开发任务。
 
-> 当前版本是可运行的 MVP 原型，不是生产级安装器。V0.7.1 在保留原有能力的基础上增加配置式 GitHub 发布向导与扩展默认忽略规则；Windows 独立 EXE 仍需在 Windows 环境中构建和验证。
+> 当前版本是可运行的 MVP 原型，不是生产级安装器。V0.7.2 在保留原有能力的基础上修复初始化确认输入的大小写兼容；Windows 独立 EXE 仍需在 Windows 环境中构建和验证。
 
 ## 0. 交互式启动与 Windows 独立 EXE
 
