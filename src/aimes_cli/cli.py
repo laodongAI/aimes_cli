@@ -244,17 +244,15 @@ def interactive_wizard():
             # 交互式向导承诺操作“当前项目目录”，因此不向上自动跳到父级 Git 仓库。
             root = Path.cwd().resolve()
             print(f"\n项目范围：{root}（仅修改此目录，不修改用户全局配置）")
-            dry = input("先预览变更？[Y/n]：").strip().lower() not in ("n", "no")
+            dry = _ask_yes_no("先预览变更？", default=True)
             if dry:
                 preview = init_project(root, selected, "project", True)
                 emit(preview)
-                confirm = input("预览完成。确认按上述计划执行初始化？请输入 YES：").strip()
-                if confirm.upper() != "YES":
+                if not _confirm_word("预览完成。确认按上述计划执行初始化？请输入 YES（输入 N 取消）：", "YES"):
                     print("未确认，已取消；没有写入文件。")
                     continue
             else:
-                confirm = input("将直接写入当前项目文件。确认执行？请输入 YES：").strip()
-                if confirm.upper() != "YES":
+                if not _confirm_word("将直接写入当前项目文件。确认执行？请输入 YES（输入 N 取消）：", "YES"):
                     print("未确认，已取消；没有写入文件。")
                     continue
             result = init_project(root, selected, "project", False)
@@ -273,6 +271,32 @@ def interactive_wizard():
 def _ask(label: str, default: str = "") -> str:
     suffix = f" [{default}]" if default else ""
     return input(f"{label}{suffix}：").strip() or default
+
+
+def _confirm_word(prompt: str, expected: str, cancel_words=("n", "no", "cancel", "c", "q", "quit", "exit")) -> bool:
+    """要求用户输入确认词；大小写不敏感，输错时重试，明确取消词才退出。"""
+    while True:
+        answer = input(prompt).strip()
+        normalized = answer.casefold()
+        if normalized == expected.casefold():
+            return True
+        if normalized in cancel_words:
+            return False
+        print(f"输入无效，请输入 {expected} 确认，或输入 N 取消。")
+
+
+def _ask_yes_no(prompt: str, default: bool = True) -> bool:
+    """大小写不敏感的 Y/N 确认；无效输入会重试。"""
+    suffix = "[Y/n]" if default else "[y/N]"
+    while True:
+        answer = input(f"{prompt} {suffix}：").strip().casefold()
+        if not answer:
+            return default
+        if answer in ("y", "yes"):
+            return True
+        if answer in ("n", "no"):
+            return False
+        print("输入无效，请输入 Y/YES 或 N/NO。")
 
 
 def run_publish_wizard(args=None) -> int:
@@ -325,7 +349,7 @@ def run_publish_wizard(args=None) -> int:
     branch = branch_value.strip() or None
     if args.save_profile and not interactive:
         save_profile(args.save_profile, {"source": source, "repository": repo_value, "branch": branch or "", "message": message_value, "excludes": excludes})
-    if args.apply and args.confirm != "PUBLISH":
+    if args.apply and (args.confirm or "").strip().casefold() != "publish":
         raise ValueError("执行发布必须同时提供 --apply --confirm PUBLISH")
     preview = publish_project(source, repo_value, branch, False, None, message_value, excludes)
     emit(preview, args.format, args.output)
@@ -334,7 +358,7 @@ def run_publish_wizard(args=None) -> int:
             print("无需推送：远端与本地镜像一致。")
             return 0
         print("\n注意：完整镜像会删除删除清单中列出的远端文件。")
-        if input("确认推送？请输入 PUBLISH（其他输入均取消）：").strip() != "PUBLISH":
+        if not _confirm_word("确认推送？请输入 PUBLISH（大小写不限，输入 N 取消）：", "PUBLISH"):
             print("已取消；没有向 GitHub 推送。")
             return 0
         result = publish_project(source, repo_value, branch, True, "PUBLISH", message_value, excludes)
