@@ -11,6 +11,7 @@ from .v05 import validate_adapter_evidence, adapter_report, validate_context_pac
 from .mock_runner import run_mock
 from .audit import append_event, validate_audit
 from .publish import publish_project
+from .publish_profiles import load_profiles, save_profile
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -20,13 +21,17 @@ def parser() -> argparse.ArgumentParser:
         sp.add_argument('--root', type=Path, help='Project root (defaults to current directory / upward detection)')
         sp.add_argument('--format', choices=['text','json'], default='text')
         sp.add_argument('--output', type=Path, help='Write report to a file')
-    publish=sub.add_parser('publish', help='Preview or mirror a local project to a GitHub repository root')
-    publish.add_argument('--source', type=Path, required=True, help='Local project directory to mirror')
-    publish.add_argument('--repo', required=True, help='GitHub repository as owner/repo or GitHub URL')
+    publish=sub.add_parser('publish', help='Interactive configuration or preview/mirror a local project to GitHub')
+    publish.add_argument('--source', type=Path, help='Local project directory to mirror')
+    publish.add_argument('--repo', help='GitHub repository as owner/repo or GitHub URL')
     publish.add_argument('--branch', help='Target branch; defaults to the repository default branch')
+    publish.add_argument('--profile', help='Use a saved publishing profile')
+    publish.add_argument('--list-profiles', action='store_true', help='List saved publishing profiles')
+    publish.add_argument('--save-profile', metavar='NAME', help='Save selected settings as a reusable profile')
+    publish.add_argument('--exclude', action='append', default=[], metavar='GLOB', help='Additional exclusion glob; may be repeated')
     publish.add_argument('--apply', action='store_true', help='Execute the mirror and push (preview is the default)')
     publish.add_argument('--confirm', help='Must be exactly PUBLISH when used with --apply')
-    publish.add_argument('--message', default='chore: mirror local project with AIMES', help='Git commit message')
+    publish.add_argument('--message', default=None, help='Git commit message')
     publish.add_argument('--format', choices=['text','json'], default='text')
     publish.add_argument('--output', type=Path, help='Write report to a file')
     init=sub.add_parser('init', help='Initialize AIMES governance in the current project')
@@ -181,13 +186,14 @@ def interactive_wizard():
         ("检查本机工具环境", "doctor"),
         ("查看部署状态", "status"),
         ("预览配置变更", "diff"),
+        ("发布项目到 GitHub", "publish"),
     ]
     while True:
         print("\n请选择要执行的操作：")
         for i, (label, _) in enumerate(actions, 1):
             print(f"  {i}. {label}")
         print("  0. 退出")
-        choice = input("请输入序号 [0-7]：").strip()
+        choice = input("请输入序号 [0-8]：").strip()
         if choice in ("0", "q", "quit", "exit"):
             print("已退出 AIMES。")
             return 0
@@ -195,6 +201,10 @@ def interactive_wizard():
             print("输入无效，请输入菜单中的序号。")
             continue
         label, command = actions[int(choice)-1]
+        if command == "publish":
+            try: run_publish_wizard()
+            except (ValueError, OSError) as exc: print(f"发布配置错误：{exc}")
+            continue
         if command in ("init", "configure", "diff"):
             keys = list(ADAPTERS)
             print("\n请选择工具，可输入多个序号并用逗号分隔：")
@@ -243,6 +253,75 @@ def interactive_wizard():
         emit(result)
 
 
+
+def _ask(label: str, default: str = "") -> str:
+    suffix = f" [{default}]" if default else ""
+    return input(f"{label}{suffix}：").strip() or default
+
+
+def run_publish_wizard(args=None) -> int:
+    """发布向导：配置选择、差异预览、显式确认推送。"""
+    args = args or argparse.Namespace(source=None, repo=None, branch=None, profile=None, list_profiles=False, save_profile=None, exclude=[], apply=False, confirm=None, message=None, format="text", output=None)
+    profiles = load_profiles()
+    if args.list_profiles:
+        for name, item in profiles.items():
+            print(f"  {name}: {item.get('source', '')} -> {item.get('repository', '')} [{item.get('branch') or '默认分支'}]")
+        if not profiles: print("暂无已保存的发布配置。")
+        return 0
+    selected = {}
+    if args.profile:
+        if args.profile not in profiles: raise ValueError(f"未找到发布配置：{args.profile}。请先运行 aimes publish --list-profiles。")
+        selected = dict(profiles[args.profile])
+    elif not args.source and not args.repo and sys.stdin.isatty() and profiles:
+        names = list(profiles)
+        print("\n已保存的发布配置：")
+        for i, name in enumerate(names, 1): print(f"  {i}. {name} — {profiles[name].get('repository', '')}")
+        print(f"  {len(names)+1}. 新建配置")
+        choice = _ask("选择配置序号", str(len(names)+1))
+        if choice.isdigit() and 1 <= int(choice) <= len(names): selected = dict(profiles[names[int(choice)-1]])
+    interactive = sys.stdin.isatty() and not args.apply
+    source_value = str(args.source or selected.get("source") or Path.cwd())
+    repo_value = args.repo or selected.get("repository") or ""
+    branch_value = args.branch if args.branch is not None else selected.get("branch", "")
+    message_value = args.message or selected.get("message") or "chore: mirror local project with AIMES"
+    excludes = list(selected.get("excludes") or []) + list(args.exclude or [])
+    if interactive:
+        source_value = _ask("本地项目目录", source_value)
+        repo_value = _ask("GitHub 仓库（owner/repo）", repo_value)
+        branch_value = _ask("目标分支（留空使用默认分支）", branch_value)
+        message_value = _ask("提交说明", message_value)
+        if excludes: print("现有自定义排除规则：" + ", ".join(excludes))
+        custom = _ask("追加排除规则（逗号分隔，可留空）", "")
+        if custom: excludes.extend(x.strip() for x in custom.replace("，", ",").split(",") if x.strip())
+        if not repo_value: raise ValueError("必须提供 GitHub 仓库，例如 laodongAI/my-project")
+        save_name = _ask("保存配置名称（留空不保存）", args.save_profile or args.profile or "")
+        if save_name:
+            save_profile(save_name, {"source": source_value, "repository": repo_value, "branch": branch_value, "message": message_value, "excludes": excludes})
+            print(f"已保存配置：{save_name}")
+    if not repo_value or not source_value: raise ValueError("请提供 --source/--repo，或在交互向导中填写。")
+    source = Path(source_value).expanduser().resolve()
+    branch = branch_value.strip() or None
+    if args.save_profile and not interactive:
+        save_profile(args.save_profile, {"source": source, "repository": repo_value, "branch": branch or "", "message": message_value, "excludes": excludes})
+    preview = publish_project(source, repo_value, branch, False, None, message_value, excludes)
+    emit(preview, args.format, args.output)
+    if interactive:
+        if not any(preview.get("change_counts", {}).get(k, 0) for k in ("added", "updated", "deleted")):
+            print("无需推送：远端与本地镜像一致。")
+            return 0
+        print("\n注意：完整镜像会删除删除清单中列出的远端文件。")
+        if input("确认推送？请输入 PUBLISH（其他输入均取消）：").strip() != "PUBLISH":
+            print("已取消；没有向 GitHub 推送。")
+            return 0
+        result = publish_project(source, repo_value, branch, True, "PUBLISH", message_value, excludes)
+        emit(result, args.format, args.output)
+        return 0 if result.get("ok") else 2
+    if args.apply and args.confirm != "PUBLISH": raise ValueError("执行发布必须同时提供 --apply --confirm PUBLISH")
+    if args.apply:
+        result = publish_project(source, repo_value, branch, True, args.confirm, message_value, excludes)
+        emit(result, args.format, args.output)
+    return 0
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
@@ -259,10 +338,7 @@ def main(argv=None):
     root=(getattr(args, 'root', None) or find_root()).resolve()
     try:
         if args.command == 'publish':
-            source = args.source.expanduser().resolve()
-            result = publish_project(source, args.repo, args.branch, args.apply, args.confirm, args.message)
-            emit(result, args.format, args.output)
-            return 0 if result['ok'] else 2
+            return run_publish_wizard(args)
         if args.command in ('init','configure'):
             tools=choose_tools(args.tools)
             result=init_project(root,tools,getattr(args,'scope','project'),args.dry_run)
