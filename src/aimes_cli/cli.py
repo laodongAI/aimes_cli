@@ -365,7 +365,7 @@ def run_publish_wizard(args=None) -> int:
         emit(result, args.format, args.output)
         return 0 if result.get("ok") else 2
     if args.apply:
-        result = publish_project(source, repo_value, branch, True, args.confirm, message_value, excludes)
+        result = publish_project(source, repo_value, branch, True, "PUBLISH", message_value, excludes)
         emit(result, args.format, args.output)
     return 0
 
