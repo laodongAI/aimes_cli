@@ -57,10 +57,71 @@ def is_excluded(rel: str, is_dir: bool = False, extra_patterns: tuple[str, ...] 
         if pattern.endswith("/**") and (normalized == pattern[:-3].rstrip("/") or normalized.startswith(pattern[:-2])): return True
     return False
 
+def detect_project_profile(source: Path) -> dict[str, Any]:
+    """根据项目标志文件识别技术栈，并返回对应的附加过滤规则。"""
+    source = source.resolve()
+    files = {p.name.lower() for p in source.iterdir() if p.is_file()}
+    dirs = {p.name.lower() for p in source.iterdir() if p.is_dir()}
+    stacks: list[str] = []
+    rules: list[str] = []
+
+    if files.intersection({"pyproject.toml", "setup.py", "setup.cfg", "requirements.txt", "pipfile", "poetry.lock", "uv.lock"}):
+        stacks.append("python")
+        rules.extend([".coverage", ".nox", "pip-wheel-metadata", "*.egg-info", "__pypackages__"])
+    if "package.json" in files or files.intersection({"pnpm-lock.yaml", "yarn.lock", "package-lock.json", "bun.lockb", "bun.lock"}):
+        stacks.append("nodejs")
+        rules.extend([".next", ".nuxt", ".output", ".svelte-kit", ".angular", ".turbo", ".parcel-cache", ".vite", "playwright-report", "test-results", "storybook-static"])
+        package_file = source / "package.json"
+        try:
+            package = package_file.read_text(encoding="utf-8")
+            if '"vue"' in package or "'vue'" in package:
+                stacks.append("vue")
+            if '"react"' in package or "'react'" in package:
+                stacks.append("react")
+        except (OSError, UnicodeDecodeError):
+            pass
+    if files.intersection({"pom.xml", "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts", "gradlew"}):
+        stacks.append("java")
+        rules.extend(["target", ".gradle", "out", "*.class"])
+    if "go.mod" in files:
+        stacks.append("go")
+        rules.extend(["bin"])
+    if "cargo.toml" in files:
+        stacks.append("rust")
+        rules.extend(["target"])
+    if any(name.endswith((".sln", ".csproj", ".fsproj", ".vbproj")) for name in files):
+        stacks.append("dotnet")
+        rules.extend(["bin", "obj", ".vs"])
+    if files.intersection({"gemfile", "gemfile.lock"}) or "gemspec" in " ".join(files):
+        stacks.append("ruby")
+        rules.extend(["vendor/bundle", ".bundle"])
+    if files.intersection({"composer.json", "composer.lock"}):
+        stacks.append("php")
+        rules.extend(["vendor"])
+    if files.intersection({"makefile", "cmakelists.txt", "meson.build"}):
+        stacks.append("native")
+        rules.extend(["cmake-build-debug", "cmake-build-release", "CMakeFiles", "CMakeCache.txt"])
+
+    # 读取常见 .gitignore 规则；忽略反向规则，避免用户自定义的 ! 规则意外绕过安全过滤。
+    ignore_file = source / ".gitignore"
+    if ignore_file.is_file():
+        try:
+            for line in ignore_file.read_text(encoding="utf-8-sig").splitlines():
+                rule = line.strip()
+                if not rule or rule.startswith("#") or rule.startswith("!"):
+                    continue
+                rules.append(rule)
+        except (OSError, UnicodeDecodeError):
+            pass
+    return {"stacks": list(dict.fromkeys(stacks)) or ["generic"], "rules": list(dict.fromkeys(rules))}
+
+
 def collect_source_files(source: Path, extra_patterns: tuple[str, ...] | list[str] = ()) -> tuple[dict[str, Path], list[str], list[dict[str, str]]]:
     source = source.resolve()
     if not source.is_dir(): raise ValueError(f"本地源目录不存在或不是目录：{source}")
     if source == Path(source.anchor): raise ValueError("为避免误发布，不能把磁盘/文件系统根目录作为源目录")
+    profile = detect_project_profile(source)
+    effective_patterns = list(dict.fromkeys([*profile["rules"], *extra_patterns]))
     files, excluded, findings = {}, [], []
     for current, dirs, names in os.walk(source, topdown=True, followlinks=False):
         base = Path(current)
@@ -68,13 +129,13 @@ def collect_source_files(source: Path, extra_patterns: tuple[str, ...] | list[st
         for name in dirs:
             path = base / name
             rel = path.relative_to(source).as_posix()
-            if path.is_symlink() or is_excluded(rel, True, extra_patterns): excluded.append(rel + "/")
+            if path.is_symlink() or is_excluded(rel, True, effective_patterns): excluded.append(rel + "/")
             else: kept.append(name)
         dirs[:] = kept
         for name in names:
             path = base / name
             rel = path.relative_to(source).as_posix()
-            if path.is_symlink() or is_excluded(rel, extra_patterns=extra_patterns): excluded.append(rel); continue
+            if path.is_symlink() or is_excluded(rel, extra_patterns=effective_patterns): excluded.append(rel); continue
             files[rel] = path
             try:
                 if path.stat().st_size > MAX_SCAN_BYTES: continue
@@ -136,7 +197,7 @@ def publish_project(source: Path, repository: str, branch: str | None = None, ap
         if branch and actual_branch != branch: raise ValueError(f"克隆到的分支与请求不一致：{actual_branch} != {branch}")
         base_sha = git_run(["rev-parse", "HEAD"], cwd=clone)
         plan = build_change_plan(source_files, _target_snapshot(clone))
-        report: dict[str, Any] = {"ok": True, "mode": "apply" if apply else "dry-run", "repository": repo_name, "branch": actual_branch, "source": str(source), "source_file_count": len(source_files), "excluded_count": len(excluded), "excluded_preview": excluded[:100], "custom_excludes": extra_patterns, "secret_findings": findings, "changes": plan, "change_counts": {k: len(v) for k, v in plan.items()}, "base_commit": base_sha, "commit": None, "warning": "根目录完整镜像会删除本地源目录中不存在的远端文件；不会修改 .git 元数据，且不会强制推送。"}
+        report: dict[str, Any] = {"ok": True, "mode": "apply" if apply else "dry-run", "repository": repo_name, "branch": actual_branch, "source": str(source), "source_file_count": len(source_files), "excluded_count": len(excluded), "excluded_preview": excluded[:100], "detected_stacks": detect_project_profile(source)["stacks"], "auto_excludes": detect_project_profile(source)["rules"], "custom_excludes": extra_patterns, "secret_findings": findings, "changes": plan, "change_counts": {k: len(v) for k, v in plan.items()}, "base_commit": base_sha, "commit": None, "warning": "根目录完整镜像会删除本地源目录中不存在的远端文件；不会修改 .git 元数据，且不会强制推送。"}
         if not apply:
             report["message"] = "仅预览，未向 GitHub 推送任何更改。确认删除清单后，使用 --apply --confirm PUBLISH 执行。"
             return report
