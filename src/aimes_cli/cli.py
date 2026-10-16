@@ -155,8 +155,10 @@ def emit(data, fmt='text', output: Path | None=None):
                     for path in paths[:30]: lines.append(f'    - {path}')
                     if len(paths) > 30: lines.append(f'    ... 另有 {len(paths) - 30} 项')
             if data.get('excluded_preview'):
-                lines.append('Excluded sensitive/cache paths (preview up to 100):')
+                lines.append('Excluded environment/cache/runtime paths (preview up to 100):')
                 for path in data['excluded_preview']: lines.append(f'  - {path}')
+            if data.get('custom_excludes'):
+                lines.append('Custom exclusion rules: ' + ', '.join(data['custom_excludes']))
             if data.get('secret_findings'):
                 lines.append('Potential secret findings:')
                 for item in data['secret_findings']: lines.append('  - ' + str(item.get('path')) + ': ' + str(item.get('reason')))
@@ -303,6 +305,8 @@ def run_publish_wizard(args=None) -> int:
     branch = branch_value.strip() or None
     if args.save_profile and not interactive:
         save_profile(args.save_profile, {"source": source, "repository": repo_value, "branch": branch or "", "message": message_value, "excludes": excludes})
+    if args.apply and args.confirm != "PUBLISH":
+        raise ValueError("执行发布必须同时提供 --apply --confirm PUBLISH")
     preview = publish_project(source, repo_value, branch, False, None, message_value, excludes)
     emit(preview, args.format, args.output)
     if interactive:
@@ -316,7 +320,6 @@ def run_publish_wizard(args=None) -> int:
         result = publish_project(source, repo_value, branch, True, "PUBLISH", message_value, excludes)
         emit(result, args.format, args.output)
         return 0 if result.get("ok") else 2
-    if args.apply and args.confirm != "PUBLISH": raise ValueError("执行发布必须同时提供 --apply --confirm PUBLISH")
     if args.apply:
         result = publish_project(source, repo_value, branch, True, args.confirm, message_value, excludes)
         emit(result, args.format, args.output)
