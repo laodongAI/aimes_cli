@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.2 - Case-insensitive init confirmation
+
+- Accept `YES`, `yes`, and mixed-case variants after the initialization preview or direct-write prompt.
+- Add a regression test proving lowercase `yes` proceeds to the apply phase.
+
 ## 0.7.1 - 修复初始化预览后的执行流程
 
 - 修复交互式初始化选择预览后只输出 dry-run 报告并返回菜单、没有继续执行的问题。
