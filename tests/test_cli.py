@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+from unittest.mock import call, patch
 from pathlib import Path
 from aimes_cli.adapters import normalize_tools
 from aimes_cli.core import init_project, inspect_project, validate_project
@@ -66,5 +67,30 @@ class AimesCliTests(unittest.TestCase):
 
     def test_unknown_tool_rejected(self):
         with self.assertRaises(ValueError): normalize_tools('unknown-tool')
+
+    def test_interactive_init_previews_then_applies_after_confirmation(self):
+        from aimes_cli.cli import interactive_wizard
+        preview = {"ok": True, "root": str(self.root), "dry_run": True, "actions": []}
+        applied = {"ok": True, "root": str(self.root), "dry_run": False, "actions": []}
+        with patch("aimes_cli.cli.Path.cwd", return_value=self.root), \
+             patch("aimes_cli.cli.input", side_effect=["1", "1", "y", "YES", "0"]), \
+             patch("aimes_cli.cli.init_project", side_effect=[preview, applied]) as init_mock, \
+             patch("aimes_cli.cli.emit") as emit_mock:
+            self.assertEqual(interactive_wizard(), 0)
+        self.assertEqual(init_mock.call_args_list, [
+            call(self.root, ["trae-code"], "project", True),
+            call(self.root, ["trae-code"], "project", False),
+        ])
+        self.assertEqual(emit_mock.call_count, 2)
+
+    def test_interactive_init_preview_cancel_does_not_apply(self):
+        from aimes_cli.cli import interactive_wizard
+        preview = {"ok": True, "root": str(self.root), "dry_run": True, "actions": []}
+        with patch("aimes_cli.cli.Path.cwd", return_value=self.root), \
+             patch("aimes_cli.cli.input", side_effect=["1", "1", "y", "no", "0"]), \
+             patch("aimes_cli.cli.init_project", return_value=preview) as init_mock, \
+             patch("aimes_cli.cli.emit"):
+            self.assertEqual(interactive_wizard(), 0)
+        init_mock.assert_called_once_with(self.root, ["trae-code"], "project", True)
 
 if __name__ == '__main__': unittest.main()
