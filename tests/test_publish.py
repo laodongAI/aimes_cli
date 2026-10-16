@@ -111,6 +111,14 @@ class PublishTests(unittest.TestCase):
             if old is None: os.environ.pop("AIMES_CONFIG_HOME", None)
             else: os.environ["AIMES_CONFIG_HOME"] = old
 
+    def test_collect_files_automatically_excludes_github_oversized_blobs(self):
+        (self.root / "README.md").write_text("hello", encoding="utf-8")
+        (self.root / "large.bin").write_bytes(b"0123456789")
+        with patch("aimes_cli.publish.MAX_GITHUB_BLOB_BYTES", 8):
+            files, excluded, _ = collect_source_files(self.root)
+        self.assertEqual(set(files), {"README.md"})
+        self.assertTrue(any(item.startswith("large.bin") and "GitHub 2 GiB" in item for item in excluded))
+
     def test_collect_files_flags_token_like_content(self):
         (self.root / "config.txt").write_text("token=ghp_" + "A" * 30, encoding="utf-8")
         files, _, findings = collect_source_files(self.root)
