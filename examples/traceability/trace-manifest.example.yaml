@@ -1,0 +1,48 @@
+schema_version: 1
+project:
+  name: "AIMES Demo Project"
+  repository: null
+task:
+  id: TASK-DEMO-001
+  title: "验证端到端追溯关系"
+  goal: "示例演示需求、知识、任务、实现和测试之间的关联"
+  status: IMPLEMENTED_UNVERIFIED
+evidence_file: examples/evidence/evidence-registry.example.yaml
+entities:
+  - id: REQ-DEMO-001
+    type: requirement
+    status: APPROVED
+    links:
+      - target: KNOW-DEMO-001
+        relation: informed_by
+  - id: KNOW-DEMO-001
+    type: knowledge
+    status: candidate
+    links: []
+  - id: TASK-DEMO-001
+    type: task
+    status: IN_PROGRESS
+    links:
+      - target: REQ-DEMO-001
+        relation: implements
+  - id: IMPL-DEMO-001
+    type: implementation
+    status: IMPLEMENTED_UNVERIFIED
+    links:
+      - target: TASK-DEMO-001
+        relation: implements
+  - id: TEST-DEMO-001
+    type: test
+    status: VERIFIED
+    links:
+      - target: IMPL-DEMO-001
+        relation: verifies
+    evidence_refs:
+      - EVD-DEMO-001
+context_files:
+  - README.md
+  - docs/CLI-COMMAND-CONTRACT.md
+open_questions:
+  - "演示项目的真实仓库路径与当前分支是什么？"
+risks:
+  - "本文件是示例数据，实际项目需替换成真实实体与证据。"

@@ -1,0 +1,6 @@
+AIMES CLI V0.5.3 build notes
+
+Source tests: 47 passed, 0 failed on Linux / Python 3.13.
+Windows EXE: not built here; must run build_windows_exe.ps1 on Windows.
+Standalone deployment target: dist-exe\aimes\aimes.exe plus its companion files.
+Do not distribute only aimes.exe; distribute the whole folder.

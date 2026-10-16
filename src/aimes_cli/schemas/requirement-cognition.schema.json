@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aimes.local/schemas/requirement-cognition.schema.json",
+  "title": "AIMES Requirement Cognition Record",
+  "type": "object",
+  "required": ["schema_version", "record_id", "source_task_id", "status", "business_goal", "scenarios", "requirements"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "record_id": {"type": "string", "minLength": 1},
+    "source_task_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["DRAFT", "APPROVED", "PLANNED", "IN_PROGRESS", "IMPLEMENTED_UNVERIFIED", "VERIFIED", "FAILED", "BLOCKED", "REJECTED", "DEPRECATED", "REMOVED", "UNKNOWN", "NOT_APPLICABLE"]},
+    "business_goal": {"type": "string", "minLength": 1},
+    "actors": {"type": "array"},
+    "scenarios": {"type": "array", "items": {"type": "object", "required": ["id"]}},
+    "requirements": {"type": "array", "items": {"type": "object", "required": ["id", "statement", "source_refs", "acceptance_criteria"], "properties": {"id": {"type": "string"}, "statement": {"type": "string", "minLength": 1}, "source_refs": {"type": "array"}, "acceptance_criteria": {"type": "array", "minItems": 1}}}},
+    "constraints": {"type": "array"}, "confirmed_facts": {"type": "array"}, "inferences": {"type": "array"}, "unknowns": {"type": "array"}, "conflicts": {"type": "array"}, "assumptions_proposed": {"type": "array"}, "risks": {"type": "array"}, "project_evidence": {"type": "array"}, "questions_for_owner": {"type": "array"}, "review_result": {"type": "string"}, "approved_by": {"type": ["string", "null"]}, "approved_at": {"type": ["string", "null"]}
+  },
+  "additionalProperties": false
+}

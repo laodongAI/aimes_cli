@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AIMES Trace Manifest",
+  "type": "object",
+  "required": ["schema_version", "entities"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "project": {"type": "object"}, "task": {"type": "object"},
+    "evidence_file": {"type": "string"},
+    "entities": {"type": "array", "items": {"type": "object", "required": ["id", "type", "status"], "properties": {
+      "id": {"type": "string", "minLength": 1},
+      "type": {"enum": ["requirement", "knowledge", "reuse_decision", "task", "implementation", "test", "release", "skill"]},
+      "status": {"type": "string"}, "links": {"type": "array"}, "evidence_refs": {"type": "array", "items": {"type": "string"}}
+    }}},
+    "context_files": {"type": "array", "items": {"type": "string"}},
+    "open_questions": {"type": "array", "items": {"type": "string"}},
+    "risks": {"type": "array", "items": {"type": "string"}}
+  }
+}

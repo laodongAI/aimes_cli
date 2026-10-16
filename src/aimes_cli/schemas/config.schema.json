@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aimes.local/schemas/config.schema.json",
+  "title": "AIMES Project Configuration",
+  "type": "object",
+  "required": ["schema_version", "governance", "project", "tools", "policy", "records"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "governance": {
+      "type": "object",
+      "required": ["name", "version", "core"],
+      "properties": {
+        "name": {"const": "AIMES"},
+        "version": {"type": "string"},
+        "core": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "project": {"type": "object", "required": ["root", "name", "scope"], "properties": {"root": {"type": "string"}, "name": {"type": "string"}, "scope": {"enum": ["project"]}}, "additionalProperties": true},
+    "tools": {"type": "array", "items": {"type": "object", "required": ["id", "name", "adapter_status", "entry_paths"], "properties": {"id": {"type": "string"}, "name": {"type": "string"}, "adapter_status": {"enum": ["template", "manual"]}, "entry_paths": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": true}},
+    "policy": {"type": "object", "required": ["preserve_existing_files", "auto_overwrite", "unknown_capability", "verified_requires_evidence"], "properties": {"preserve_existing_files": {"const": true}, "auto_overwrite": {"const": false}, "unknown_capability": {"const": "report-and-stop"}, "verified_requires_evidence": {"const": true}}, "additionalProperties": true},
+    "records": {"type": "object", "properties": {"tasks": {"type": "string"}, "handoff": {"type": "string"}}, "additionalProperties": true}
+  },
+  "additionalProperties": false
+}

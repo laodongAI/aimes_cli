@@ -1,0 +1,21 @@
+schema_version: 1
+project: AIMES Adapter Verification Demo
+checks:
+  - id: ADAPTER-CHECK-CODEX-001
+    tool: codex-cli
+    product_version: "填写实际安装版本"
+    rule_entry: AGENTS.md
+    verification: UNKNOWN
+    method: file_inspection
+    observed_at: ""
+    observer: ""
+    evidence_note: "此示例尚未进行真实运行时验证；检查文件存在不等于规则已加载。"
+  - id: ADAPTER-CHECK-CLAUDE-001
+    tool: claude-code
+    product_version: "填写实际安装版本"
+    rule_entry: CLAUDE.md
+    verification: NOT_RUN
+    method: manual_prompt
+    observed_at: ""
+    observer: ""
+    evidence_note: "待在新会话中执行可辨识的规则加载探针，并保存输出。"

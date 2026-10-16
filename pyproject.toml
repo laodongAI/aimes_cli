@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aimes-governance-cli"
+version = "0.5.3"
+description = "Local-first, cross-tool AI engineering governance bootstrap and validation CLI"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary - project governance artifacts" }
+authors = [{ name = "AIMES" }]
+dependencies = ["PyYAML>=6.0,<7.0"]
+
+[project.scripts]
+aimes = "aimes_cli.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+aimes_cli = ["templates/**/*.md", "schemas/*.json"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aimes.local/schemas/knowledge-asset.schema.json",
+  "title": "AIMES Knowledge Asset",
+  "type": "object",
+  "required": ["schema_version", "knowledge_id", "title", "type", "summary", "source_refs", "applicability_conditions", "constraints", "exceptions", "invalidating_conditions", "maturity"],
+  "properties": {
+    "schema_version": {"const": 1}, "knowledge_id": {"type": "string", "minLength": 1}, "title": {"type": "string", "minLength": 1}, "type": {"type": "string", "minLength": 1}, "summary": {"type": "string", "minLength": 1}, "source_refs": {"type": "array", "minItems": 1}, "produced_by_task": {"type": ["string", "null"]}, "baseline_commit": {"type": ["string", "null"]}, "applicability_conditions": {"type": "array"}, "constraints": {"type": "array"}, "exceptions": {"type": "array"}, "invalidating_conditions": {"type": "array"}, "verification_evidence": {"type": "array"}, "known_defects": {"type": "array"}, "counterexamples": {"type": "array"}, "maintainer": {"type": ["string", "null"]}, "last_reviewed": {"type": ["string", "null"]}, "maturity": {"enum": ["candidate", "reviewed", "validated", "deprecated"]}, "related_entities": {"type": "array"}, "superseded_by": {"type": ["string", "null"]}
+  },
+  "additionalProperties": false
+}

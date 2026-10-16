@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AIMES Evidence Registry",
+  "type": "object",
+  "required": ["schema_version", "evidence"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "evidence": {"type": "array", "items": {"type": "object", "required": ["id", "kind", "result"], "properties": {
+      "id": {"type": "string", "minLength": 1},
+      "kind": {"enum": ["command", "test", "build", "review", "artifact", "manual"]},
+      "command": {"type": "string"}, "exit_code": {"type": "integer"},
+      "result": {"enum": ["PASS", "FAIL", "INFO", "UNKNOWN"]},
+      "observed_at": {"type": "string"}, "artifact_path": {"type": "string"},
+      "sha256": {"type": "string"}, "note": {"type": "string"}
+    }}}
+  }
+}

@@ -1,0 +1,23 @@
+schema_version: 1
+contract_id: AIMES-SKILL-OUTPUT-EXAMPLE
+status: UNKNOWN
+summary: "结论范围与现有证据一致；未将未执行验证声明为通过。"
+evidence:
+  - source: "src/example.py:20-31"
+    kind: static_inspection
+    supports: "静态代码中存在该调用路径"
+not_verified:
+  - "未执行集成测试"
+file_selection_plan:
+  task: "分析目标模块的输入校验"
+  budget:
+    max_files: 8
+    max_bytes: 120000
+  files:
+    - path: "src/example.py"
+      priority: P0
+      reason: "目标入口"
+      expected_evidence: "输入校验路径"
+  exclusions: []
+  unresolved_questions: []
+next_action: "在具备依赖的环境中运行集成测试"

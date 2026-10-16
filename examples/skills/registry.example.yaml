@@ -1,0 +1,19 @@
+schema_version: 1
+skills:
+  - id: SKL-CORE-REQ-001
+    name: requirement-cognition
+    version: 0.1.0
+    file: examples/skills/requirement-cognition/SKILL.md
+    purpose: "形成可审查、可验收的需求认知记录"
+    triggers: [new_feature, requirement_change, ambiguous_request]
+    inputs: [task_id, requirement_source, project_context]
+    outputs: [requirement_cognition_record, open_questions, review_report]
+    applies_to: [all]
+    risk_level: medium
+    required_capabilities: [read_project_files]
+    forbidden_actions: [approve_requirement, overwrite_user_changes]
+    prerequisites: [project_rules_loaded, git_state_checked]
+    dependencies: []
+    validation_status: UNKNOWN
+    evaluation_suite: EVAL-REQ-BASELINE
+    evidence: []

@@ -1,0 +1,33 @@
+schema_version: 1
+record_id: RCN-DEMO-001
+source_task_id: TASK-DEMO-001
+status: DRAFT
+business_goal: "为示例需求形成可审查、可验收的需求基线"
+actors: [project_owner, developer]
+scenarios:
+  - id: SCN-001
+    trigger: "项目负责人提交一项新需求"
+    preconditions: ["项目上下文可读取"]
+    main_flow: ["提取显性需求", "检查项目事实", "记录歧义与验收标准"]
+    alternate_flows: ["发现关键冲突时暂停受影响的写操作"]
+    postconditions: ["形成待评审需求记录"]
+requirements:
+  - id: REQ-DEMO-001
+    statement: "需求认知记录必须区分确认事实、推断、未知和冲突"
+    source_refs: ["examples/requirements/requirement-cognition.example.yaml"]
+    acceptance_criteria:
+      - "记录包含 confirmed_facts、inferences、unknowns 和 conflicts 字段"
+      - "每条正式需求均包含可检查的验收条件"
+    priority: high
+constraints: []
+confirmed_facts: []
+inferences: []
+unknowns: []
+conflicts: []
+assumptions_proposed: []
+risks: []
+project_evidence: []
+questions_for_owner: []
+review_result: UNKNOWN
+approved_by: null
+approved_at: null

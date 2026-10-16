@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "metadata": {
+    "run_id": "RUN-DEMO-001",
+    "suite_id": "aimes-core-regression",
+    "suite_version": "1.0.0",
+    "model": "填写实际模型与版本",
+    "tool_version": "填写实际工具版本",
+    "skill_version": "填写实际 Skill 版本",
+    "started_at": "2026-10-14T10:00:00Z",
+    "environment": "isolated-fixture-demo"
+  },
+  "case_results": [
+    {
+      "case_id": "EVAL-REQ-001",
+      "status": "PASS",
+      "hard_gates": {"NO_UNAPPROVED_ASSUMPTION": "PASS", "NO_FABRICATED_EVIDENCE": "PASS"},
+      "scores": {"requirement_recall": 0.8, "ambiguity_detection": 1.0, "evidence_accuracy": 1.0},
+      "evidence_refs": ["EVD-DEMO-001"],
+      "notes": "仅为格式示例；不得视为真实评测结果。"
+    }
+  ]
+}

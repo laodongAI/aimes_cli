@@ -1,0 +1,24 @@
+schema_version: 1
+reuse_decision_id: RUD-DEMO-001
+task_id: TASK-DEMO-001
+status: DRAFT
+candidate_assets:
+  - asset_ref: "examples/knowledge/knowledge-asset.example.yaml"
+    source_evidence: ["文件内容已检查"]
+    last_verified: null
+comparison:
+  shared_properties: ["都需要将推断与确认事实区分"]
+  differences: ["当前任务尚未在真实项目验证"]
+  preconditions_satisfied: []
+  preconditions_unknown: ["目标项目的现有记录格式"]
+  constraints_conflicts: []
+  known_limitations: ["示例资产尚未经过真实项目验证"]
+decision: NEED_MORE_EVIDENCE
+rationale: "先核实目标项目的现有需求规范，再决定直接复用或适配。"
+planned_adaptations: []
+rejected_alternatives: []
+verification_plan:
+  - "检查目标项目当前需求记录和验收约定"
+verification_evidence: []
+approval_required: false
+approved_by: null

@@ -1,0 +1,10 @@
+schema_version: 1
+evidence:
+  - id: EVD-DEMO-001
+    kind: test
+    command: "python -m pytest -q tests/test_v03_traceability.py"
+    exit_code: 0
+    result: PASS
+    observed_at: "2026-10-14T12:00:00+08:00"
+    artifact_path: examples/evidence/demo-test-output.log
+    note: "演示记录；仅用于展示证据格式，不代表当前用户项目已执行该命令。"

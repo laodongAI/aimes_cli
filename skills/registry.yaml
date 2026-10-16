@@ -1,0 +1,243 @@
+schema_version: 1
+skills:
+- id: SKL-CORE-ONB-001
+  name: project-onboarding
+  version: 0.3.0
+  file: skills/project-onboarding/SKILL.md
+  purpose: 以当前仓库事实恢复项目目标、结构、状态和任务上下文，不依赖旧聊天作为唯一来源。
+  triggers:
+  - new_project
+  - task_handoff
+  - session_start
+  inputs:
+  - project_path
+  - task_id
+  - task_context
+  outputs:
+  - project_brief
+  - evidence_map
+  - open_questions
+  - next_steps
+  applies_to:
+  - all
+  risk_level: low
+  required_capabilities:
+  - read_project_files
+  forbidden_actions:
+  - overwrite_user_changes
+  - fabricate_verification
+  - bypass_quality_gate
+  prerequisites:
+  - project_rules_loaded
+  - git_state_checked
+  dependencies: []
+  validation_status: UNKNOWN
+  evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
+  evidence: []
+- id: SKL-CORE-REQ-001
+  name: requirement-cognition
+  version: 0.3.0
+  file: skills/requirement-cognition/SKILL.md
+  purpose: 将自然语言需求转化为可确认、可设计、可实施、可验收的结构化需求记录。
+  triggers:
+  - new_feature
+  - requirement_change
+  - ambiguous_request
+  inputs:
+  - task_id
+  - requirement_source
+  - project_context
+  outputs:
+  - requirement_cognition_record
+  - open_questions
+  - review_report
+  applies_to:
+  - all
+  risk_level: medium
+  required_capabilities:
+  - read_project_files
+  forbidden_actions:
+  - overwrite_user_changes
+  - fabricate_verification
+  - bypass_quality_gate
+  prerequisites:
+  - project_rules_loaded
+  - git_state_checked
+  dependencies: []
+  validation_status: UNKNOWN
+  evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
+  evidence: []
+- id: SKL-CORE-KNOW-001
+  name: project-knowledge-reuse
+  version: 0.3.0
+  file: skills/project-knowledge-reuse/SKILL.md
+  purpose: 从项目代码、设计、测试、缺陷和历史任务中发现候选资产，评估适用性后决定复用、适配、模式迁移或不复用。
+  triggers:
+  - feature_implementation
+  - bug_fix
+  - similar_problem
+  - refactoring
+  inputs:
+  - task_id
+  - problem_statement
+  - project_context
+  outputs:
+  - candidate_assets
+  - reuse_decision_record
+  - verification_plan
+  applies_to:
+  - all
+  risk_level: medium
+  required_capabilities:
+  - read_project_files
+  forbidden_actions:
+  - overwrite_user_changes
+  - fabricate_verification
+  - bypass_quality_gate
+  prerequisites:
+  - project_rules_loaded
+  - git_state_checked
+  dependencies: []
+  validation_status: UNKNOWN
+  evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
+  evidence: []
+- id: SKL-CORE-IMPACT-001
+  name: change-impact-analysis
+  version: 0.3.0
+  file: skills/change-impact-analysis/SKILL.md
+  purpose: 在实施前识别变更对需求、模块、接口、数据、安全、测试、文档、部署和回滚的影响。
+  triggers:
+  - before_implementation
+  - requirement_change
+  - dependency_upgrade
+  - bug_fix
+  inputs:
+  - task_id
+  - change_description
+  - project_context
+  outputs:
+  - impact_matrix
+  - affected_assets
+  - verification_plan
+  - approval_items
+  applies_to:
+  - all
+  risk_level: medium
+  required_capabilities:
+  - read_project_files
+  forbidden_actions:
+  - overwrite_user_changes
+  - fabricate_verification
+  - bypass_quality_gate
+  prerequisites:
+  - project_rules_loaded
+  - git_state_checked
+  dependencies: []
+  validation_status: UNKNOWN
+  evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
+  evidence: []
+- id: SKL-CORE-ARCH-001
+  name: architecture-contract-review
+  version: 0.3.0
+  file: skills/architecture-contract-review/SKILL.md
+  purpose: 检查方案是否符合既有架构边界、接口契约、数据模型、ADR、安全边界和兼容性要求。
+  triggers:
+  - architecture_change
+  - public_api_change
+  - data_model_change
+  - integration_design
+  inputs:
+  - task_id
+  - design_or_diff
+  - project_context
+  outputs:
+  - contract_findings
+  - decision_options
+  - required_approvals
+  - verification_plan
+  applies_to:
+  - all
+  risk_level: high
+  required_capabilities:
+  - read_project_files
+  forbidden_actions:
+  - overwrite_user_changes
+  - fabricate_verification
+  - bypass_quality_gate
+  prerequisites:
+  - project_rules_loaded
+  - git_state_checked
+  dependencies: []
+  validation_status: UNKNOWN
+  evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
+  evidence: []
+- id: SKL-CORE-IMPL-001
+  name: controlled-implementation
+  version: 0.3.0
+  file: skills/controlled-implementation/SKILL.md
+  purpose: 按已批准需求和明确范围实施最小必要变更，保护用户修改并以真实证据报告结果。
+  triggers:
+  - approved_task
+  - bug_fix
+  - feature_implementation
+  inputs:
+  - task_id
+  - approved_requirements
+  - impact_analysis
+  - project_context
+  outputs:
+  - implementation_diff
+  - verification_results
+  - traceability_updates
+  - delivery_report
+  applies_to:
+  - all
+  risk_level: high
+  required_capabilities:
+  - read_project_files
+  forbidden_actions:
+  - overwrite_user_changes
+  - fabricate_verification
+  - bypass_quality_gate
+  prerequisites:
+  - project_rules_loaded
+  - git_state_checked
+  dependencies: []
+  validation_status: UNKNOWN
+  evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
+  evidence: []
+- id: SKL-CORE-TEST-001
+  name: requirement-driven-testing
+  version: 0.3.0
+  file: skills/requirement-driven-testing/SKILL.md
+  purpose: 从批准需求和风险出发设计可判定的测试，覆盖主流程、边界、异常和回归，并如实记录执行证据。
+  triggers:
+  - new_feature
+  - bug_fix
+  - release_validation
+  - requirement_change
+  inputs:
+  - task_id
+  - approved_requirements
+  - implementation_context
+  outputs:
+  - test_matrix
+  - test_cases
+  - execution_report
+  - coverage_gaps
+  applies_to:
+  - all
+  risk_level: medium
+  required_capabilities:
+  - read_project_files
+  forbidden_actions:
+  - overwrite_user_changes
+  - fabricate_verification
+  - bypass_quality_gate
+  prerequisites:
+  - project_rules_loaded
+  - git_state_checked
+  dependencies: []
+  validation_status: UNKNOWN
+  evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
+  evidence: []

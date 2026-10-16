@@ -1,0 +1,83 @@
+# Changelog
+
+## 0.5.2 - Prompt/runtime engineering hardening
+
+- Added shared positive/negative prompt output examples and file-selection/context budget protocol.
+- Added external-tool failure classification and safe degradation protocol.
+- Added local JSONL audit trail primitives with sensitive-field redaction.
+- Added deterministic evaluation fixture runner; it reports heuristic/fixture results and does not claim real-model evaluation.
+- Added CLI command-contract regression tests and friendlier parse/schema diagnostics.
+- Preserved V0.5.1 prompt assets and seven P0 Skills; added V0.5.2 protocol sections.
+
+
+## 0.5.1 - Prompt and Skill optimization
+
+- 全量修订 7 个 P0 Skills，明确输入/输出契约、证据和状态语义、任务专属失败分支、停止条件与评测案例。
+- 新增提示词系统统一契约、Skill 编排协议、全量复审报告和 14 个提示词基准案例。
+- Skill 注册表版本升级到 0.2.0；真实工具验证状态继续保持 UNKNOWN。
+- 增加提示词评测套件结构校验与契约示例。
+- 未实现自动模型/IDE 驱动，不宣称真实工具行为已验证。
+
+## V0.5.0 — 多工具运行时验证证据与交接完整性
+
+- 新增 `aimes adapter validate`：校验跨工具规则加载验证记录，支持 PASS/FAIL/BLOCKED/NOT_RUN/UNKNOWN。
+- 新增 `aimes adapter report`：按工具汇总验证覆盖情况，不把未执行检查视为通过。
+- 新增 `aimes context validate`：核对 Context Pack 源文件 SHA-256，检测打包后上下文变化，并可检查 HANDOFF 文件。
+- 增加证据方法门禁：仅查看规则文件不能记录为运行时 PASS；PASS 需有运行时观察、自动化检查或用户确认，并附证据说明或文件。
+- 新增 V0.5 示例和专项测试；CLI 仍不控制 IDE、不自动执行探针、不声称真实工具已经完成验证。
+
+## V0.4.0 — AI 开发准确度评测与回归
+
+- 新增版本化评测集校验：`aimes evaluation validate`。
+- 新增已记录运行结果校验和报告：`aimes evaluation report`。
+- 新增基线/候选对比：`aimes evaluation compare`，可识别状态退化、硬门禁退化、案例增删与诊断分数变化。
+- 新增评测集与运行记录 JSON Schema、示例数据及自动化测试。
+- 明确评测 CLI 不调用模型、不执行项目命令；分数是诊断指标，硬门禁单独报告。
+- 本版本仍需在真实工具、隔离项目 fixture 和人工/独立验收流程中完成端到端试点。
+
+
+## V0.3.0
+- 新增 `trace validate`：校验跨实体引用、重复 ID、证据文件及 VERIFIED 证据门禁。
+- 新增 `evidence validate`：校验记录的命令/测试/构建结果、退出码、产物路径与可选 SHA-256。
+- 新增 `context pack`：生成 `context-pack.json` 与 `HANDOFF.md`，记录上下文文件哈希、任务状态、未决问题和风险。
+- 新增 trace/evidence JSON Schema、示例数据与 5 项专项测试。
+- 保留 V0.1/V0.2 命令与只读治理原则；不会执行证据中记录的命令或自动升级 VERIFIED。
+
+
+## 0.1.0 — MVP prototype
+
+- Added interactive and non-interactive project initialization.
+- Added eight tool execution contexts: Trae Code, VS Code + Codex, VS Code + Claude Code, VS Code + GitHub Copilot, ZCode, QCode, Claude Code CLI, Codex CLI.
+- Added shared AIMES V1.2 governance core deployment.
+- Added tool-specific instruction entry templates for known paths.
+- Added manual review notes for ZCode and QCode instead of guessing native rule paths.
+- Added safe conflict handling: preserve existing files and stage proposals.
+- Added manifest-based updates for unchanged managed files.
+- Added inspect, diff, configure, validate, doctor, status.
+- Added JSON output and Windows installation documentation.
+- Added eight unit tests.
+
+## Known limitations
+
+No global deployment, automatic uninstall, rollback, three-way merge, automatic runtime rule loading detection, or actual ZCode/QCode integration. Runtime verification across the eight tool contexts remains a release gate for the next version.
+
+
+## 0.2.0 - 2026-10-14
+
+- 新增只读命令：`requirement validate`、`knowledge validate`、`reuse validate`、`skill validate`。
+- 新增需求认知、知识资产、复用决策和 Skill 注册表 JSON Schema。
+- 增加字段、状态、重复 ID、验收标准、成熟度证据、复用验证计划和 Skill 文件引用检查。
+- 增加项目根目录路径逃逸检查；验证器不执行 Shell、不改写源文件。
+- 增加示例 YAML、首个 requirement-cognition Skill 示例及 V1.3 设计文档副本。
+- 保留 V0.1 既有命令与项目初始化行为；V0.2 新校验命令以退出码 1 表示治理校验失败。
+
+- 加入首批 7 个 P0 Skill 草案及统一注册表：项目接管、需求认知、项目知识复用、变更影响分析、架构契约审查、受控实施、需求驱动测试。
+- 所有 Skill 初始 `validation_status: UNKNOWN`，不声称已在真实工具中验证。
+
+## V0.5.3 - 2026-10-16
+
+- Added an interactive main menu when `aimes` is launched without arguments in a TTY.
+- Added guided multi-tool selection for init/configure/diff; project writes require explicit `YES` confirmation when the user opts out of preview mode.
+- Kept existing argument-based CLI commands for scripts and CI.
+- Added Windows PyInstaller build script and deployment guidance for a standalone EXE that does not require activating a project virtual environment.
+- Windows EXE build/runtime verification is not claimed until the build script is run on Windows.

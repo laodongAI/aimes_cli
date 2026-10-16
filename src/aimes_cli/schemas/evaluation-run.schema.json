@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AIMES Evaluation Run Record",
+  "type": "object",
+  "required": ["schema_version", "metadata", "case_results"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "metadata": {"type": "object"},
+    "case_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["case_id", "status", "hard_gates", "scores"],
+        "properties": {
+          "case_id": {"type": "string"},
+          "status": {"enum": ["PASS", "FAIL", "BLOCKED", "NOT_RUN"]},
+          "hard_gates": {"type": "object", "additionalProperties": {"enum": ["PASS", "FAIL", "NOT_RUN", "BLOCKED"]}},
+          "scores": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}},
+          "evidence_refs": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

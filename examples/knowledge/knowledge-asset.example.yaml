@@ -1,0 +1,24 @@
+schema_version: 1
+knowledge_id: KNOW-DEMO-001
+title: "需求认知记录应区分事实与推断"
+type: engineering_pattern
+summary: "需求分析输出应将证实事实、合理推断、未知和冲突分别记录，避免推断被误当成批准需求。"
+source_refs:
+  - "examples/requirements/requirement-cognition.example.yaml"
+produced_by_task: TASK-DEMO-001
+baseline_commit: null
+applicability_conditions:
+  - "自然语言需求可能存在歧义或上下文缺失"
+constraints:
+  - "不能仅凭当前代码决定业务目标"
+exceptions: []
+invalidating_conditions:
+  - "项目采用经批准且兼容的替代需求模型"
+verification_evidence: []
+known_defects: []
+counterexamples: []
+maintainer: null
+last_reviewed: null
+maturity: candidate
+related_entities: [REQ-DEMO-001]
+superseded_by: null

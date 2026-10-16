@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aimes.local/schemas/skill-registry.schema.json",
+  "title": "AIMES Skill Registry",
+  "type": "object",
+  "required": ["schema_version", "skills"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "skills": {"type": "array", "items": {"type": "object", "required": ["id", "name", "version", "file", "purpose", "triggers", "inputs", "outputs", "applies_to", "risk_level", "required_capabilities", "forbidden_actions", "prerequisites", "dependencies", "validation_status", "evaluation_suite", "evidence"], "properties": {"id": {"type": "string"}, "name": {"type": "string"}, "version": {"type": "string"}, "file": {"type": "string"}, "purpose": {"type": "string"}, "triggers": {"type": "array"}, "inputs": {"type": "array"}, "outputs": {"type": "array"}, "applies_to": {"type": "array"}, "risk_level": {"enum": ["low", "medium", "high", "critical"]}, "required_capabilities": {"type": "array"}, "forbidden_actions": {"type": "array"}, "prerequisites": {"type": "array"}, "dependencies": {"type": "array"}, "validation_status": {"enum": ["DRAFT", "APPROVED", "PLANNED", "IN_PROGRESS", "IMPLEMENTED_UNVERIFIED", "VERIFIED", "FAILED", "BLOCKED", "REJECTED", "DEPRECATED", "REMOVED", "UNKNOWN", "NOT_APPLICABLE"]}, "evaluation_suite": {"type": ["string", "null"]}, "evidence": {"type": "array"}}, "additionalProperties": false}}
+  },
+  "additionalProperties": false
+}
