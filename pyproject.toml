@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aimes-governance-cli"
-version = "0.7.1"
+version = "0.7.2"
 description = "Local-first, cross-tool AI engineering governance bootstrap and validation CLI"
 readme = "README.md"
 requires-python = ">=3.10"
