@@ -235,15 +235,23 @@ def interactive_wizard():
                 result = init_project(find_root().resolve(), selected, "project", True)
                 emit(result)
                 continue
-            print("\n项目范围：当前项目目录（不修改用户全局配置）")
+            # 交互式向导承诺操作“当前项目目录”，因此不向上自动跳到父级 Git 仓库。
+            root = Path.cwd().resolve()
+            print(f"\n项目范围：{root}（仅修改此目录，不修改用户全局配置）")
             dry = input("先预览变更？[Y/n]：").strip().lower() not in ("n", "no")
-            if not dry:
-                confirm = input("将写入当前项目文件。确认执行？请输入 YES：").strip()
+            if dry:
+                preview = init_project(root, selected, "project", True)
+                emit(preview)
+                confirm = input("预览完成。确认按上述计划执行初始化？请输入 YES：").strip()
                 if confirm != "YES":
                     print("未确认，已取消；没有写入文件。")
                     continue
-            root = find_root().resolve()
-            result = init_project(root, selected, "project", dry)
+            else:
+                confirm = input("将直接写入当前项目文件。确认执行？请输入 YES：").strip()
+                if confirm != "YES":
+                    print("未确认，已取消；没有写入文件。")
+                    continue
+            result = init_project(root, selected, "project", False)
             emit(result)
             continue
         result = {
