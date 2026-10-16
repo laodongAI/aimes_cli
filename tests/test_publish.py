@@ -2,7 +2,7 @@ import hashlib
 import tempfile
 import unittest
 from pathlib import Path
-from aimes_cli.publish import build_change_plan, collect_source_files, is_excluded, normalize_repository, validate_branch
+from aimes_cli.publish import build_change_plan, collect_source_files, detect_project_profile, is_excluded, normalize_repository, validate_branch
 from aimes_cli.publish_profiles import config_path, load_profiles, save_profile
 from aimes_cli.cli import parser
 
@@ -59,6 +59,31 @@ class PublishTests(unittest.TestCase):
         self.assertIn(".env", excluded)
         self.assertIn("private.pem", excluded)
         self.assertEqual(findings, [])
+
+    def test_project_stack_detection_selects_automatic_rules(self):
+        (self.root / "package.json").write_text('{"dependencies":{"vue":"^3.0.0"}}', encoding="utf-8")
+        (self.root / "pnpm-lock.yaml").write_text("lockfileVersion: '9.0'", encoding="utf-8")
+        (self.root / ".gitignore").write_text("# local output\ncoverage/\nlocal-data.json\n!keep-me.json\n", encoding="utf-8")
+        profile = detect_project_profile(self.root)
+        self.assertIn("nodejs", profile["stacks"])
+        self.assertIn("vue", profile["stacks"])
+        self.assertIn("coverage/", profile["rules"])
+        self.assertIn(".next", profile["rules"])
+
+    def test_collect_files_applies_detected_stack_and_gitignore_rules(self):
+        (self.root / "package.json").write_text('{"scripts":{"build":"vite build"}}', encoding="utf-8")
+        (self.root / ".gitignore").write_text("local-data.json\ncoverage/\n", encoding="utf-8")
+        (self.root / "README.md").write_text("hello", encoding="utf-8")
+        (self.root / "local-data.json").write_text("local", encoding="utf-8")
+        (self.root / ".next").mkdir()
+        (self.root / ".next" / "cache.bin").write_text("cache", encoding="utf-8")
+        (self.root / "coverage").mkdir()
+        (self.root / "coverage" / "report.txt").write_text("coverage", encoding="utf-8")
+        files, excluded, _ = collect_source_files(self.root)
+        self.assertEqual(set(files), {"package.json", ".gitignore", "README.md"})
+        self.assertIn("local-data.json", excluded)
+        self.assertIn(".next/", excluded)
+        self.assertIn("coverage/", excluded)
 
     def test_collect_files_applies_custom_excludes(self):
         (self.root / "README.md").write_text("hello", encoding="utf-8")
