@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0 - 配置式 GitHub 发布向导与扩展忽略规则
+
+- `aimes publish` 增加交互式配置选择、预览和确认推送流程。
+- 新增用户级发布配置档案，支持 `--profile`、`--save-profile`、`--list-profiles` 和重复使用的 `--exclude` 参数。
+- 默认过滤 Python/Node 环境、AI 工具本地状态目录、运行时日志/PID/临时文件、构建目录和编译产物。
+- 配置仅保存项目路径、仓库、分支、提交说明和排除规则，不保存 GitHub 凭据。
+- 增加过滤规则、配置档案和命令参数测试。
+
 ## 0.6.0 - GitHub root mirror publishing
 
 - Added `aimes publish` to preview and publish a local project as a complete mirror of an existing GitHub repository root.
