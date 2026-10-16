@@ -1,8 +1,8 @@
-# AIMES 本地治理 CLI（V0.7.0）
+# AIMES 本地治理 CLI（V0.7.1）
 
 AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具。它负责把 AIMES V1.2 治理核心部署到项目仓库，生成工具专属规则入口，检查配置与冲突，并输出部署状态。它不替代 Codex、Claude Code、Trae、ZCode 或 Copilot 执行开发任务。
 
-> 当前版本是可运行的 MVP 原型，不是生产级安装器。V0.7.0 在保留原有能力的基础上增加配置式 GitHub 发布向导与扩展默认忽略规则；Windows 独立 EXE 仍需在 Windows 环境中构建和验证。
+> 当前版本是可运行的 MVP 原型，不是生产级安装器。V0.7.1 在保留原有能力的基础上增加配置式 GitHub 发布向导与扩展默认忽略规则；Windows 独立 EXE 仍需在 Windows 环境中构建和验证。
 
 ## 0. 交互式启动与 Windows 独立 EXE
 
@@ -10,7 +10,7 @@ AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具
 
 Windows 独立 EXE 构建和 PATH 配置请见 [`docs/WINDOWS-EXE-DEPLOYMENT.md`](docs/WINDOWS-EXE-DEPLOYMENT.md)。独立 EXE 携带 Python 运行时，不需要激活项目 `.venv`；但必须将整个发布目录放入固定位置并配置用户 PATH。当前开发环境未在 Windows 上实际构建或验证 EXE。
 
-## 1. GitHub 根目录镜像发布（V0.7.0）
+## 1. GitHub 根目录镜像发布（V0.7.1）
 
 `aimes publish` 默认只预览；执行必须同时提供 `--apply --confirm PUBLISH`。完整镜像会删除远端根目录中本地不存在的文件，必须先检查删除清单。命令排除常见凭据/私钥、虚拟环境、依赖和缓存路径，执行前扫描常见密钥样式，并使用普通非强制推送。详细边界见 [`docs/PUBLISH-GITHUB-MIRROR.md`](docs/PUBLISH-GITHUB-MIRROR.md)。
 
