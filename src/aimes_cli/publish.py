@@ -2,10 +2,26 @@ from __future__ import annotations
 import hashlib, os, re, shutil, subprocess, tempfile
 from pathlib import Path
 from typing import Any
+from fnmatch import fnmatchcase
 
-EXCLUDED_DIRS = {".git", ".venv", "venv", "env", "node_modules", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".nox", ".idea", ".vscode-test", "coverage", "htmlcov"}
-EXCLUDED_NAMES = {".env", ".env.local", ".env.development", ".env.production", "credentials.json", "secrets.json", "id_rsa", "id_ed25519", "known_hosts", ".ds_store", "thumbs.db"}
-EXCLUDED_SUFFIXES = {".pem", ".key", ".p12", ".pfx", ".pyc", ".pyo"}
+# 默认过滤开发环境、AI 工具本地状态、运行产物和构建缓存。
+EXCLUDED_DIRS = {
+    ".git", ".venv", "venv", "env", "ENV", ".env", "node_modules", "__pycache__",
+    ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".nox", ".idea", ".vscode-test",
+    ".cache", "cache", "logs", "log", "tmp", "temp", "runtime", "run", "site-packages",
+    "coverage", "htmlcov", "build", "dist", ".claude", ".codex", ".cursor", ".aider",
+    ".continue", ".windsurf", ".trae", ".qoder", ".zcode", ".gemini", ".opencode", ".copilot",
+}
+EXCLUDED_NAMES = {
+    ".env", ".env.local", ".env.development", ".env.production", "credentials.json",
+    "secrets.json", "id_rsa", "id_ed25519", "known_hosts", ".ds_store", "thumbs.db",
+    "desktop.ini", ".aider.chat.history.md", ".python_history",
+}
+EXCLUDED_SUFFIXES = {
+    ".pem", ".key", ".p12", ".pfx", ".pyc", ".pyo", ".pyd", ".log", ".pid",
+    ".swp", ".swo", ".tmp", ".temp", ".bak", ".orig", ".class", ".o", ".obj",
+    ".so", ".dll", ".dylib", ".sock",
+}
 SECRET_PATTERNS = [re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----"), re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}\b"), re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}\b"), re.compile(r"\bAKIA[0-9A-Z]{16}\b"), re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{24,}\b")]
 MAX_SCAN_BYTES = 2 * 1024 * 1024
 
@@ -26,13 +42,22 @@ def validate_branch(branch: str) -> str:
     if any(p in {"", ".", ".."} or p.startswith(".") or p.endswith(".") for p in branch.split("/")): raise ValueError(f"无效的 Git 分支名：{branch}")
     return branch
 
-def is_excluded(rel: str, is_dir: bool = False) -> bool:
-    parts = Path(rel).parts
-    if any(p in EXCLUDED_DIRS for p in parts): return True
-    name = parts[-1].lower() if parts else rel.lower()
-    return name in EXCLUDED_NAMES or name.startswith(".env.") or Path(name).suffix in EXCLUDED_SUFFIXES or name.endswith("~") or name in {".ds_store", "desktop.ini"}
+def is_excluded(rel: str, is_dir: bool = False, extra_patterns: tuple[str, ...] | list[str] = ()) -> bool:
+    normalized = rel.replace("\\", "/").strip("/")
+    parts = normalized.split("/") if normalized else []
+    if any(p.lower() in EXCLUDED_DIRS for p in parts): return True
+    name = parts[-1].lower() if parts else normalized.lower()
+    if name in EXCLUDED_NAMES or name.startswith(".env.") or Path(name).suffix.lower() in EXCLUDED_SUFFIXES or name.endswith("~"):
+        return True
+    # 支持 basename glob 和相对路径 glob；只能追加过滤，不能用 ! 取消安全规则。
+    for raw in extra_patterns:
+        pattern = str(raw).strip().replace("\\", "/").strip("/")
+        if not pattern or pattern.startswith("!") or "\x00" in pattern: continue
+        if fnmatchcase(normalized, pattern) or any(fnmatchcase(part, pattern) for part in parts): return True
+        if pattern.endswith("/**") and (normalized == pattern[:-3].rstrip("/") or normalized.startswith(pattern[:-2])): return True
+    return False
 
-def collect_source_files(source: Path) -> tuple[dict[str, Path], list[str], list[dict[str, str]]]:
+def collect_source_files(source: Path, extra_patterns: tuple[str, ...] | list[str] = ()) -> tuple[dict[str, Path], list[str], list[dict[str, str]]]:
     source = source.resolve()
     if not source.is_dir(): raise ValueError(f"本地源目录不存在或不是目录：{source}")
     if source == Path(source.anchor): raise ValueError("为避免误发布，不能把磁盘/文件系统根目录作为源目录")
@@ -43,13 +68,13 @@ def collect_source_files(source: Path) -> tuple[dict[str, Path], list[str], list
         for name in dirs:
             path = base / name
             rel = path.relative_to(source).as_posix()
-            if path.is_symlink() or is_excluded(rel, True): excluded.append(rel + "/")
+            if path.is_symlink() or is_excluded(rel, True, extra_patterns): excluded.append(rel + "/")
             else: kept.append(name)
         dirs[:] = kept
         for name in names:
             path = base / name
             rel = path.relative_to(source).as_posix()
-            if path.is_symlink() or is_excluded(rel): excluded.append(rel); continue
+            if path.is_symlink() or is_excluded(rel, extra_patterns=extra_patterns): excluded.append(rel); continue
             files[rel] = path
             try:
                 if path.stat().st_size > MAX_SCAN_BYTES: continue
@@ -91,12 +116,15 @@ def build_change_plan(source_files: dict[str, Path], target_files: dict[str, str
     unchanged = sorted((set(hashes) & set(target_files)) - set(updated))
     return {"added": added, "updated": updated, "deleted": deleted, "unchanged": unchanged}
 
-def publish_project(source: Path, repository: str, branch: str | None = None, apply: bool = False, confirm: str | None = None, message: str = "chore: mirror local project with AIMES") -> dict[str, Any]:
+def publish_project(source: Path, repository: str, branch: str | None = None, apply: bool = False, confirm: str | None = None, message: str = "chore: mirror local project with AIMES", excludes: list[str] | None = None) -> dict[str, Any]:
     source = source.expanduser().resolve()
     url, repo_name = normalize_repository(repository)
     if branch: validate_branch(branch)
     if apply and confirm != "PUBLISH": raise ValueError("执行发布必须同时提供 --apply --confirm PUBLISH")
-    source_files, excluded, findings = collect_source_files(source)
+    extra_patterns = list(dict.fromkeys(excludes or []))
+    if any(not rule.strip() or "\x00" in rule or rule.strip().startswith("!") for rule in extra_patterns):
+        raise ValueError("自定义排除规则不能为空、不能包含 NUL，也不支持以 ! 开头的反向规则")
+    source_files, excluded, findings = collect_source_files(source, extra_patterns)
     if not source_files: raise ValueError("源目录没有可发布文件；为避免清空远端仓库，已停止")
     if apply and findings:
         raise ValueError("源文件疑似包含密钥/令牌，已阻止发布：" + ", ".join(x["path"] for x in findings[:10]) + "。请移除密钥后重新预览。")
@@ -108,7 +136,7 @@ def publish_project(source: Path, repository: str, branch: str | None = None, ap
         if branch and actual_branch != branch: raise ValueError(f"克隆到的分支与请求不一致：{actual_branch} != {branch}")
         base_sha = git_run(["rev-parse", "HEAD"], cwd=clone)
         plan = build_change_plan(source_files, _target_snapshot(clone))
-        report: dict[str, Any] = {"ok": True, "mode": "apply" if apply else "dry-run", "repository": repo_name, "branch": actual_branch, "source": str(source), "source_file_count": len(source_files), "excluded_count": len(excluded), "excluded_preview": excluded[:100], "secret_findings": findings, "changes": plan, "change_counts": {k: len(v) for k, v in plan.items()}, "base_commit": base_sha, "commit": None, "warning": "根目录完整镜像会删除本地源目录中不存在的远端文件；不会修改 .git 元数据，且不会强制推送。"}
+        report: dict[str, Any] = {"ok": True, "mode": "apply" if apply else "dry-run", "repository": repo_name, "branch": actual_branch, "source": str(source), "source_file_count": len(source_files), "excluded_count": len(excluded), "excluded_preview": excluded[:100], "custom_excludes": extra_patterns, "secret_findings": findings, "changes": plan, "change_counts": {k: len(v) for k, v in plan.items()}, "base_commit": base_sha, "commit": None, "warning": "根目录完整镜像会删除本地源目录中不存在的远端文件；不会修改 .git 元数据，且不会强制推送。"}
         if not apply:
             report["message"] = "仅预览，未向 GitHub 推送任何更改。确认删除清单后，使用 --apply --confirm PUBLISH 执行。"
             return report
