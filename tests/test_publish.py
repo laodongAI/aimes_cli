@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from aimes_cli.publish import build_change_plan, collect_source_files, is_excluded, normalize_repository, validate_branch
+from aimes_cli.cli import parser
 
 
 class PublishTests(unittest.TestCase):
@@ -12,6 +13,11 @@ class PublishTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_publish_parser_defaults_to_preview(self):
+        args = parser().parse_args(['publish', '--source', str(self.root), '--repo', 'owner/repo'])
+        self.assertFalse(args.apply)
+        self.assertIsNone(args.branch)
 
     def test_normalize_repository_name_and_url(self):
         url, name = normalize_repository("laodongAI/demo")

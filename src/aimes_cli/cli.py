@@ -256,7 +256,7 @@ def main(argv=None):
         parser().print_help()
         return 0
     args=parser().parse_args(argv)
-    root=(args.root or find_root()).resolve()
+    root=(getattr(args, 'root', None) or find_root()).resolve()
     try:
         if args.command == 'publish':
             source = args.source.expanduser().resolve()
