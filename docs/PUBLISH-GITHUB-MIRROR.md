@@ -1,49 +1,57 @@
 # AIMES CLI：GitHub 根目录完整镜像发布
 
-## 目的与边界
+## 推荐方式：交互式发布向导
 
-`aimes publish` 将本地项目完整镜像到一个已有 GitHub 仓库的根目录。它使用本机 Git CLI 和 Git 已配置的认证方式，不要求将 GitHub Token 保存到 AIMES 配置中。
-
-完整镜像意味着：目标分支中存在、但本地源目录中不存在的文件会被删除。因此请把 `--source` 指向你确实希望成为仓库完整内容的项目目录。该命令不会只更新某个子目录；仓库根目录是同步边界。
-
-## 前置条件
-
-- Python 3.10+，AIMES CLI 已安装。
-- 本机已安装 Git，`git --version` 可正常运行。
-- 本机已配置 GitHub HTTPS 凭据；当前实现将 GitHub 仓库规范化为 HTTPS URL。
-- 对目标仓库具有写权限，且目标分支已存在并可克隆。
-
-## 第一步：仅预览（默认行为）
+安装/升级到 AIMES CLI 0.7.0 后，在项目目录执行：
 
 ```powershell
-aimes publish --source "E:\work\my-project" --repo "owner/repository"
-aimes publish --source "E:\work\my-project" --repo "owner/repository" --branch "main" --format json
+aimes publish
 ```
 
-预览会临时克隆远端分支并比较文件内容，输出新增、更新、删除、未变化的文件清单；不会提交或推送。未指定 `--branch` 时使用 GitHub 仓库默认分支。
+向导会让你选择已有配置或新建配置，确认本地项目目录、GitHub 仓库、目标分支、提交说明和额外排除规则。之后先生成预览，展示新增、更新、删除、未变化和过滤掉的文件。只有输入精确的 `PUBLISH` 才会执行推送。
 
-## 第二步：确认后执行
+发布配置保存在用户目录 `~/.aimes/publish-profiles.json`（Windows 下通常是用户主目录中的 `.aimes` 目录）。配置只保存项目路径、仓库、分支、提交说明和排除规则，不保存 GitHub Token 或密码。可通过环境变量 `AIMES_CONFIG_HOME` 指定配置目录。
+
+## 复用配置与参数模式
 
 ```powershell
-aimes publish --source "E:\work\my-project" --repo "owner/repository" --branch "main" --apply --confirm PUBLISH
+# 列出已保存的配置
+aimes publish --list-profiles
+
+# 使用配置并预览
+aimes publish --profile my-project
+
+# 保存/更新配置
+aimes publish --source "E:\work\my-project" --repo "owner/repository" --branch main --save-profile my-project
+
+# 在默认过滤规则之外追加排除项（可重复）
+aimes publish --source "E:\work\my-project" --repo "owner/repository" --exclude "test-data/**" --exclude "*.local.json"
+
+# 脚本模式：先生成预览，再执行（需要显式确认）
+aimes publish --profile my-project --apply --confirm PUBLISH
 ```
 
-`--apply` 与精确确认标记 `--confirm PUBLISH` 缺一不可。发布会在临时克隆中准备完整镜像、创建一个提交并普通推送；不会使用 `--force`。如果其他人同时更新了目标分支，推送将被 Git 拒绝，重新预览后再试。
+非交互模式默认只预览；`--apply` 与 `--confirm PUBLISH` 缺一不可。执行时使用普通非强制 Git push。
 
-## 安全规则
+## 默认忽略规则
 
-- 默认预览；不提供 `--apply` 不会推送。
-- 不复制 `.git` 元数据、符号链接、虚拟环境、依赖目录、常见缓存/构建缓存、`.env*`、凭据文件和常见私钥文件。
-- 对文本文件扫描常见私钥标记、GitHub Token、AWS Access Key 和 OpenAI API Key 样式。检测到疑似密钥时，执行模式会中止；预览仍会报告发现项。
-- 不执行源项目脚本，不运行任意 Shell 命令；只调用固定的 Git 子命令。
-- 使用普通 `git push`，不强制覆盖远端历史。远端并发更新导致推送被拒绝时，必须重新预览。
+- Python 环境：`.venv/`、`venv/`、`env/`、`site-packages/`、`__pycache__/`、`*.pyc`、`*.pyo`、`*.pyd`。
+- Node 和构建：`node_modules/`、`build/`、`dist/`、`coverage/`、`htmlcov/`。
+- AI 工具辅助目录：`.claude/`、`.codex/`、`.cursor/`、`.aider/`、`.continue/`、`.windsurf/`、`.trae/`、`.qoder/`、`.zcode/`、`.gemini/`、`.opencode/`、`.copilot/`。
+- 运行与缓存：`logs/`、`log/`、`tmp/`、`temp/`、`runtime/`、`.cache/`、`.pytest_cache/`、`.mypy_cache/`、`.ruff_cache/`。
+- 运行文件和编译产物：`*.log`、`*.pid`、`*.tmp`、`*.bak`、`*.swp`、`*.class`、`*.so`、`*.dll`、`*.dylib`。
+- 凭据：常见 `.env*`、私钥/证书、凭据 JSON 和访问令牌等。
+
+默认过滤是安全基线，不等同于完整的秘密检测。项目源码、`requirements.txt`、`pyproject.toml`、`package.json`、锁文件和常规文档不会仅因它们是配置文件而被排除。默认安全规则不可通过自定义规则取消。
+
+自定义 `--exclude` 支持文件名匹配、通配符和相对路径规则，例如 `*.local.json`、`test-data/**`、`src/generated/client.py`。多个规则可重复传入；交互向导也支持逗号分隔输入多个规则。
+
+## 完整镜像语义与安全边界
+
+完整镜像意味着：目标分支中存在、但本地过滤后源目录中不存在的文件会被删除。因此目标仓库根目录是同步边界，不是双向合并。每次执行前必须检查删除清单。
+
+- 需要目标仓库已存在、目标分支可克隆，且本机 Git 已配置认证。
+- 不复制 `.git` 元数据和符号链接，不执行源项目脚本。
+- 扫描常见私钥标记、GitHub Token、AWS Access Key 和 OpenAI API Key 样式；检测到疑似密钥时，执行模式会中止。该扫描是启发式的，不能保证发现所有秘密。
+- 使用普通 `git push`，不强制覆盖远端历史；并发更新导致推送被拒绝时，请重新预览。
 - 源目录必须存在且至少含一个可发布文件；文件系统根目录会被拒绝。
-- 完整镜像会删除远端仓库根目录中所有不在本地镜像内的普通文件。执行前必须逐项检查删除清单。
-
-## 重要限制
-
-- 这是文件镜像，不是双向合并；远端独有文件不会保留。
-- 敏感路径按规则排除，因此发布内容是排除安全/缓存路径后的本地镜像。
-- 内容扫描只能识别部分常见密钥格式，不能保证发现所有秘密。不要把凭据放进项目源目录。
-- 需要 GitHub 仓库已存在且目标分支可克隆；不负责创建仓库。
-- 预览需要网络和 GitHub 读取权限；实际推送需要目标仓库写权限。
