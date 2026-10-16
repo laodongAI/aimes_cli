@@ -147,6 +147,8 @@ def emit(data, fmt='text', output: Path | None=None):
                     found = ', '.join(tool.get('commands_found', [])) or 'no matching CLI executable detected'
                     lines.append(f"  - {tool['name']}: {found} [{tool['adapter_status']}]")
                 lines.append('Detection is advisory; it does not prove extension availability or rule loading.')
+            if data.get('remote_empty'):
+                lines.append('Remote repository: empty (no commits yet); first publish will create the initial commit.')
             if data.get('changes'):
                 lines.append('Mirror changes (added/updated/deleted/unchanged):')
                 for kind in ('added', 'updated', 'deleted', 'unchanged'):
