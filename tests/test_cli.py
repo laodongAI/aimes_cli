@@ -73,7 +73,7 @@ class AimesCliTests(unittest.TestCase):
         preview = {"ok": True, "root": str(self.root), "dry_run": True, "actions": []}
         applied = {"ok": True, "root": str(self.root), "dry_run": False, "actions": []}
         with patch("aimes_cli.cli.Path.cwd", return_value=self.root), \
-             patch("aimes_cli.cli.input", side_effect=["1", "1", "y", "YES", "0"]), \
+             patch("builtins.input", side_effect=["1", "1", "y", "YES", "0"]), \
              patch("aimes_cli.cli.init_project", side_effect=[preview, applied]) as init_mock, \
              patch("aimes_cli.cli.emit") as emit_mock:
             self.assertEqual(interactive_wizard(), 0)
@@ -87,7 +87,7 @@ class AimesCliTests(unittest.TestCase):
         from aimes_cli.cli import interactive_wizard
         preview = {"ok": True, "root": str(self.root), "dry_run": True, "actions": []}
         with patch("aimes_cli.cli.Path.cwd", return_value=self.root), \
-             patch("aimes_cli.cli.input", side_effect=["1", "1", "y", "no", "0"]), \
+             patch("builtins.input", side_effect=["1", "1", "y", "no", "0"]), \
              patch("aimes_cli.cli.init_project", return_value=preview) as init_mock, \
              patch("aimes_cli.cli.emit"):
             self.assertEqual(interactive_wizard(), 0)
