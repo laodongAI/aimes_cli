@@ -124,7 +124,8 @@ class PublishTests(unittest.TestCase):
         applied = {"ok": True, "message": "published"}
         try:
             with patch("aimes_cli.cli.sys.stdin") as stdin, \
-                 patch("aimes_cli.cli._ask", side_effect=[str(self.root), "owner/repo", "", "chore: test", "", "PUBLISH"]), \
+                 patch("aimes_cli.cli._ask", side_effect=[str(self.root), "owner/repo", "", "chore: test", ""]), \
+                 patch("builtins.input", side_effect=["publsh", "pUbLiSh"]), \
                  patch("aimes_cli.cli.publish_project", side_effect=[preview, applied]) as publish:
                 stdin.isatty.return_value = True
                 self.assertEqual(run_publish_wizard(args), 0)
@@ -137,6 +138,33 @@ class PublishTests(unittest.TestCase):
                 os.environ.pop("AIMES_CONFIG_HOME", None)
             else:
                 os.environ["AIMES_CONFIG_HOME"] = old
+
+
+    def test_publish_confirmation_is_case_insensitive_and_retries_invalid_input(self):
+        from aimes_cli.cli import run_publish_wizard
+        (self.root / "README.md").write_text("hello", encoding="utf-8")
+        args = parser().parse_args([
+            "publish", "--source", str(self.root), "--repo", "owner/repo",
+            "--apply", "--confirm", "pUbLiSh",
+        ])
+        preview = {"ok": True, "change_counts": {"added": 1, "updated": 0, "deleted": 0},
+                   "changes": {"added": ["README.md"], "updated": [], "deleted": [], "unchanged": []}}
+        applied = {"ok": True, "message": "published"}
+        with patch("aimes_cli.cli.sys.stdin") as stdin, \
+             patch("aimes_cli.cli.publish_project", side_effect=[preview, applied]) as publish:
+            stdin.isatty.return_value = False
+            self.assertEqual(run_publish_wizard(args), 0)
+        self.assertEqual(publish.call_count, 2)
+        self.assertEqual(publish.call_args.args[4], "PUBLISH")
+
+    def test_confirmation_helper_reprompts_until_valid_or_cancelled(self):
+        from aimes_cli.cli import _confirm_word, _ask_yes_no
+        with patch("builtins.input", side_effect=["publsh", "pUbLiSh"]):
+            self.assertTrue(_confirm_word("Confirm:", "PUBLISH"))
+        with patch("builtins.input", side_effect=["maybe", "YeS"]):
+            self.assertTrue(_ask_yes_no("Proceed?", default=False))
+        with patch("builtins.input", side_effect=["wrong", "N"]):
+            self.assertFalse(_confirm_word("Confirm:", "YES"))
 
     def test_collect_files_automatically_excludes_github_oversized_blobs(self):
         (self.root / "README.md").write_text("hello", encoding="utf-8")
