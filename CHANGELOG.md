@@ -1,3 +1,10 @@
+## 0.7.3 - 自动识别项目并选择镜像过滤规则
+
+- 发布向导不再要求用户每次手工输入追加排除规则；已有配置和 `--exclude` 参数仍然可用。
+- 根据项目标志文件识别 Python、Node.js、Vue、React、Java、Go、Rust、.NET、Ruby、PHP 和原生构建项目，自动选择对应的缓存/构建产物过滤规则。
+- 自动读取项目根目录 `.gitignore` 中的正向排除规则，并保留内置敏感路径过滤与密钥扫描。
+- 镜像预览报告显示识别出的技术栈和自动规则数量；新增检测与过滤回归测试。
+
 # Changelog
 
 ## 0.7.2 - Case-insensitive init confirmation
