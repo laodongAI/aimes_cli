@@ -1,0 +1,94 @@
+name: Windows EXE build and smoke test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "aimes_entry.py"
+      - "build_windows_exe.ps1"
+      - "requirements-build.txt"
+      - "pyproject.toml"
+      - ".github/workflows/windows-exe.yml"
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-exe:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install project dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install -r requirements-build.txt
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Build standalone Windows EXE
+        shell: pwsh
+        run: ./build_windows_exe.ps1
+
+      - name: Smoke-test EXE outside the repository
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exe = Join-Path $env:GITHUB_WORKSPACE 'dist-exe\aimes\aimes.exe'
+          if (-not (Test-Path $exe)) {
+            throw "Expected EXE was not produced: $exe"
+          }
+
+          $versionOutput = & $exe --version
+          if ($LASTEXITCODE -ne 0) {
+            throw "EXE --version failed with exit code $LASTEXITCODE"
+          }
+          Write-Host $versionOutput
+
+          $smokeRoot = Join-Path $env:RUNNER_TEMP 'aimes-external-project-smoke'
+          if (Test-Path $smokeRoot) {
+            Remove-Item -LiteralPath $smokeRoot -Recurse -Force
+          }
+          New-Item -ItemType Directory -Path $smokeRoot | Out-Null
+
+          Push-Location $smokeRoot
+          try {
+            & $exe init --tools codex-cli
+            if ($LASTEXITCODE -ne 0) {
+              throw "EXE init failed with exit code $LASTEXITCODE"
+            }
+            if (-not (Test-Path (Join-Path $smokeRoot '.aimes\config.yaml'))) {
+              throw 'EXE did not create .aimes/config.yaml in the external working directory.'
+            }
+
+            & $exe validate
+            if ($LASTEXITCODE -ne 0) {
+              throw "EXE validate failed with exit code $LASTEXITCODE"
+            }
+          }
+          finally {
+            Pop-Location
+          }
+
+      - name: Upload standalone EXE directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: aimes-windows-exe
+          path: dist-exe/aimes/
+          if-no-files-found: error
+          retention-days: 14
