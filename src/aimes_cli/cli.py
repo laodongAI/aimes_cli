@@ -291,10 +291,14 @@ def run_publish_wizard(args=None) -> int:
     elif not args.source and not args.repo and sys.stdin.isatty() and profiles:
         names = list(profiles)
         print("\n已保存的发布配置：")
-        for i, name in enumerate(names, 1): print(f"  {i}. {name} — {profiles[name].get('repository', '')}")
+        for i, name in enumerate(names, 1):
+            marker = " [上次使用]" if name == "上次使用" else ""
+            print(f"  {i}. {name}{marker} — {profiles[name].get('repository', '')}")
         print(f"  {len(names)+1}. 新建配置")
-        choice = _ask("选择配置序号", str(len(names)+1))
-        if choice.isdigit() and 1 <= int(choice) <= len(names): selected = dict(profiles[names[int(choice)-1]])
+        default_choice = str(names.index("上次使用") + 1) if "上次使用" in names else "1"
+        choice = _ask("选择配置序号", default_choice)
+        if choice.isdigit() and 1 <= int(choice) <= len(names):
+            selected = dict(profiles[names[int(choice)-1]])
     interactive = sys.stdin.isatty() and not args.apply
     source_value = str(args.source or selected.get("source") or Path.cwd())
     repo_value = args.repo or selected.get("repository") or ""
@@ -308,9 +312,13 @@ def run_publish_wizard(args=None) -> int:
         message_value = _ask("提交说明", message_value)
         if excludes: print("已加载配置中的自定义排除规则：" + ", ".join(excludes))
         if not repo_value: raise ValueError("必须提供 GitHub 仓库，例如 laodongAI/my-project")
-        save_name = _ask("保存配置名称（留空不保存）", args.save_profile or "")
-        if save_name:
-            save_profile(save_name, {"source": source_value, "repository": repo_value, "branch": branch_value, "message": message_value, "excludes": excludes})
+        current_profile = {"source": source_value, "repository": repo_value, "branch": branch_value, "message": message_value, "excludes": excludes}
+        # Always remember the last interactive configuration; named profiles remain separately reusable.
+        save_profile("上次使用", current_profile)
+        print("已自动记住本次发布配置；下次进入向导将默认使用。")
+        save_name = _ask("另存为配置名称（留空跳过）", args.save_profile or "")
+        if save_name and save_name != "上次使用":
+            save_profile(save_name, current_profile)
             print(f"已保存配置：{save_name}")
     if not repo_value or not source_value: raise ValueError("请提供 --source/--repo，或在交互向导中填写。")
     source = Path(source_value).expanduser().resolve()
