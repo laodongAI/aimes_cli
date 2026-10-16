@@ -111,6 +111,33 @@ class PublishTests(unittest.TestCase):
             if old is None: os.environ.pop("AIMES_CONFIG_HOME", None)
             else: os.environ["AIMES_CONFIG_HOME"] = old
 
+    def test_interactive_publish_remembers_last_used_profile(self):
+        import os
+        from unittest.mock import call
+        from aimes_cli.cli import run_publish_wizard
+        config_home = self.root / "user-config"
+        old = os.environ.get("AIMES_CONFIG_HOME")
+        os.environ["AIMES_CONFIG_HOME"] = str(config_home)
+        (self.root / "README.md").write_text("hello", encoding="utf-8")
+        args = parser().parse_args(["publish"])
+        preview = {"ok": True, "change_counts": {"added": 1, "updated": 0, "deleted": 0}, "changes": {"added": ["README.md"], "updated": [], "deleted": [], "unchanged": []}}
+        applied = {"ok": True, "message": "published"}
+        try:
+            with patch("aimes_cli.cli.sys.stdin") as stdin, \
+                 patch("aimes_cli.cli._ask", side_effect=[str(self.root), "owner/repo", "", "chore: test", "", "PUBLISH"]), \
+                 patch("aimes_cli.cli.publish_project", side_effect=[preview, applied]) as publish:
+                stdin.isatty.return_value = True
+                self.assertEqual(run_publish_wizard(args), 0)
+                profiles = load_profiles()
+                self.assertEqual(profiles["上次使用"]["repository"], "owner/repo")
+                self.assertEqual(profiles["上次使用"]["source"], str(self.root))
+                self.assertEqual(publish.call_count, 2)
+        finally:
+            if old is None:
+                os.environ.pop("AIMES_CONFIG_HOME", None)
+            else:
+                os.environ["AIMES_CONFIG_HOME"] = old
+
     def test_collect_files_automatically_excludes_github_oversized_blobs(self):
         (self.root / "README.md").write_text("hello", encoding="utf-8")
         (self.root / "large.bin").write_bytes(b"0123456789")
