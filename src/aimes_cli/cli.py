@@ -30,6 +30,7 @@ def parser() -> argparse.ArgumentParser:
     upgrade = sub.add_parser('upgrade', help='Safely upgrade an existing AIMES project; preview and preserve user edits')
     common(upgrade)
     upgrade.add_argument('--apply', action='store_true', help='Apply safe changes after explicit confirmation')
+    upgrade.add_argument('--dry-run', action='store_true', help='Only print the plan; do not prompt or write files')
     upgrade.add_argument('--confirm', help='Must be UPGRADE to apply non-interactively')
     publish=sub.add_parser('publish', help='Interactive configuration or preview/mirror a local project to GitHub')
     publish.add_argument('--source', type=Path, help='Local project directory to mirror')
@@ -402,7 +403,7 @@ def run_publish_wizard(args=None) -> int:
         choice = _ask("选择配置序号", default_choice)
         if choice.isdigit() and 1 <= int(choice) <= len(names):
             selected = dict(profiles[names[int(choice)-1]])
-    interactive = sys.stdin.isatty() and not args.apply
+    interactive = sys.stdin.isatty() and not args.apply and not getattr(args, "dry_run", False)
     source_value = str(args.source or selected.get("source") or Path.cwd())
     repo_value = args.repo or selected.get("repository") or ""
     branch_value = args.branch if args.branch is not None else selected.get("branch", "")
@@ -450,7 +451,7 @@ def run_publish_wizard(args=None) -> int:
 
 def run_upgrade_wizard(root: Path, args=None) -> int:
     """Preview and guide an existing project through a non-destructive AIMES upgrade."""
-    args = args or argparse.Namespace(apply=False, confirm=None, format="text", output=None)
+    args = args or argparse.Namespace(apply=False, dry_run=False, confirm=None, format="text", output=None)
     plan = plan_upgrade(root)
     emit(plan, args.format, args.output)
     if not plan.get("ok"):
