@@ -181,6 +181,8 @@ aimes cleanup audit --root . --format json --output .aimes/reports/cleanup-audit
 
 # 仅使用当前可验证数据计算工程指标；缺少数据源时显示 UNKNOWN
 aimes metrics report --root . --format json --output .aimes/reports/metrics.json
+# 发布前检查包版本、运行时版本、README、治理核心模板和 EXE 资源收集配置
+aimes release validate --root . --format json
 
 # 提供追溯、临时产物、交接试点和审计日志数据源
 aimes metrics report --root . --trace-manifest .aimes/traceability/trace-manifest.yaml --temp-registry .aimes/temp-registry.yaml --handoff-trials .aimes/evaluations/handoff-trials.yaml --audit-log .aimes/audit/events.jsonl --format json
