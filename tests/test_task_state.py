@@ -113,7 +113,37 @@ class TaskStateTests(unittest.TestCase):
         from aimes_cli.task_state import release_task_state
         handoff = self.root / "project-control" / "handoffs" / "2026-10-18-TASK-TEST-001-trae-code.md"
         handoff.parent.mkdir(parents=True)
-        handoff.write_text("# Handoff\\n", encoding="utf-8")
+        handoff.write_text(
+            f"""# Task Handoff: TASK-TEST-001 — Test handoff
+
+- **Task ID:** TASK-TEST-001
+- **Baseline commit:** `{self.base_commit}`
+- **Task status:** IN_PROGRESS
+- **Evidence status:** NOT_RUN
+
+## 1. Goal and acceptance criteria
+- Goal: test
+
+## 2. Repository state at handoff
+- Git status recorded.
+
+## 3. Changes made
+- No code changes.
+
+## 4. Verification evidence
+- NOT_RUN; no code changes in this fixture.
+
+## 5. Open issues, risks and decisions
+- None.
+
+## 6. Next steps
+1. Continue test.
+
+## 7. Incoming tool checklist
+- [ ] Verify state.
+""",
+            encoding="utf-8",
+        )
         result = release_task_state(
             self.root, task_id="TASK-TEST-001", tool_id="trae-code",
             handoff_file="project-control/handoffs/2026-10-18-TASK-TEST-001-trae-code.md",
@@ -123,6 +153,19 @@ class TaskStateTests(unittest.TestCase):
         validation = validate_task_state(self.state_path, self.root)
         self.assertTrue(validation["ok"], validation["findings"])
         self.assertFalse(validation["writer_active"])
+
+    def test_incomplete_handoff_prevents_release(self):
+        from aimes_cli.task_state import release_task_state
+        handoff = self.root / "project-control" / "handoffs" / "incomplete.md"
+        handoff.parent.mkdir(parents=True)
+        handoff.write_text("# Handoff\\n", encoding="utf-8")
+        result = release_task_state(
+            self.root, task_id="TASK-TEST-001", tool_id="trae-code",
+            handoff_file="project-control/handoffs/incomplete.md", confirm="RELEASE",
+        )
+        self.assertFalse(result["ok"])
+        self.assertTrue(any(item["code"] == "HANDOFF_INCOMPLETE" for item in result["findings"]))
+        self.assertTrue(self.state_path.is_file())
 
     def test_missing_state_is_warning_unless_active_required(self):
         self.state_path.unlink()
