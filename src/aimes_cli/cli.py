@@ -13,6 +13,7 @@ from .audit import append_event, validate_audit
 from .publish import publish_project
 from .publish_profiles import load_profiles, save_profile
 from .docs_check import check_docs
+from .task_state import validate_task_state
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -43,6 +44,13 @@ def parser() -> argparse.ArgumentParser:
     for name, helptext in [('inspect','Inspect project and existing rule files'),('validate','Validate AIMES configuration and managed files'),('doctor','Check local tool executable availability'),('status','Show governance deployment status'),('diff','Show a deployment preview')]:
         sp=sub.add_parser(name,help=helptext); common(sp)
         if name=='diff': sp.add_argument('--tools', default='trae-code,vscode-codex,vscode-claude-code,vscode-copilot,zcode,qcode,claude-code,codex-cli')
+    task = sub.add_parser('task', help='Task ownership and change-scope governance')
+    task_sub = task.add_subparsers(dest='task_command', required=True)
+    task_validate = task_sub.add_parser('validate', help='Validate active-writer declaration, lease, branch and changed-file scope')
+    common(task_validate)
+    task_validate.add_argument('path', type=Path, nargs='?', default=Path('.aimes/project-control/active-writer.yaml'))
+    task_validate.add_argument('--require-active', action='store_true', help='Fail unless an unexpired ACTIVE writer declaration exists')
+    task_validate.add_argument('--no-check-scope', action='store_true', help='Skip changed-file scope check (not recommended)')
     docs = sub.add_parser('docs', help='Documentation integrity and thin-entry checks')
     docs_sub = docs.add_subparsers(dest='docs_command', required=True)
     docs_check = docs_sub.add_parser('check', help='Check local Markdown links and configured thin tool entries; read-only')
@@ -415,6 +423,11 @@ def main(argv=None):
         if args.command == 'skill':
             target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
             result = validate_skill_registry(target, root, args.id)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'task' and args.task_command == 'validate':
+            target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
+            result = validate_task_state(target, root, require_active=args.require_active, check_scope=not args.no_check_scope)
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'docs' and args.docs_command == 'check':
