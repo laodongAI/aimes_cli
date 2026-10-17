@@ -105,7 +105,7 @@ aimes evidence validate examples/evidence/evidence-registry.example.yaml
 aimes context pack examples/traceability/trace-manifest.example.yaml --output-dir .aimes/context-pack
 ```
 
-- `trace validate` 检查实体 ID 唯一性、追溯链接、证据文件以及 VERIFIED 状态对应的证据引用。
+- `trace validate` 检查实体 ID 唯一性、追溯链接、按实体类型区分的状态词表、证据文件/引用，以及 VERIFIED 状态对应的 PASS 证据；路径字段类型错误会以结构化错误报告，不应导致 CLI 崩溃。
 - `evidence validate` 校验已记录的命令/测试/构建证据，不会执行其中的命令；可校验产物存在性和 SHA-256。
 - `context pack` 生成 `context-pack.json` 与 `HANDOFF.md`，记录上下文文件清单和哈希；不复制源文件、不执行项目命令。
 - 示例数据中的证据是格式演示，不代表真实项目已经执行过相关命令。
