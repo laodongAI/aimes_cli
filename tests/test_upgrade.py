@@ -56,6 +56,33 @@ class SafeUpgradeTests(unittest.TestCase):
         proposal = self.root / ".aimes/proposed-upgrade/AGENTS.md.proposed"
         self.assertEqual(proposal.read_text(encoding="utf-8"), "# upstream template update\n")
 
+    def test_failed_write_rolls_back_prior_file_changes(self):
+        agents = self.root / "AGENTS.md"
+        claude = self.root / "CLAUDE.md"
+        old_agents = agents.read_text(encoding="utf-8")
+        old_claude = claude.read_text(encoding="utf-8")
+        proposed = {
+            "AGENTS.md": "# updated agents\n",
+            "CLAUDE.md": "# updated claude\n",
+            ".aimes/config.yaml": (self.root / ".aimes/config.yaml").read_text(encoding="utf-8"),
+            ".aimes/tool-capabilities.yaml": (self.root / ".aimes/tool-capabilities.yaml").read_text(encoding="utf-8"),
+            ".aimes/adapters/README.md": (self.root / ".aimes/adapters/README.md").read_text(encoding="utf-8"),
+        }
+        original_write_text = Path.write_text
+
+        def fail_claude(path, data, *args, **kwargs):
+            if path == claude:
+                raise OSError("simulated disk error")
+            return original_write_text(path, data, *args, **kwargs)
+
+        with patch("aimes_cli.upgrade.proposed_files", return_value=proposed), \
+             patch.object(Path, "write_text", new=fail_claude):
+            result = apply_upgrade(self.root, ["AGENTS.md", "CLAUDE.md"])
+        self.assertFalse(result["ok"])
+        self.assertTrue(result["rolled_back"], result)
+        self.assertEqual(agents.read_text(encoding="utf-8"), old_agents)
+        self.assertEqual(claude.read_text(encoding="utf-8"), old_claude)
+
     def test_apply_creates_backup_before_replacing_unchanged_managed_file(self):
         claude = self.root / "CLAUDE.md"
         proposed = {
