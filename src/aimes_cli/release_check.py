@@ -63,7 +63,7 @@ def validate_release(root: Path) -> dict[str, Any]:
 
     if readme.is_file():
         text = readme.read_text(encoding="utf-8-sig")
-        match = re.search(r"(?mi)^#.*\(V(\d+\.\d+\.\d+)\)", text)
+        match = re.search(r"(?mi)^#.*[\(（]V(\d+\.\d+\.\d+)[\)）]", text)
         readme_version = match.group(1) if match else None
         check("readme_version_present", readme_version is not None, "README title contains a version marker such as (V0.7.9).", "README.md")
     else:
