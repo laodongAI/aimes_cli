@@ -1,37 +1,40 @@
-# AIMES 治理升级实施记录：P1 第一批
+# AIMES 治理升级实施记录：P1
 
 - 日期：2026-10-18
 - 分支：`governance/p0-audit-2026-10-18`
 - PR：[#1](https://github.com/laodongAI/aimes_cli/pull/1)
-- 版本：`0.7.8`（开发分支）
+- 开发版本：`0.7.9`
 
-## 1. 本批已实现
+## 1. 文档与薄入口检查
 
-1. 新增 `aimes docs check`，只读检查 Markdown 本地链接、配置中登记的工具入口是否存在，以及原生薄入口是否引用治理核心、是否超过默认 40 行。
-2. 为文档检查器增加正反例测试：正常项目、断链、缺失核心引用、入口超长、配置入口缺失、外部链接、未初始化的普通文档仓库、模板内项目相对链接。
-3. 新增 CLI 集成测试，验证 JSON 输出及校验失败退出码。
-4. 新增 GitHub Actions 单元测试工作流；在现有单元测试之外，以非阻断方式执行仓库文档检查基线。
-5. 将 `pyproject.toml`、`src/aimes_cli/__init__.py` 和 README 版本统一到 `0.7.8`。
-6. 修复 Windows EXE 构建脚本遗漏包数据资源的问题：增加 PyInstaller `--collect-data aimes_cli`，确保治理核心模板能被收集。
+- 新增 `aimes docs check`：只读检查 Markdown 本地链接、配置登记的工具入口是否存在、原生薄入口是否引用治理核心、是否超过默认 40 行。
+- 测试覆盖正常文档、断链、缺失核心引用、入口超长、配置入口缺失、外部链接、普通未初始化仓库和模板内项目相对链接。
+- 文档扫描先以 advisory baseline 运行，不直接阻断 PR；待存量问题和误报边界确认后再升级门禁。
 
-## 2. 已取得的运行证据
+## 2. 追溯校验补强
 
-- GitHub Actions 的 AIMES CLI 单元测试工作流已报告成功。
-- 仓库文档基线检查报告：47 个 Markdown 文件、3 个本地链接，0 个 ERROR、0 个 WARNING。
-- 第一次 Windows EXE 工作流：构建成功，但在外部目录运行 `aimes init --tools codex-cli` 时失败，日志明确显示缺少打包后的 `aimes_cli/templates/core/AIMES-CORE-V1.2.md`。
-- 针对该失败已修改打包参数；修复后的 Windows EXE 工作流正在重新执行，最终结论需以该次工作流结果为准。
+- 扩展追溯实体类型，支持 module、feature、design、code。
+- 对不同实体类型应用对应状态词表；knowledge 使用知识成熟度词表，其它任务类实体使用全局状态词表。
+- 校验 `evidence_refs`、`evidence_file` 和 `context_files` 的字段类型，避免错误数据触发未捕获异常。
+- 增加测试覆盖非法状态、知识状态词表及错误路径字段类型。
+- 复用现有 `trace validate`，没有另造第二套追溯注册表。
 
-## 3. 设计边界
+## 3. 发布兼容性
 
-- `docs check` 是静态检查，不证明任何 IDE/插件在运行时加载了规则。
-- 未初始化 AIMES 的普通 Markdown 仓库不强制要求存在 AIMES 核心文件；一旦存在 AIMES 配置或登记入口，则必须验证核心文件。
-- 包内治理核心模板中的相对链接以消费项目根目录为基准，因此文档检查不会错误地将模板源文件当作项目根目录下的普通文档。
-- 手动适配说明只检查文件存在性，不应用原生薄规则入口的长度和引用约束。
-- 仓库文档扫描目前先作为 advisory baseline，不阻断 PR；待基线稳定、误报边界明确后再决定是否升级为门禁。
+- 统一 `pyproject.toml`、运行时 `__version__` 和 README 标题版本为 `0.7.9`。
+- 新增 `aimes release validate`，校验包/运行时/README 版本、治理核心模板版本、包数据声明和 Windows EXE 数据收集配置。
+- 将 release validate 加入 GitHub Actions 阻断步骤。
+- 修复 Windows EXE 构建缺少治理核心模板的问题：增加 PyInstaller `--collect-data aimes_cli`。
 
-## 4. 后续
+## 4. 运行证据
 
-- P1：复核 Windows EXE 修复后的运行结果；在确认后完善版本发布与包资源完整性检查。
-- P1：梳理现有 `trace validate` 的实体状态、关系类型、路径和证据边界；先补缺失的自动化测试，再决定是否需要独立注册表。
-- P2：实现任务声明、活动写入者和每任务交接协议。
-- P3：实现临时产物只读审计与指标采集。
+- GitHub Actions 单元测试曾在任务交接新增时暴露一个非法 newline 参数；已修复并增加回归测试。
+- 最近一次完整单元测试运行：105 项测试通过，release compatibility 检查通过，advisory 文档检查通过。
+- Windows EXE 构建及外部目录初始化冒烟测试在修复资源收集后已通过一轮；更晚的 P2/P3 提交正在进行再次验证。
+- 文档基线：47 个 Markdown 文件、3 个本地链接，0 个 ERROR、0 个 WARNING。
+
+## 5. 边界
+
+- 静态检查不能证明 IDE/插件实际加载了规则。
+- 真实工具规则加载仍需在目标 Windows 工作区中按工具/版本执行验收，并保存证据。
+- 文档检查、追溯检查和 release validate 的报告不能替代人工架构批准或功能验收。
