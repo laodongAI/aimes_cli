@@ -1,4 +1,4 @@
-# AIMES 本地治理 CLI（V0.7.9）
+# AIMES 本地治理 CLI（V0.8.0）
 
 AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具。它负责把 AIMES V1.2 治理核心部署到项目仓库，生成工具专属规则入口，检查配置与冲突，并输出部署状态。它不替代 Codex、Claude Code、Trae、ZCode 或 Copilot 执行开发任务。
 
