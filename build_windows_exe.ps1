@@ -16,6 +16,7 @@ $python = Join-Path $PSScriptRoot '.build-venv\Scripts\python.exe'
 & $python -m PyInstaller --noconfirm --clean --onedir --console `
     --name aimes `
     --collect-all yaml `
+    --collect-data aimes_cli `
     --paths src `
     --distpath dist-exe `
     --workpath build\pyinstaller-work `
