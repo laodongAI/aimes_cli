@@ -138,3 +138,15 @@ V0.4 的 `evaluation` 命令不执行 AI 任务或命令。运行记录由实际
 声明 Schema：`schemas/active-writer.schema.json`；示例：`examples/project-control/active-writer.example.yaml`。任务交接模板：`docs/templates/TASK-HANDOFF-TEMPLATE.md`。释放写入权前必须存在交接文件，且包含七个必需章节、任务 ID、基线 commit、任务状态和证据状态；模板占位符未替换时拒绝释放。任务控制文件路径不计入业务变更范围；其它未在 `allowed_paths` 中登记的变更会报告为错误。无 Git 仓库时会明确提示无法执行分支、基线与范围核验。
 
 `task claim/release` 通过本地文件系统的独占创建锁协调 AIMES 命令之间的声明更新；它不阻止不遵守 AIMES 协议的 IDE/编辑器直接写文件，也不是跨机器分布式锁。过期租约不会自动接管，必须显式执行 `--takeover --confirm CLAIM`。若 AIMES 命令因进程异常退出留下 `active-writer.lock`，先确认没有任务操作仍在运行，再按项目操作流程人工恢复；CLI 不会自动删除锁文件。需要并行工作时应使用独立 worktree/分支。
+
+
+## V0.7.9 临时产物审计与工程指标
+
+| 命令 | 用途 | 写入行为 | 退出码 |
+|---|---|---|---|
+| `aimes cleanup audit [<temp-registry.yaml>]` | 校验临时登记项、到期状态、路径边界，并扫描常见未登记临时/缓存候选 | 只读 | 0 无 ERROR（可有 WARNING）；1 发现结构/路径错误；2 参数/读取错误 |
+| `aimes metrics report` | 输出 AIMES 核心规范定义的 9 项工程指标；可选传入追溯清单、临时登记、交接试点和审计日志 | 只读；可通过 `--output` 保存报告 | 0 报告生成成功；1 输入结构错误；2 参数/读取错误 |
+
+`cleanup audit` 不执行删除；A/B/C 分类只用于风险分级，不等同于删除授权。临时登记 Schema：`schemas/temp-registry.schema.json`，示例：`examples/project-control/temp-registry.example.yaml`。
+
+`metrics report` 对缺少数据源、零分母或无法验证的数据返回 `UNKNOWN`，不把缺失值替换为 0/100%。指标口径沿用 AIMES-CORE-V1.2 的 9 项定义；需求/功能/代码映射指标只有在追溯清单中有相应实体时才可计算。门禁绕过次数只统计明确记录为 `event_type: gate.bypassed` 的审计事件，未提供审计日志时显示 UNKNOWN。
