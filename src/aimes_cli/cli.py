@@ -15,6 +15,7 @@ from .publish_profiles import load_profiles, save_profile
 from .docs_check import check_docs
 from .task_state import validate_task_state, claim_task_state, release_task_state
 from .cleanup_audit import audit_temp_registry
+from .metrics import build_metrics_report
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -68,6 +69,14 @@ def parser() -> argparse.ArgumentParser:
     task_release.add_argument('--tool-id', required=True, choices=list(ADAPTERS))
     task_release.add_argument('--handoff-file', required=True, help='Project-relative handoff file that must already exist')
     task_release.add_argument('--confirm', required=True, help='Must be RELEASE (case-insensitive)')
+    metrics = sub.add_parser('metrics', help='Evidence-backed engineering metrics')
+    metrics_sub = metrics.add_subparsers(dest='metrics_command', required=True)
+    metrics_report = metrics_sub.add_parser('report', help='Calculate available metrics; missing sources remain UNKNOWN')
+    common(metrics_report)
+    metrics_report.add_argument('--trace-manifest', type=Path, help='Optional trace manifest for traceability/evidence metrics')
+    metrics_report.add_argument('--temp-registry', type=Path, help='Optional temporary artifact registry')
+    metrics_report.add_argument('--handoff-trials', type=Path, help='Optional handoff recoverability trial registry')
+    metrics_report.add_argument('--audit-log', type=Path, help='Optional audit JSONL for gate bypass count')
     cleanup = sub.add_parser('cleanup', help='Temporary artifact audit (read-only)')
     cleanup_sub = cleanup.add_subparsers(dest='cleanup_command', required=True)
     cleanup_audit = cleanup_sub.add_parser('audit', help='Report registered/expired/unregistered temporary candidates; never deletes files')
@@ -446,6 +455,11 @@ def main(argv=None):
         if args.command == 'skill':
             target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
             result = validate_skill_registry(target, root, args.id)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'metrics' and args.metrics_command == 'report':
+            result = build_metrics_report(root, trace_manifest=args.trace_manifest,
+                temp_registry=args.temp_registry, handoff_trials=args.handoff_trials, audit_log=args.audit_log)
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'cleanup' and args.cleanup_command == 'audit':
