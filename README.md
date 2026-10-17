@@ -157,13 +157,21 @@ aimes docs check --root . --format json --output .aimes/reports/docs-check.json
 aimes task validate --root . --format json
 # 要求当前必须存在有效的活动写入者声明
 aimes task validate --root . --require-active --format json
+
+# 取得当前分支与基线提交，再声明本任务的写入范围
+$branch = git branch --show-current
+$base = git rev-parse HEAD
+aimes task claim --task-id TASK-123 --tool-id trae-code --branch $branch --base-commit $base --allowed-path src/ --allowed-path tests/ --lease-hours 8 --confirm CLAIM
+
+# 完成交接文件后释放写入声明
+aimes task release --task-id TASK-123 --tool-id trae-code --handoff-file project-control/handoffs/2026-10-18-TASK-123-trae-code.md --confirm RELEASE
 ```
 
 活动写入者声明位于 `.aimes/project-control/active-writer.yaml`，格式示例见 `examples/project-control/active-writer.example.yaml`。检查器可核对任务 ID、工具 ID、分支、基线提交、租约时间、允许修改的路径，以及基线之后的已跟踪/未跟踪变更是否越界。默认没有声明时仅提示 WARNING；使用 `--require-active` 可将缺失/过期声明作为错误。
 
 任务交接使用独立文件，建议命名为 `project-control/handoffs/YYYY-MM-DD-TASK-<ID>-<tool>.md`，模板见 `docs/templates/TASK-HANDOFF-TEMPLATE.md`。全局 `HANDOFF.md` 仅作为索引，不应替代每个任务的实际交接记录。
 
-**边界：** 当前 `task validate` 是只读声明与范围校验，不是原子写锁；不能单独防止两个 IDE 同时编辑同一工作区。多人/多工具并行应使用独立分支或 worktree，并在交接前后核验 Git 状态。
+**边界：** 当前 `task claim/release` 使用本地文件系统的独占创建锁来协调 AIMES 命令之间的声明更新；`task validate` 本身只读。该锁不能阻止不遵守 AIMES 协议的 IDE/编辑器直接写文件，也不应被视为跨机器分布式锁。多人/多工具并行仍应使用独立分支或 worktree，并在交接前后核验 Git 状态。
 
 ## 5. 安全机制
 
