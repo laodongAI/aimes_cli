@@ -11,6 +11,16 @@ import yaml
 
 from .adapters import ADAPTERS
 
+HANDOFF_REQUIRED_HEADINGS = (
+    "## 1. Goal and acceptance criteria",
+    "## 2. Repository state at handoff",
+    "## 3. Changes made",
+    "## 4. Verification evidence",
+    "## 5. Open issues, risks and decisions",
+    "## 6. Next steps",
+    "## 7. Incoming tool checklist",
+)
+
 VALID_WRITER_STATES = {"ACTIVE", "RELEASED"}
 CONTROL_PATH_PREFIXES = (".aimes/project-control/", "project-control/")
 
@@ -47,6 +57,24 @@ def _safe_relative_path(value: Any) -> tuple[str | None, str | None]:
     if normalized in {"", "."}:
         return None, "path must identify a file or directory"
     return normalized, None
+
+
+def _handoff_content_errors(path: Path, task_id: str, base_commit: str) -> list[str]:
+    try:
+        content = path.read_text(encoding="utf-8-sig")
+    except (OSError, UnicodeError) as exc:
+        return [f"Cannot read handoff file: {exc}"]
+    errors = [f"Missing required handoff section: {heading}" for heading in HANDOFF_REQUIRED_HEADINGS if heading not in content]
+    if task_id not in content:
+        errors.append(f"Handoff file does not mention task ID {task_id!r}.")
+    if base_commit not in content:
+        errors.append("Handoff file does not record the active declaration's base_commit.")
+    for field in ("Task ID:", "Baseline commit:", "Task status:", "Evidence status:"):
+        if field not in content:
+            errors.append(f"Handoff file is missing required metadata field: {field}")
+    if "TASK-ID" in content or "<full commit SHA>" in content:
+        errors.append("Handoff file still contains template placeholders.")
+    return errors
 
 
 def _run_git(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -199,6 +227,9 @@ def validate_task_state(
             else:
                 if not handoff_path.is_file():
                     _finding(findings, "ERROR", "HANDOFF_FILE_MISSING", f"handoff_file does not exist: {normalized_handoff}")
+                elif status == "RELEASED":
+                    for error in _handoff_content_errors(handoff_path, str(data.get("task_id", "")), str(data.get("base_commit", ""))):
+                        _finding(findings, "ERROR", "HANDOFF_INCOMPLETE", error, normalized_handoff)
 
     actual_branch = None
     changed_paths: set[str] = set()
@@ -438,6 +469,11 @@ def release_task_state(
             return _result(state_path, root, findings, None, [])
         if data.get("status") != "ACTIVE" or data.get("task_id") != task_id or data.get("tool_id") != tool_id:
             _finding(findings, "ERROR", "WRITER_IDENTITY_MISMATCH", "Only the matching active task/tool may release this writer declaration.")
+            return _result(state_path, root, findings, data, [])
+        handoff_errors = _handoff_content_errors(handoff_path, task_id, str(data.get("base_commit", "")))
+        if handoff_errors:
+            for error in handoff_errors:
+                _finding(findings, "ERROR", "HANDOFF_INCOMPLETE", error, normalized_handoff)
             return _result(state_path, root, findings, data, [])
         data["status"] = "RELEASED"
         data["released_at"] = datetime.now(timezone.utc).isoformat()
