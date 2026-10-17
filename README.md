@@ -309,6 +309,6 @@ Mock Runner 只验证预置响应文本的精确子串，不评估真实模型�
 
 ## 现有项目安全升级（V0.8.0）
 
-AIMES 0.8.0 增加了面向已接入项目的安全升级向导。先在项目目录执行 `aimes upgrade` 查看已安装 CLI 版本、项目清单版本和逐文件操作计划；交互模式下每个文件单独确认。已证明未被修改的 AIMES 托管文件会在备份后更新；新文件需确认后添加；用户修改过或无法证明由 AIMES 管理的文件绝不覆盖，只可生成候选文件供人工合并。升级完成后执行 `aimes validate`。
+AIMES 0.8.0 增加了面向已接入项目的安全升级向导。先在项目目录执行 `aimes upgrade --dry-run` 查看已安装 CLI 版本、项目清单版本和逐文件操作计划；执行 `aimes upgrade` 进入逐项确认向导。已证明未被修改的 AIMES 托管文件会在备份后更新；新文件需确认后添加；用户修改过或无法证明由 AIMES 管理的文件绝不覆盖，只可生成候选文件供人工合并。升级完成后执行 `aimes validate`。
 
 完整策略和边界见 [`docs/SAFE-PROJECT-UPGRADE.md`](docs/SAFE-PROJECT-UPGRADE.md)。
