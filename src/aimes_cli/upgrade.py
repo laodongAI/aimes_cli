@@ -171,7 +171,8 @@ def apply_upgrade(root: Path, selected_paths: list[str] | None = None) -> dict[s
         if content is None:
             continue
         try:
-            if target.exists():
+            existed_before = target.exists()
+            if existed_before:
                 if not target.is_file():
                     errors.append({"path": rel, "error": "target is not a regular file"})
                     continue
@@ -180,7 +181,7 @@ def apply_upgrade(root: Path, selected_paths: list[str] | None = None) -> dict[s
                 shutil.copy2(target, backup)
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(content, encoding="utf-8")
-            written.append({"path": rel, "action": action, "sha256": sha256_text(content), "created": not backup.exists()})
+            written.append({"path": rel, "action": action, "sha256": sha256_text(content), "created": not existed_before})
             actual_managed[rel] = content
         except OSError as exc:
             errors.append({"path": rel, "error": str(exc)})
