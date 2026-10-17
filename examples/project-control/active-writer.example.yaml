@@ -1,0 +1,14 @@
+# Copy to .aimes/project-control/active-writer.yaml and replace every example value.
+schema_version: 1
+task_id: TASK-2026-001
+tool_id: trae-code
+branch: task/TASK-2026-001-trae-code
+base_commit: 0123456789abcdef0123456789abcdef01234567
+started_at: "2026-10-18T09:00:00+08:00"
+lease_expires_at: "2026-10-18T17:00:00+08:00"
+allowed_paths:
+  - src/
+  - tests/
+status: ACTIVE
+# Add after handoff has been written and verified:
+# handoff_file: project-control/handoffs/2026-10-18-TASK-2026-001-trae-code.md
