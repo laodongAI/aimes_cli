@@ -261,7 +261,7 @@ def _acquire_writer_lock(root: Path) -> tuple[Path | None, str | None]:
 def _write_state_atomically(state_path: Path, data: dict[str, Any]) -> None:
     temp_path = state_path.with_name(f".{state_path.name}.{os.getpid()}.tmp")
     try:
-        with temp_path.open("x", encoding="utf-8", newline="\\n") as stream:
+        with temp_path.open("x", encoding="utf-8") as stream:
             yaml.safe_dump(data, stream, allow_unicode=True, sort_keys=False)
         os.replace(temp_path, state_path)
     finally:
