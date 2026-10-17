@@ -1,4 +1,4 @@
-# AIMES 本地治理 CLI（V0.7.4）
+# AIMES 本地治理 CLI（V0.7.7）
 
 AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具。它负责把 AIMES V1.2 治理核心部署到项目仓库，生成工具专属规则入口，检查配置与冲突，并输出部署状态。它不替代 Codex、Claude Code、Trae、ZCode 或 Copilot 执行开发任务。
 
@@ -92,6 +92,7 @@ aimes configure --tools vscode-copilot
 aimes doctor
 aimes status
 aimes validate --format json --output .aimes/reports/validation.json
+aimes docs check --root . --format json --output .aimes/reports/docs-check.json
 ```
 
 `--scope` 当前仅支持 `project`。全局配置、自动升级、卸载和回滚尚未实现，不应使用本版本执行全局部署。
@@ -136,6 +137,18 @@ aimes context validate .aimes/context-pack/context-pack.json --handoff .aimes/co
 - `adapter report` 汇总各工具的 PASS/FAIL/BLOCKED/NOT_RUN/UNKNOWN 覆盖情况。缺少记录不等于通过或失败。
 - `context validate` 对照 Context Pack 中记录的 SHA-256 检查源文件是否变化，并可检查 HANDOFF 文件是否存在。变化会提示重新审阅，不自动判断修改是否正确。
 - PASS 记录必须采用运行时观察、自动化检查或用户确认的方法，并附证据文件或说明。CLI 不会自动操纵 IDE，也不会伪造运行时证据。
+
+### 文档完整性与薄入口检查
+
+```powershell
+# 只读检查 Markdown 本地链接、配置中的工具入口和治理核心引用
+aimes docs check --root . --format json --output .aimes/reports/docs-check.json
+```
+
+- 检查本地 Markdown 链接目标是否存在，并跳过代码围栏中的示例链接与外部 URL。
+- 对配置中登记的工具入口检查文件是否存在；对原生薄规则入口检查权威核心引用和行数上限（默认 40 行）。
+- 手动适配说明文件只检查存在性，不会被误判为原生薄规则入口。
+- 命令只读，不自动修复或删除文件；发现错误返回退出码 1。首次接入时建议先审阅报告，再决定是否作为 CI 阻断门禁。
 
 ## 5. 安全机制
 
