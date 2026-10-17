@@ -132,7 +132,9 @@ V0.4 的 `evaluation` 命令不执行 AI 任务或命令。运行记录由实际
 |---|---|---|---|
 | `aimes task validate [<active-writer.yaml>]` | 校验活动写入者声明、工具 ID、时间租约、分支、基线提交与变更文件范围 | 只读 | 0 通过（允许 WARNING）；1 校验错误；2 参数/读取错误 |
 | `aimes task validate --require-active` | 在需要开始受治理写入前，要求存在未过期的 ACTIVE 声明 | 只读 | 缺失/过期/非 ACTIVE 时返回 1 |
+| `aimes task claim --task-id ID --tool-id TOOL --branch BRANCH --base-commit SHA --allowed-path PATH --confirm CLAIM` | 使用独占本地锁创建活动写入者声明，并先核验分支、基线与变更范围 | 创建/更新 `.aimes/project-control/active-writer.yaml` | 0 成功；1 声明/范围冲突；2 参数/读取错误 |
+| `aimes task release --task-id ID --tool-id TOOL --handoff-file PATH --confirm RELEASE` | 在交接文件已存在且任务/工具身份匹配时释放写入声明 | 原子更新声明为 RELEASED | 0 成功；1 身份/交接/锁冲突；2 参数/读取错误 |
 
 声明 Schema：`schemas/active-writer.schema.json`；示例：`examples/project-control/active-writer.example.yaml`。任务交接模板：`docs/templates/TASK-HANDOFF-TEMPLATE.md`。任务控制文件路径不计入业务变更范围；其它未在 `allowed_paths` 中登记的变更会报告为错误。无 Git 仓库时会明确提示无法执行分支、基线与范围核验。
 
-此命令不是原子锁服务，不会自动取得或释放写权限，也不自动接管过期任务。写入权切换仍需责任人确认；需要并行工作时应使用独立 worktree/分支。
+`task claim/release` 通过本地文件系统的独占创建锁协调 AIMES 命令之间的声明更新；它不阻止不遵守 AIMES 协议的 IDE/编辑器直接写文件，也不是跨机器分布式锁。过期租约不会自动接管，必须显式执行 `--takeover --confirm CLAIM`。需要并行工作时应使用独立 worktree/分支。
