@@ -10,11 +10,13 @@
 
 ```powershell
 # 只读预览：检查版本并列出新增、可安全更新、未变化及冲突文件
-aimes upgrade
+aimes upgrade --dry-run
 
 # 交互式逐项升级：每个文件分别确认，最后输入 UPGRADE
+aimes upgrade
+
+# 也可以进入主菜单，选择“升级现有项目 AIMES”
 aimes
-# 在主菜单选择“升级现有项目 AIMES”
 
 # 非交互执行：仅在检查过预览后使用
 aimes upgrade --apply --confirm UPGRADE
