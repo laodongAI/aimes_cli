@@ -5,11 +5,15 @@ from typing import Any
 import yaml
 from .validators import GLOBAL_STATUSES, KNOWLEDGE_MATURITY
 
-VALID_ENTITY_TYPES = {"requirement", "knowledge", "reuse_decision", "task", "implementation", "test", "release", "skill"}
+VALID_ENTITY_TYPES = {"requirement", "module", "feature", "design", "code", "knowledge", "reuse_decision", "task", "implementation", "test", "release", "skill"}
 VALID_EVIDENCE_KINDS = {"command", "test", "build", "review", "artifact", "manual"}
 ENTITY_STATUS_VOCABULARY = {
     "knowledge": KNOWLEDGE_MATURITY,
     "requirement": GLOBAL_STATUSES,
+    "module": GLOBAL_STATUSES,
+    "feature": GLOBAL_STATUSES,
+    "design": GLOBAL_STATUSES,
+    "code": GLOBAL_STATUSES,
     "reuse_decision": GLOBAL_STATUSES,
     "task": GLOBAL_STATUSES,
     "implementation": GLOBAL_STATUSES,
