@@ -179,9 +179,25 @@ def emit(data, fmt='text', output: Path | None=None):
         lines = ['AIMES CLI report']
         if isinstance(data, dict):
             if data.get('root'): lines.append(f"Project: {data['root']}")
+            if data.get('installed_cli_version') is not None: lines.append(f"Installed AIMES CLI version: {data['installed_cli_version']}")
+            if data.get('project_cli_version') is not None: lines.append(f"Project manifest CLI version: {data['project_cli_version']}")
+            if data.get('project_cli_version_before') is not None: lines.append(f"Project manifest CLI version before upgrade: {data['project_cli_version_before']}")
+            if data.get('governance_target_version') is not None: lines.append(f"Target governance version: {data['governance_target_version']}")
             if 'ok' in data: lines.append(f"Result: {'PASS' if data['ok'] else 'NEEDS ATTENTION'}")
             if 'dry_run' in data: lines.append(f"Mode: {'dry-run (no files written)' if data['dry_run'] else 'apply'}")
             if data.get('tools') and all(isinstance(item, str) for item in data['tools']): lines.append('Tools: ' + ', '.join(data['tools']))
+            if data.get('written'):
+                lines.append('Files written:')
+                for item in data['written']: lines.append(f"  - {item.get('action', 'write')}: {item['path']}")
+            if data.get('preserved'):
+                lines.append('Preserved files / proposals:')
+                for item in data['preserved']:
+                    if isinstance(item, dict): lines.append(f"  - {item.get('path', '?')}: {item.get('reason', '')}" + (f" -> {item['proposal_path']}" if item.get('proposal_path') else ''))
+                    else: lines.append(f"  - {item}")
+            if data.get('errors'):
+                lines.append('Errors:')
+                for item in data['errors']: lines.append(f"  - {item.get('path', '?')}: {item.get('error', '')}")
+            if data.get('backup_dir'): lines.append(f"Backup directory: {data['backup_dir']}")
             if data.get('actions'):
                 lines.append('Actions:')
                 for action in data['actions']:
