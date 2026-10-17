@@ -140,6 +140,10 @@ AIMES 已在提示词系统契约中提出“上下文预算”和“最小充�
 
 不得以“Token 越少越好”单指标优化。推荐采用约束式目标：**硬门禁不退化、首次通过率不下降的前提下，降低总 Token、模型调用和返工成本。**
 
+## 7.1 固定基准与执行入口
+
+基准任务、A/B 对照方法、质量非退化门槛和运行记录字段以 [TOKEN-EFFICIENCY-BENCHMARK-PLAN-2026-10-18.md](TOKEN-EFFICIENCY-BENCHMARK-PLAN-2026-10-18.md) 为准；固定的 8 类评测案例位于 [token-efficiency-suite.yaml](../../examples/evaluation/token-efficiency-suite.yaml)。通过 `aimes evaluation validate` 仅证明案例结构符合契约，不代表模型已运行或能力已通过验证。执行状态在真实运行前必须保持 `NOT_RUN`，实际 Token 不可得时记为 `UNKNOWN`。
+
 ## 7. 推荐实施顺序
 
 ### T0：先定规则（本次验证前）
