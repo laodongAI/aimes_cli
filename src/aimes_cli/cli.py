@@ -12,6 +12,7 @@ from .mock_runner import run_mock
 from .audit import append_event, validate_audit
 from .publish import publish_project
 from .publish_profiles import load_profiles, save_profile
+from .docs_check import check_docs
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -42,6 +43,11 @@ def parser() -> argparse.ArgumentParser:
     for name, helptext in [('inspect','Inspect project and existing rule files'),('validate','Validate AIMES configuration and managed files'),('doctor','Check local tool executable availability'),('status','Show governance deployment status'),('diff','Show a deployment preview')]:
         sp=sub.add_parser(name,help=helptext); common(sp)
         if name=='diff': sp.add_argument('--tools', default='trae-code,vscode-codex,vscode-claude-code,vscode-copilot,zcode,qcode,claude-code,codex-cli')
+    docs = sub.add_parser('docs', help='Documentation integrity and thin-entry checks')
+    docs_sub = docs.add_subparsers(dest='docs_command', required=True)
+    docs_check = docs_sub.add_parser('check', help='Check local Markdown links and configured thin tool entries; read-only')
+    common(docs_check)
+    docs_check.add_argument('--max-entry-lines', type=int, default=40, help='Maximum allowed lines in a thin entry (default: 40)')
     # V0.2 structured governance registries; all validators are read-only.
     req = sub.add_parser('requirement', help='Requirement cognition record operations')
     req_sub = req.add_subparsers(dest='requirement_command', required=True)
@@ -409,6 +415,12 @@ def main(argv=None):
         if args.command == 'skill':
             target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
             result = validate_skill_registry(target, root, args.id)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'docs' and args.docs_command == 'check':
+            if args.max_entry_lines < 1:
+                raise ValueError('--max-entry-lines must be greater than zero')
+            result = check_docs(root, max_entry_lines=args.max_entry_lines)
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'trace':
