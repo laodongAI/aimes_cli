@@ -13,7 +13,7 @@ from .audit import append_event, validate_audit
 from .publish import publish_project
 from .publish_profiles import load_profiles, save_profile
 from .docs_check import check_docs
-from .task_state import validate_task_state
+from .task_state import validate_task_state, claim_task_state, release_task_state
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -51,6 +51,22 @@ def parser() -> argparse.ArgumentParser:
     task_validate.add_argument('path', type=Path, nargs='?', default=Path('.aimes/project-control/active-writer.yaml'))
     task_validate.add_argument('--require-active', action='store_true', help='Fail unless an unexpired ACTIVE writer declaration exists')
     task_validate.add_argument('--no-check-scope', action='store_true', help='Skip changed-file scope check (not recommended)')
+    task_claim = task_sub.add_parser('claim', help='Atomically claim the local active-writer declaration')
+    common(task_claim)
+    task_claim.add_argument('--task-id', required=True)
+    task_claim.add_argument('--tool-id', required=True, choices=list(ADAPTERS))
+    task_claim.add_argument('--branch', required=True)
+    task_claim.add_argument('--base-commit', required=True)
+    task_claim.add_argument('--allowed-path', action='append', dest='allowed_paths', required=True, help='Allowed relative file/directory; repeat as needed')
+    task_claim.add_argument('--lease-hours', type=int, default=8)
+    task_claim.add_argument('--confirm', required=True, help='Must be CLAIM (case-insensitive)')
+    task_claim.add_argument('--takeover', action='store_true', help='Explicitly replace only an expired/invalid active lease')
+    task_release = task_sub.add_parser('release', help='Release writer declaration after a handoff file exists')
+    common(task_release)
+    task_release.add_argument('--task-id', required=True)
+    task_release.add_argument('--tool-id', required=True, choices=list(ADAPTERS))
+    task_release.add_argument('--handoff-file', required=True, help='Project-relative handoff file that must already exist')
+    task_release.add_argument('--confirm', required=True, help='Must be RELEASE (case-insensitive)')
     docs = sub.add_parser('docs', help='Documentation integrity and thin-entry checks')
     docs_sub = docs.add_subparsers(dest='docs_command', required=True)
     docs_check = docs_sub.add_parser('check', help='Check local Markdown links and configured thin tool entries; read-only')
@@ -423,6 +439,17 @@ def main(argv=None):
         if args.command == 'skill':
             target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
             result = validate_skill_registry(target, root, args.id)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'task' and args.task_command == 'claim':
+            result = claim_task_state(root, task_id=args.task_id, tool_id=args.tool_id, branch=args.branch,
+                base_commit=args.base_commit, allowed_paths=args.allowed_paths, lease_hours=args.lease_hours,
+                confirm=args.confirm, takeover=args.takeover)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'task' and args.task_command == 'release':
+            result = release_task_state(root, task_id=args.task_id, tool_id=args.tool_id,
+                handoff_file=args.handoff_file, confirm=args.confirm)
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'task' and args.task_command == 'validate':
