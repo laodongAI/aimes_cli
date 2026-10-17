@@ -95,7 +95,7 @@ aimes validate --format json --output .aimes/reports/validation.json
 aimes docs check --root . --format json --output .aimes/reports/docs-check.json
 ```
 
-`--scope` 当前仅支持 `project`。全局配置、自动升级、卸载和回滚尚未实现，不应使用本版本执行全局部署。
+`--scope` 当前仅支持 `project`。全局配置和卸载尚未实现，不应使用本版本执行全局部署。现有项目的安全升级请使用 `aimes upgrade`；它先列出文件差异，逐项确认后才写入，并保留冲突文件。
 
 ### V0.3：追溯、证据与交接
 
@@ -305,3 +305,10 @@ aimes audit validate .aimes/audit/events.jsonl --format json
 ```
 
 Mock Runner 只验证预置响应文本的精确子串，不评估真实模型的语义质量。不要把 Mock PASS 写成真实模型评测通过。当前结构化审计需由调用方显式记录事件，尚不自动捕获所有 IDE/模型活动。
+
+
+## 现有项目安全升级（V0.8.0）
+
+AIMES 0.8.0 增加了面向已接入项目的安全升级向导。先在项目目录执行 `aimes upgrade` 查看已安装 CLI 版本、项目清单版本和逐文件操作计划；交互模式下每个文件单独确认。已证明未被修改的 AIMES 托管文件会在备份后更新；新文件需确认后添加；用户修改过或无法证明由 AIMES 管理的文件绝不覆盖，只可生成候选文件供人工合并。升级完成后执行 `aimes validate`。
+
+完整策略和边界见 [`docs/SAFE-PROJECT-UPGRADE.md`](docs/SAFE-PROJECT-UPGRADE.md)。
