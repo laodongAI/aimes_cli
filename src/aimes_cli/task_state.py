@@ -12,7 +12,7 @@ import yaml
 from .adapters import ADAPTERS
 
 VALID_WRITER_STATES = {"ACTIVE", "RELEASED"}
-CONTROL_PATH_PREFIXES = (".aimes/project-control/", "project-control/handoffs/")
+CONTROL_PATH_PREFIXES = (".aimes/project-control/", "project-control/")
 
 
 def _finding(findings: list[dict[str, Any]], level: str, code: str, message: str, path: str | None = None) -> None:
