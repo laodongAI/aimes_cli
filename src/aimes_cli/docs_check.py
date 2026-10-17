@@ -120,6 +120,10 @@ def check_docs(root: Path, *, max_entry_lines: int = 40) -> dict[str, Any]:
             _finding(findings, "ERROR", "ENTRY_MISSING", f"Configured tool entry does not exist: {rel}", rel)
             continue
         checked_entries += 1
+        # Only native thin rule-entry files are subject to the line/reference policy.
+        # Manual-adapter READMEs are registered entry artifacts, but are not rule files.
+        if rel not in DEFAULT_ENTRY_PATHS:
+            continue
         try:
             content = path.read_text(encoding="utf-8-sig")
         except OSError as exc:
