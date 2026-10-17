@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import re
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
@@ -153,6 +153,12 @@ def validate_task_state(
     status = data.get("status")
     if status not in VALID_WRITER_STATES:
         _finding(findings, "ERROR", "INVALID_WRITER_STATUS", f"status must be one of {sorted(VALID_WRITER_STATES)}.")
+    if status == "RELEASED":
+        released_at = _parse_time(data.get("released_at"))
+        if released_at is None:
+            _finding(findings, "ERROR", "RELEASED_AT_INVALID", "RELEASED declarations require released_at as an ISO-8601 timestamp with timezone.")
+        if not isinstance(data.get("handoff_file"), str) or not data.get("handoff_file").strip():
+            _finding(findings, "ERROR", "HANDOFF_REQUIRED", "RELEASED declarations require a handoff_file.")
 
     started = _parse_time(data.get("started_at"))
     expires = _parse_time(data.get("lease_expires_at"))
@@ -322,6 +328,9 @@ def claim_task_state(
                 _finding(findings, "ERROR", "EXISTING_STATE_INVALID", "Existing writer declaration is not a YAML mapping.")
                 return _result(state_path, root, findings, None, [])
             existing = loaded
+            if existing.get("status") not in VALID_WRITER_STATES:
+                _finding(findings, "ERROR", "EXISTING_STATE_INVALID", "Existing writer declaration has an unknown status; review it manually before replacing.")
+                return _result(state_path, root, findings, existing, [])
             existing_expiry = _parse_time(existing.get("lease_expires_at"))
             if existing.get("status") == "ACTIVE" and existing_expiry and existing_expiry > now:
                 _finding(findings, "ERROR", "WRITER_ALREADY_ACTIVE", f"Task {existing.get('task_id')!r} already owns an unexpired writer lease.")
@@ -353,7 +362,7 @@ def claim_task_state(
             "branch": branch.strip(),
             "base_commit": base_commit.strip(),
             "started_at": now.isoformat(),
-            "lease_expires_at": (now + __import__("datetime").timedelta(hours=lease_hours)).isoformat(),
+            "lease_expires_at": (now + timedelta(hours=lease_hours)).isoformat(),
             "allowed_paths": list(dict.fromkeys(item.strip().replace("\\\\", "/").rstrip("/") for item in allowed_paths)),
             "status": "ACTIVE",
         }
