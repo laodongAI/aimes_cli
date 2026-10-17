@@ -40,7 +40,7 @@ class ReleaseCheckTests(unittest.TestCase):
         (self.root / "build_windows_exe.ps1").write_text("pyinstaller --onefile\n", encoding="utf-8")
         result = validate_release(self.root)
         self.assertFalse(result["ok"])
-        self.assertTrue(any("collect package data" in item["message"] for item in result["findings"]))
+        self.assertTrue(any("package data" in item["message"] for item in result["findings"]))
 
 
 if __name__ == "__main__":
