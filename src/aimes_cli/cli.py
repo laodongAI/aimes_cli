@@ -16,6 +16,7 @@ from .docs_check import check_docs
 from .task_state import validate_task_state, claim_task_state, release_task_state
 from .cleanup_audit import audit_temp_registry
 from .metrics import build_metrics_report
+from .release_check import validate_release
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -69,6 +70,10 @@ def parser() -> argparse.ArgumentParser:
     task_release.add_argument('--tool-id', required=True, choices=list(ADAPTERS))
     task_release.add_argument('--handoff-file', required=True, help='Project-relative handoff file that must already exist')
     task_release.add_argument('--confirm', required=True, help='Must be RELEASE (case-insensitive)')
+    release = sub.add_parser('release', help='Release metadata and governance compatibility checks')
+    release_sub = release.add_subparsers(dest='release_command', required=True)
+    release_validate = release_sub.add_parser('validate', help='Validate package/runtime/README/core-template version compatibility')
+    common(release_validate)
     metrics = sub.add_parser('metrics', help='Evidence-backed engineering metrics')
     metrics_sub = metrics.add_subparsers(dest='metrics_command', required=True)
     metrics_report = metrics_sub.add_parser('report', help='Calculate available metrics; missing sources remain UNKNOWN')
@@ -455,6 +460,10 @@ def main(argv=None):
         if args.command == 'skill':
             target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
             result = validate_skill_registry(target, root, args.id)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'release' and args.release_command == 'validate':
+            result = validate_release(root)
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'metrics' and args.metrics_command == 'report':
