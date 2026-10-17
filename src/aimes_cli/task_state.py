@@ -63,6 +63,13 @@ def _git_context(root: Path, base_commit: str, findings: list[dict[str, Any]]) -
     if probe.returncode != 0:
         _finding(findings, "WARNING", "GIT_UNAVAILABLE", "Git repository not detected; branch/base/scope checks were skipped.")
         return None, None
+    repo_root = Path(probe.stdout.strip()).resolve()
+    try:
+        project_prefix = root.resolve().relative_to(repo_root).as_posix()
+    except ValueError:
+        _finding(findings, "ERROR", "PROJECT_OUTSIDE_REPOSITORY", "Project root is not inside the detected Git repository.")
+        return None, None
+    pathspec = project_prefix if project_prefix != "." else "."
 
     branch_result = _run_git(root, "branch", "--show-current")
     branch = branch_result.stdout.strip() if branch_result.returncode == 0 else None
@@ -73,12 +80,22 @@ def _git_context(root: Path, base_commit: str, findings: list[dict[str, Any]]) -
 
     changed: set[str] = set()
     if commit_result.returncode == 0:
-        diff = _run_git(root, "diff", "--name-only", base_commit, "--")
+        diff = _run_git(root, "diff", "--name-only", base_commit, "--", pathspec)
         if diff.returncode == 0:
-            changed.update(line.replace("\\", "/") for line in diff.stdout.splitlines() if line.strip())
-        untracked = _run_git(root, "ls-files", "--others", "--exclude-standard")
+            for line in diff.stdout.splitlines():
+                normalized = line.replace("\\", "/")
+                if project_prefix != "." and normalized.startswith(project_prefix + "/"):
+                    normalized = normalized[len(project_prefix) + 1:]
+                if normalized:
+                    changed.add(normalized)
+        untracked = _run_git(root, "ls-files", "--others", "--exclude-standard", "--", pathspec)
         if untracked.returncode == 0:
-            changed.update(line.replace("\\", "/") for line in untracked.stdout.splitlines() if line.strip())
+            for line in untracked.stdout.splitlines():
+                normalized = line.replace("\\", "/")
+                if project_prefix != "." and normalized.startswith(project_prefix + "/"):
+                    normalized = normalized[len(project_prefix) + 1:]
+                if normalized:
+                    changed.add(normalized)
     return branch, changed
 
 
@@ -125,6 +142,9 @@ def validate_task_state(
     for field in ("task_id", "branch", "base_commit"):
         if not isinstance(data.get(field), str) or not data[field].strip():
             _finding(findings, "ERROR", "FIELD_VALUE", f"{field} must be a non-empty string.")
+    base_commit_value = data.get("base_commit")
+    if isinstance(base_commit_value, str) and base_commit_value.strip() and not re.fullmatch(r"[0-9a-fA-F]{7,40}", base_commit_value.strip()):
+        _finding(findings, "ERROR", "BASE_COMMIT_FORMAT", "base_commit must be a 7-40 character hexadecimal Git commit SHA.")
     tool_id = data.get("tool_id")
     if tool_id not in ADAPTERS:
         _finding(findings, "ERROR", "UNKNOWN_TOOL", f"tool_id is not a supported AIMES tool ID: {tool_id!r}")
