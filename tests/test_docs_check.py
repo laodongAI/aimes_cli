@@ -56,6 +56,20 @@ class DocsCheckTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(any(item["code"] == "ENTRY_MISSING" for item in result["findings"]))
 
+    def test_generic_markdown_repo_does_not_require_aimes_core(self):
+        (self.root / "AGENTS.md").unlink()
+        (self.root / "README.md").write_text("# Plain docs repo\\n", encoding="utf-8")
+        (self.root / "docs" / "_governance" / "AIMES-CORE-V1.2.md").unlink()
+        result = check_docs(self.root)
+        self.assertTrue(result["ok"], result["findings"])
+
+    def test_packaged_core_template_links_are_not_checked_at_template_location(self):
+        template = self.root / "src" / "aimes_cli" / "templates" / "core"
+        template.mkdir(parents=True)
+        (template / "AIMES-CORE-V1.2.md").write_text("[Project task file](project-control/TASKS.md)\\n", encoding="utf-8")
+        result = check_docs(self.root)
+        self.assertFalse(any(item["code"] == "BROKEN_LINK" for item in result["findings"]))
+
     def test_external_links_are_ignored(self):
         (self.root / "README.md").write_text(
             "[External](https://example.com/not-local)\n[Email](mailto:test@example.com)\n",
