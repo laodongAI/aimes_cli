@@ -173,6 +173,24 @@ aimes task release --task-id TASK-123 --tool-id trae-code --handoff-file project
 
 **边界：** 当前 `task claim/release` 使用本地文件系统的独占创建锁来协调 AIMES 命令之间的声明更新；`task validate` 本身只读。该锁不能阻止不遵守 AIMES 协议的 IDE/编辑器直接写文件，也不应被视为跨机器分布式锁。多人/多工具并行仍应使用独立分支或 worktree，并在交接前后核验 Git 状态。
 
+### 临时产物审计与工程指标
+
+```powershell
+# 只读审计临时产物，不删除文件
+aimes cleanup audit --root . --format json --output .aimes/reports/cleanup-audit.json
+
+# 仅使用当前可验证数据计算工程指标；缺少数据源时显示 UNKNOWN
+aimes metrics report --root . --format json --output .aimes/reports/metrics.json
+
+# 提供追溯、临时产物、交接试点和审计日志数据源
+aimes metrics report --root . --trace-manifest .aimes/traceability/trace-manifest.yaml --temp-registry .aimes/temp-registry.yaml --handoff-trials .aimes/evaluations/handoff-trials.yaml --audit-log .aimes/audit/events.jsonl --format json
+```
+
+- 临时登记表示例：`examples/project-control/temp-registry.example.yaml`；Schema：`schemas/temp-registry.schema.json`。
+- `cleanup audit` 检查登记项是否存在、是否过期，并扫描常见未登记临时目录/文件；只输出候选和风险分类，不会删除。
+- `metrics report` 对应 AIMES 核心规范的 9 项工程指标。只有在数据源可验证且分母有效时才计算比率；缺少追溯、交接试点、临时登记或审计日志时，指标显示 `UNKNOWN`，不会把缺失数据当作 0 或 100%。
+- 关键功能实现/测试映射率只统计明确标记为 `critical: true` 或 `criticality: high|critical` 的功能，避免模型自行猜测关键程度。
+
 ## 5. 安全机制
 
 - 不覆盖已有文件。
