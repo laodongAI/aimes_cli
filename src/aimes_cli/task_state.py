@@ -276,8 +276,15 @@ def _result(path: Path, root: Path, findings: list[dict[str, Any]], data: dict[s
 
 
 def _acquire_writer_lock(root: Path) -> tuple[Path | None, str | None]:
-    lock_path = root / ".aimes" / "project-control" / "active-writer.lock"
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    root = root.resolve()
+    raw_lock_path = root / ".aimes" / "project-control" / "active-writer.lock"
+    lock_parent = raw_lock_path.parent.resolve()
+    try:
+        lock_parent.relative_to(root)
+    except ValueError:
+        return None, "Writer control directory resolves outside the project root; refusing to write through a symlink."
+    lock_parent.mkdir(parents=True, exist_ok=True)
+    lock_path = lock_parent / raw_lock_path.name
     try:
         fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
         with os.fdopen(fd, "w", encoding="utf-8") as stream:
@@ -318,6 +325,12 @@ def claim_task_state(
     root = root.resolve()
     state_path = root / ".aimes" / "project-control" / "active-writer.yaml"
     findings: list[dict[str, Any]] = []
+    if not root.is_dir():
+        _finding(findings, "ERROR", "ROOT_NOT_DIRECTORY", f"Project root is not a directory: {root}")
+        return _result(state_path, root, findings, None, [])
+    if _run_git(root, "rev-parse", "--show-toplevel").returncode != 0:
+        _finding(findings, "ERROR", "GIT_REQUIRED", "Claiming a writer lease requires a Git repository.")
+        return _result(state_path, root, findings, None, [])
     if (confirm or "").strip().casefold() != "claim":
         _finding(findings, "ERROR", "CONFIRMATION_REQUIRED", "Claim requires --confirm CLAIM (case-insensitive).")
         return _result(state_path, root, findings, None, [])
@@ -434,6 +447,9 @@ def release_task_state(
     root = root.resolve()
     state_path = root / ".aimes" / "project-control" / "active-writer.yaml"
     findings: list[dict[str, Any]] = []
+    if not root.is_dir():
+        _finding(findings, "ERROR", "ROOT_NOT_DIRECTORY", f"Project root is not a directory: {root}")
+        return _result(state_path, root, findings, None, [])
     if (confirm or "").strip().casefold() != "release":
         _finding(findings, "ERROR", "CONFIRMATION_REQUIRED", "Release requires --confirm RELEASE (case-insensitive).")
         return _result(state_path, root, findings, None, [])
