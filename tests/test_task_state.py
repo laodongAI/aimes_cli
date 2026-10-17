@@ -79,6 +79,51 @@ class TaskStateTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(any(item["code"] == "ALLOWED_PATH_INVALID" for item in result["findings"]))
 
+    def test_claim_creates_writer_and_refuses_second_live_claim(self):
+        self.state_path.unlink()
+        from aimes_cli.task_state import claim_task_state
+        kwargs = dict(
+            task_id="TASK-CLAIM-001", tool_id="trae-code", branch="main",
+            base_commit=self.base_commit, allowed_paths=["src/"], lease_hours=8, confirm="claim"
+        )
+        claimed = claim_task_state(self.root, **kwargs)
+        self.assertTrue(claimed["ok"], claimed["findings"])
+        self.assertTrue(self.state_path.is_file())
+        second = claim_task_state(self.root, **kwargs)
+        self.assertFalse(second["ok"])
+        self.assertTrue(any(item["code"] == "WRITER_ALREADY_ACTIVE" for item in second["findings"]))
+
+    def test_expired_lease_requires_explicit_takeover(self):
+        now = datetime.now(timezone.utc)
+        self.state["started_at"] = (now - timedelta(hours=3)).isoformat()
+        self.state["lease_expires_at"] = (now - timedelta(hours=1)).isoformat()
+        self.write_state()
+        from aimes_cli.task_state import claim_task_state
+        kwargs = dict(
+            task_id="TASK-CLAIM-002", tool_id="trae-code", branch="main",
+            base_commit=self.base_commit, allowed_paths=["src/"], lease_hours=8, confirm="CLAIM"
+        )
+        denied = claim_task_state(self.root, **kwargs)
+        self.assertFalse(denied["ok"])
+        self.assertTrue(any(item["code"] == "TAKEOVER_REQUIRED" for item in denied["findings"]))
+        claimed = claim_task_state(self.root, **kwargs, takeover=True)
+        self.assertTrue(claimed["ok"], claimed["findings"])
+
+    def test_release_requires_existing_handoff_and_marks_state_released(self):
+        from aimes_cli.task_state import release_task_state
+        handoff = self.root / "project-control" / "handoffs" / "2026-10-18-TASK-TEST-001-trae-code.md"
+        handoff.parent.mkdir(parents=True)
+        handoff.write_text("# Handoff\\n", encoding="utf-8")
+        result = release_task_state(
+            self.root, task_id="TASK-TEST-001", tool_id="trae-code",
+            handoff_file="project-control/handoffs/2026-10-18-TASK-TEST-001-trae-code.md",
+            confirm="release",
+        )
+        self.assertTrue(result["ok"], result["findings"])
+        validation = validate_task_state(self.state_path, self.root)
+        self.assertTrue(validation["ok"], validation["findings"])
+        self.assertFalse(validation["writer_active"])
+
     def test_missing_state_is_warning_unless_active_required(self):
         self.state_path.unlink()
         optional = validate_task_state(self.state_path, self.root)
