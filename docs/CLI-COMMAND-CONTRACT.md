@@ -150,3 +150,12 @@ V0.4 的 `evaluation` 命令不执行 AI 任务或命令。运行记录由实际
 `cleanup audit` 不执行删除；A/B/C 分类只用于风险分级，不等同于删除授权。临时登记 Schema：`schemas/temp-registry.schema.json`，示例：`examples/project-control/temp-registry.example.yaml`。
 
 `metrics report` 对缺少数据源、零分母或无法验证的数据返回 `UNKNOWN`，不把缺失值替换为 0/100%。指标口径沿用 AIMES-CORE-V1.2 的 9 项定义；需求/功能/代码映射指标只有在追溯清单中有相应实体时才可计算。门禁绕过次数只统计明确记录为 `event_type: gate.bypassed` 的审计事件，未提供审计日志时显示 UNKNOWN。
+
+
+## V0.7.9 发布兼容性校验
+
+| 命令 | 用途 | 写入行为 | 退出码 |
+|---|---|---|---|
+| `aimes release validate` | 检查 pyproject/runtime/README 版本一致性、治理核心模板版本、包数据配置、Windows EXE 数据收集配置，以及当前项目的治理版本/核心路径（若配置存在） | 只读 | 0 无 ERROR；1 兼容性错误；2 参数/读取错误 |
+
+此命令已作为 GitHub Actions 的阻断步骤。它不执行打包或发布；实际 EXE 构建和外部目录冒烟测试仍由 Windows 工作流完成。
