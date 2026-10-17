@@ -105,7 +105,10 @@ def check_docs(root: Path, *, max_entry_lines: int = 40) -> dict[str, Any]:
     except ValueError:
         _finding(findings, "ERROR", "CORE_PATH_ESCAPE", "Governance core path escapes project root", ".aimes/config.yaml")
         core_path = root / DEFAULT_CORE
-    if not core_path.is_file():
+    # A generic Markdown repository need not install AIMES governance.
+    # Once a config or any registered/native entry exists, the configured core is required.
+    governance_installed = (root / ".aimes" / "config.yaml").is_file() or bool(entry_paths)
+    if governance_installed and not core_path.is_file():
         _finding(findings, "ERROR", "CORE_MISSING", f"Governance core not found: {core_rel}", core_rel)
 
     checked_entries = 0
@@ -148,6 +151,10 @@ def check_docs(root: Path, *, max_entry_lines: int = 40) -> dict[str, Any]:
         except ValueError:
             continue
         if any(part in SKIP_DIRS for part in rel_path.parts):
+            continue
+        # The packaged governance core contains project-relative links; its intended
+        # root is the consuming project, not this source-template directory.
+        if "templates" in rel_path.parts and "aimes_cli" in rel_path.parts:
             continue
         checked_docs += 1
         try:
