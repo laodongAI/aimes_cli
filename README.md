@@ -268,6 +268,7 @@ python -m unittest discover -s tests -v
 - `examples/`：可复制的示例记录
 - `skills/registry.yaml` 与 `skills/*/SKILL.md`：首批 7 个 P0 Skills 工作流模板；初始验证状态均为 `UNKNOWN`，需在真实工具/项目中评测后更新
 - `docs/v1.3-design/`：AIMES V1.3 设计基线文档
+- `docs/governance-upgrade/TOKEN-EFFICIENCY-DESIGN-2026-10-18.md`：Token 效率原则、上下文分层加载、指标与分阶段实施建议
 
 
 ## V0.5.1：提示词与 Skill 全量优化
