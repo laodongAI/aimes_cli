@@ -14,6 +14,7 @@ from .publish import publish_project
 from .publish_profiles import load_profiles, save_profile
 from .docs_check import check_docs
 from .task_state import validate_task_state, claim_task_state, release_task_state
+from .cleanup_audit import audit_temp_registry
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -67,6 +68,12 @@ def parser() -> argparse.ArgumentParser:
     task_release.add_argument('--tool-id', required=True, choices=list(ADAPTERS))
     task_release.add_argument('--handoff-file', required=True, help='Project-relative handoff file that must already exist')
     task_release.add_argument('--confirm', required=True, help='Must be RELEASE (case-insensitive)')
+    cleanup = sub.add_parser('cleanup', help='Temporary artifact audit (read-only)')
+    cleanup_sub = cleanup.add_subparsers(dest='cleanup_command', required=True)
+    cleanup_audit = cleanup_sub.add_parser('audit', help='Report registered/expired/unregistered temporary candidates; never deletes files')
+    common(cleanup_audit)
+    cleanup_audit.add_argument('path', type=Path, nargs='?', default=Path('.aimes/temp-registry.yaml'))
+    cleanup_audit.add_argument('--max-scan-entries', type=int, default=10000)
     docs = sub.add_parser('docs', help='Documentation integrity and thin-entry checks')
     docs_sub = docs.add_subparsers(dest='docs_command', required=True)
     docs_check = docs_sub.add_parser('check', help='Check local Markdown links and configured thin tool entries; read-only')
@@ -439,6 +446,13 @@ def main(argv=None):
         if args.command == 'skill':
             target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
             result = validate_skill_registry(target, root, args.id)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'cleanup' and args.cleanup_command == 'audit':
+            if args.max_scan_entries < 1:
+                raise ValueError('--max-scan-entries must be greater than zero')
+            registry = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
+            result = audit_temp_registry(root, registry, max_scan_entries=args.max_scan_entries)
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'task' and args.task_command == 'claim':
