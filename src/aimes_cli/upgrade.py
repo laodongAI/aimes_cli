@@ -129,6 +129,7 @@ def apply_upgrade(root: Path, selected_paths: list[str] | None = None) -> dict[s
     written: list[dict[str, Any]] = []
     preserved: list[dict[str, Any]] = []
     errors: list[dict[str, str]] = []
+    manifest_backup_path: Path | None = None
     actual_managed: dict[str, str] = {}
 
     # Back up and stage safe changes first. Never delete a project file.
@@ -179,7 +180,7 @@ def apply_upgrade(root: Path, selected_paths: list[str] | None = None) -> dict[s
                 shutil.copy2(target, backup)
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(content, encoding="utf-8")
-            written.append({"path": rel, "action": action, "sha256": sha256_text(content)})
+            written.append({"path": rel, "action": action, "sha256": sha256_text(content), "created": not backup.exists()})
             actual_managed[rel] = content
         except OSError as exc:
             errors.append({"path": rel, "error": str(exc)})
@@ -188,7 +189,9 @@ def apply_upgrade(root: Path, selected_paths: list[str] | None = None) -> dict[s
     # claims files whose resulting content is known; conflicts are intentionally excluded.
     manifest_path = root / MANIFEST_REL
     try:
-        if manifest_path.is_file():
+        if errors:
+            pass  # Do not advance the manifest when an earlier file operation failed.
+        elif manifest_path.is_file():
             try:
                 old_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
                 manifest_valid = isinstance(old_manifest, dict) and isinstance(old_manifest.get("managed_files"), list)
@@ -198,6 +201,7 @@ def apply_upgrade(root: Path, selected_paths: list[str] | None = None) -> dict[s
                 backup = backup_root / MANIFEST_REL
                 backup.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(manifest_path, backup)
+                manifest_backup_path = backup
                 manifest_tools = tools
                 config_path = root / CONFIG_REL
                 if config_path.is_file():
@@ -215,6 +219,32 @@ def apply_upgrade(root: Path, selected_paths: list[str] | None = None) -> dict[s
     except (OSError, ValueError, TypeError) as exc:
         errors.append({"path": MANIFEST_REL.as_posix(), "error": str(exc)})
 
+    rolled_back = False
+    if errors:
+        # Best-effort transactional rollback: restore replaced files from the snapshot and
+        # remove files created by this run. User-owned conflict files are never touched.
+        rollback_errors: list[dict[str, str]] = []
+        for item in reversed(written):
+            target = root / item["path"]
+            try:
+                if item.get("created"):
+                    if target.is_file():
+                        target.unlink()
+                else:
+                    backup = backup_root / item["path"]
+                    if backup.is_file():
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(backup, target)
+            except OSError as exc:
+                rollback_errors.append({"path": item["path"], "error": f"rollback failed: {exc}"})
+        if manifest_backup_path and manifest_backup_path.is_file():
+            try:
+                shutil.copy2(manifest_backup_path, manifest_path)
+            except OSError as exc:
+                rollback_errors.append({"path": MANIFEST_REL.as_posix(), "error": f"manifest rollback failed: {exc}"})
+        errors.extend(rollback_errors)
+        rolled_back = not rollback_errors
+
     backup_exists = backup_root.exists()
     return {
         "ok": not errors,
@@ -222,8 +252,10 @@ def apply_upgrade(root: Path, selected_paths: list[str] | None = None) -> dict[s
         "installed_cli_version": __version__,
         "project_cli_version_before": plan.get("project_cli_version"),
         "backup_dir": str(backup_root) if backup_exists else None,
-        "written": written,
+        "written": written if not rolled_back else [],
+        "attempted_changes": written,
+        "rolled_back": rolled_back,
         "preserved": preserved,
         "errors": errors,
-        "message": "Upgrade changes applied. Review conflicts and validate the project." if not errors else "Upgrade encountered errors; inspect the backup and error list before retrying.",
+        "message": "Upgrade changes applied. Review conflicts and validate the project." if not errors else ("Upgrade failed; attempted file changes were rolled back." if rolled_back else "Upgrade failed and automatic rollback was incomplete; inspect the backup directory and errors immediately."),
     }
