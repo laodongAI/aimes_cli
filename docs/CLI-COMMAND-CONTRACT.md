@@ -135,6 +135,6 @@ V0.4 的 `evaluation` 命令不执行 AI 任务或命令。运行记录由实际
 | `aimes task claim --task-id ID --tool-id TOOL --branch BRANCH --base-commit SHA --allowed-path PATH --confirm CLAIM` | 使用独占本地锁创建活动写入者声明，并先核验分支、基线与变更范围 | 创建/更新 `.aimes/project-control/active-writer.yaml` | 0 成功；1 声明/范围冲突；2 参数/读取错误 |
 | `aimes task release --task-id ID --tool-id TOOL --handoff-file PATH --confirm RELEASE` | 在交接文件已存在且任务/工具身份匹配时释放写入声明 | 原子更新声明为 RELEASED | 0 成功；1 身份/交接/锁冲突；2 参数/读取错误 |
 
-声明 Schema：`schemas/active-writer.schema.json`；示例：`examples/project-control/active-writer.example.yaml`。任务交接模板：`docs/templates/TASK-HANDOFF-TEMPLATE.md`。任务控制文件路径不计入业务变更范围；其它未在 `allowed_paths` 中登记的变更会报告为错误。无 Git 仓库时会明确提示无法执行分支、基线与范围核验。
+声明 Schema：`schemas/active-writer.schema.json`；示例：`examples/project-control/active-writer.example.yaml`。任务交接模板：`docs/templates/TASK-HANDOFF-TEMPLATE.md`。释放写入权前必须存在交接文件，且包含七个必需章节、任务 ID、基线 commit、任务状态和证据状态；模板占位符未替换时拒绝释放。任务控制文件路径不计入业务变更范围；其它未在 `allowed_paths` 中登记的变更会报告为错误。无 Git 仓库时会明确提示无法执行分支、基线与范围核验。
 
-`task claim/release` 通过本地文件系统的独占创建锁协调 AIMES 命令之间的声明更新；它不阻止不遵守 AIMES 协议的 IDE/编辑器直接写文件，也不是跨机器分布式锁。过期租约不会自动接管，必须显式执行 `--takeover --confirm CLAIM`。需要并行工作时应使用独立 worktree/分支。
+`task claim/release` 通过本地文件系统的独占创建锁协调 AIMES 命令之间的声明更新；它不阻止不遵守 AIMES 协议的 IDE/编辑器直接写文件，也不是跨机器分布式锁。过期租约不会自动接管，必须显式执行 `--takeover --confirm CLAIM`。若 AIMES 命令因进程异常退出留下 `active-writer.lock`，先确认没有任务操作仍在运行，再按项目操作流程人工恢复；CLI 不会自动删除锁文件。需要并行工作时应使用独立 worktree/分支。
