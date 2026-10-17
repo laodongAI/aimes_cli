@@ -111,6 +111,17 @@ aimes context pack examples/traceability/trace-manifest.example.yaml --output-di
 - 示例数据中的证据是格式演示，不代表真实项目已经执行过相关命令。
 
 
+### Token 效率与能力非退化基准
+
+Token 优化必须先证明工程能力不退化，不能把大幅压缩提示词作为默认手段。基准方案见 [Token 效率与能力非退化基准测试方案](docs/governance-upgrade/TOKEN-EFFICIENCY-BENCHMARK-PLAN-2026-10-18.md)，固定案例集见 [token-efficiency-suite.yaml](examples/evaluation/token-efficiency-suite.yaml)。
+
+```powershell
+# 仅校验固定案例集的结构；不会调用模型或 IDE
+aimes evaluation validate examples/evaluation/token-efficiency-suite.yaml
+```
+
+案例集定义了 8 类代表性任务和硬门禁，当前真实工具运行状态为 NOT_RUN。开始对照时，先记录现有规则下的 A 组基线，再一次只改变一个优化因素执行 B 组；同任务、同环境、同验收标准比较。没有平台真实 usage 时，Token 记为 UNKNOWN，不得用字符数冒充实际 Token。任何硬门禁失败或关键能力退化，都判定优化失败。
+
 ### V0.4：AI 开发准确度评测与回归
 
 ```powershell
