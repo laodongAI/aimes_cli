@@ -17,6 +17,7 @@ from .task_state import validate_task_state, claim_task_state, release_task_stat
 from .cleanup_audit import audit_temp_registry
 from .metrics import build_metrics_report
 from .release_check import validate_release
+from .upgrade import plan_upgrade, apply_upgrade
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -26,6 +27,10 @@ def parser() -> argparse.ArgumentParser:
         sp.add_argument('--root', type=Path, help='Project root (defaults to current directory / upward detection)')
         sp.add_argument('--format', choices=['text','json'], default='text')
         sp.add_argument('--output', type=Path, help='Write report to a file')
+    upgrade = sub.add_parser('upgrade', help='Safely upgrade an existing AIMES project; preview and preserve user edits')
+    common(upgrade)
+    upgrade.add_argument('--apply', action='store_true', help='Apply safe changes after explicit confirmation')
+    upgrade.add_argument('--confirm', help='Must be UPGRADE to apply non-interactively')
     publish=sub.add_parser('publish', help='Interactive configuration or preview/mirror a local project to GitHub')
     publish.add_argument('--source', type=Path, help='Local project directory to mirror')
     publish.add_argument('--repo', help='GitHub repository as owner/repo or GitHub URL')
@@ -246,13 +251,14 @@ def interactive_wizard():
         ("查看部署状态", "status"),
         ("预览配置变更", "diff"),
         ("发布项目到 GitHub", "publish"),
+        ("升级现有项目 AIMES", "upgrade"),
     ]
     while True:
         print("\n请选择要执行的操作：")
         for i, (label, _) in enumerate(actions, 1):
             print(f"  {i}. {label}")
         print("  0. 退出")
-        choice = input("请输入序号 [0-8]：").strip()
+        choice = input("请输入序号 [0-9]：").strip()
         if choice in ("0", "q", "quit", "exit"):
             print("已退出 AIMES。")
             return 0
@@ -263,6 +269,12 @@ def interactive_wizard():
         if command == "publish":
             try: run_publish_wizard()
             except (ValueError, OSError) as exc: print(f"发布配置错误：{exc}")
+            continue
+        if command == "upgrade":
+            try:
+                run_upgrade_wizard(root)
+            except (ValueError, OSError, EOFError, KeyboardInterrupt) as exc:
+                print(f"升级已取消或失败：{exc}")
             continue
         if command in ("init", "configure", "diff"):
             keys = list(ADAPTERS)
@@ -420,6 +432,54 @@ def run_publish_wizard(args=None) -> int:
         emit(result, args.format, args.output)
     return 0
 
+def run_upgrade_wizard(root: Path, args=None) -> int:
+    """Preview and guide an existing project through a non-destructive AIMES upgrade."""
+    args = args or argparse.Namespace(apply=False, confirm=None, format="text", output=None)
+    plan = plan_upgrade(root)
+    emit(plan, args.format, args.output)
+    if not plan.get("ok"):
+        return 2
+
+    actions = [item for item in plan.get("actions", []) if item.get("action") != "unchanged"]
+    if not actions:
+        print("当前项目文件与已安装 AIMES 模板一致，无需升级。")
+        return 0
+
+    interactive = sys.stdin.isatty() and not args.apply
+    if interactive:
+        selected = []
+        print("\n逐项确认升级操作：")
+        for item in actions:
+            kind = item["action"]
+            path = item["path"]
+            if kind in ("add", "update-managed"):
+                prompt = f"{kind}: {path}。该文件是新增文件或已证明未被修改的 AIMES 管理文件，是否应用？"
+            else:
+                prompt = f"{kind}: {path}。检测到可能的项目自定义内容，是否仅生成候选文件供人工合并（原文件绝不覆盖）？"
+            if _ask_yes_no(prompt, default=True):
+                selected.append(path)
+        if not selected:
+            print("没有选择任何升级项；未修改项目文件。")
+            return 0
+        if not _confirm_word("确认执行已选择的升级步骤？请输入 UPGRADE（输入 N 取消）：", "UPGRADE"):
+            print("已取消；未应用升级。")
+            return 0
+        result = apply_upgrade(root, selected)
+    elif args.apply:
+        if (args.confirm or "").strip().casefold() != "upgrade":
+            raise ValueError("非交互升级必须同时提供 --apply --confirm UPGRADE")
+        result = apply_upgrade(root)
+    else:
+        print("\n当前为只读预览。交互式终端可直接运行 aimes upgrade 并逐项确认；脚本执行请使用 --apply --confirm UPGRADE。")
+        return 0
+
+    emit(result, args.format, args.output)
+    if result.get("backup_dir"):
+        print("升级备份目录：" + result["backup_dir"])
+    print("建议升级后执行：aimes validate --root \"" + str(root) + "\"")
+    return 0 if result.get("ok") else 2
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
@@ -437,6 +497,8 @@ def main(argv=None):
     try:
         if args.command == 'publish':
             return run_publish_wizard(args)
+        if args.command == 'upgrade':
+            return run_upgrade_wizard(root, args)
         if args.command in ('init','configure'):
             tools=choose_tools(args.tools)
             result=init_project(root,tools,getattr(args,'scope','project'),args.dry_run)
