@@ -12,6 +12,11 @@ from .mock_runner import run_mock
 from .audit import append_event, validate_audit
 from .publish import publish_project
 from .publish_profiles import load_profiles, save_profile
+from .docs_check import check_docs
+from .task_state import validate_task_state, claim_task_state, release_task_state
+from .cleanup_audit import audit_temp_registry
+from .metrics import build_metrics_report
+from .release_check import validate_release
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -42,6 +47,52 @@ def parser() -> argparse.ArgumentParser:
     for name, helptext in [('inspect','Inspect project and existing rule files'),('validate','Validate AIMES configuration and managed files'),('doctor','Check local tool executable availability'),('status','Show governance deployment status'),('diff','Show a deployment preview')]:
         sp=sub.add_parser(name,help=helptext); common(sp)
         if name=='diff': sp.add_argument('--tools', default='trae-code,vscode-codex,vscode-claude-code,vscode-copilot,zcode,qcode,claude-code,codex-cli')
+    task = sub.add_parser('task', help='Task ownership and change-scope governance')
+    task_sub = task.add_subparsers(dest='task_command', required=True)
+    task_validate = task_sub.add_parser('validate', help='Validate active-writer declaration, lease, branch and changed-file scope')
+    common(task_validate)
+    task_validate.add_argument('path', type=Path, nargs='?', default=Path('.aimes/project-control/active-writer.yaml'))
+    task_validate.add_argument('--require-active', action='store_true', help='Fail unless an unexpired ACTIVE writer declaration exists')
+    task_validate.add_argument('--no-check-scope', action='store_true', help='Skip changed-file scope check (not recommended)')
+    task_claim = task_sub.add_parser('claim', help='Atomically claim the local active-writer declaration')
+    common(task_claim)
+    task_claim.add_argument('--task-id', required=True)
+    task_claim.add_argument('--tool-id', required=True, choices=list(ADAPTERS))
+    task_claim.add_argument('--branch', required=True)
+    task_claim.add_argument('--base-commit', required=True)
+    task_claim.add_argument('--allowed-path', action='append', dest='allowed_paths', required=True, help='Allowed relative file/directory; repeat as needed')
+    task_claim.add_argument('--lease-hours', type=int, default=8)
+    task_claim.add_argument('--confirm', required=True, help='Must be CLAIM (case-insensitive)')
+    task_claim.add_argument('--takeover', action='store_true', help='Explicitly replace only an expired/invalid active lease')
+    task_release = task_sub.add_parser('release', help='Release writer declaration after a handoff file exists')
+    common(task_release)
+    task_release.add_argument('--task-id', required=True)
+    task_release.add_argument('--tool-id', required=True, choices=list(ADAPTERS))
+    task_release.add_argument('--handoff-file', required=True, help='Project-relative handoff file that must already exist')
+    task_release.add_argument('--confirm', required=True, help='Must be RELEASE (case-insensitive)')
+    release = sub.add_parser('release', help='Release metadata and governance compatibility checks')
+    release_sub = release.add_subparsers(dest='release_command', required=True)
+    release_validate = release_sub.add_parser('validate', help='Validate package/runtime/README/core-template version compatibility')
+    common(release_validate)
+    metrics = sub.add_parser('metrics', help='Evidence-backed engineering metrics')
+    metrics_sub = metrics.add_subparsers(dest='metrics_command', required=True)
+    metrics_report = metrics_sub.add_parser('report', help='Calculate available metrics; missing sources remain UNKNOWN')
+    common(metrics_report)
+    metrics_report.add_argument('--trace-manifest', type=Path, help='Optional trace manifest for traceability/evidence metrics')
+    metrics_report.add_argument('--temp-registry', type=Path, help='Optional temporary artifact registry')
+    metrics_report.add_argument('--handoff-trials', type=Path, help='Optional handoff recoverability trial registry')
+    metrics_report.add_argument('--audit-log', type=Path, help='Optional audit JSONL for gate bypass count')
+    cleanup = sub.add_parser('cleanup', help='Temporary artifact audit (read-only)')
+    cleanup_sub = cleanup.add_subparsers(dest='cleanup_command', required=True)
+    cleanup_audit = cleanup_sub.add_parser('audit', help='Report registered/expired/unregistered temporary candidates; never deletes files')
+    common(cleanup_audit)
+    cleanup_audit.add_argument('path', type=Path, nargs='?', default=Path('.aimes/temp-registry.yaml'))
+    cleanup_audit.add_argument('--max-scan-entries', type=int, default=10000)
+    docs = sub.add_parser('docs', help='Documentation integrity and thin-entry checks')
+    docs_sub = docs.add_subparsers(dest='docs_command', required=True)
+    docs_check = docs_sub.add_parser('check', help='Check local Markdown links and configured thin tool entries; read-only')
+    common(docs_check)
+    docs_check.add_argument('--max-entry-lines', type=int, default=40, help='Maximum allowed lines in a thin entry (default: 40)')
     # V0.2 structured governance registries; all validators are read-only.
     req = sub.add_parser('requirement', help='Requirement cognition record operations')
     req_sub = req.add_subparsers(dest='requirement_command', required=True)
@@ -409,6 +460,44 @@ def main(argv=None):
         if args.command == 'skill':
             target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
             result = validate_skill_registry(target, root, args.id)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'release' and args.release_command == 'validate':
+            result = validate_release(root)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'metrics' and args.metrics_command == 'report':
+            result = build_metrics_report(root, trace_manifest=args.trace_manifest,
+                temp_registry=args.temp_registry, handoff_trials=args.handoff_trials, audit_log=args.audit_log)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'cleanup' and args.cleanup_command == 'audit':
+            if args.max_scan_entries < 1:
+                raise ValueError('--max-scan-entries must be greater than zero')
+            registry = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
+            result = audit_temp_registry(root, registry, max_scan_entries=args.max_scan_entries)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'task' and args.task_command == 'claim':
+            result = claim_task_state(root, task_id=args.task_id, tool_id=args.tool_id, branch=args.branch,
+                base_commit=args.base_commit, allowed_paths=args.allowed_paths, lease_hours=args.lease_hours,
+                confirm=args.confirm, takeover=args.takeover)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'task' and args.task_command == 'release':
+            result = release_task_state(root, task_id=args.task_id, tool_id=args.tool_id,
+                handoff_file=args.handoff_file, confirm=args.confirm)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'task' and args.task_command == 'validate':
+            target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
+            result = validate_task_state(target, root, require_active=args.require_active, check_scope=not args.no_check_scope)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'docs' and args.docs_command == 'check':
+            if args.max_entry_lines < 1:
+                raise ValueError('--max-entry-lines must be greater than zero')
+            result = check_docs(root, max_entry_lines=args.max_entry_lines)
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'trace':

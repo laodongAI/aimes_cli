@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AIMES Active Writer Declaration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "task_id",
+    "tool_id",
+    "branch",
+    "base_commit",
+    "started_at",
+    "lease_expires_at",
+    "allowed_paths",
+    "status"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tool_id": {
+      "type": "string",
+      "enum": [
+        "trae-code",
+        "vscode-codex",
+        "vscode-claude-code",
+        "vscode-copilot",
+        "zcode",
+        "qcode",
+        "claude-code",
+        "codex-cli"
+      ]
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1
+    },
+    "base_commit": {
+      "type": "string",
+      "minLength": 7,
+      "pattern": "^[0-9a-fA-F]{7,40}$"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "lease_expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "allowed_paths": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "status": {
+      "enum": [
+        "ACTIVE",
+        "RELEASED"
+      ]
+    },
+    "handoff_file": {
+      "type": "string",
+      "minLength": 1
+    },
+    "released_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

@@ -1,4 +1,4 @@
-# AIMES 本地治理 CLI（V0.7.4）
+# AIMES 本地治理 CLI（V0.7.9）
 
 AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具。它负责把 AIMES V1.2 治理核心部署到项目仓库，生成工具专属规则入口，检查配置与冲突，并输出部署状态。它不替代 Codex、Claude Code、Trae、ZCode 或 Copilot 执行开发任务。
 
@@ -92,6 +92,7 @@ aimes configure --tools vscode-copilot
 aimes doctor
 aimes status
 aimes validate --format json --output .aimes/reports/validation.json
+aimes docs check --root . --format json --output .aimes/reports/docs-check.json
 ```
 
 `--scope` 当前仅支持 `project`。全局配置、自动升级、卸载和回滚尚未实现，不应使用本版本执行全局部署。
@@ -104,11 +105,22 @@ aimes evidence validate examples/evidence/evidence-registry.example.yaml
 aimes context pack examples/traceability/trace-manifest.example.yaml --output-dir .aimes/context-pack
 ```
 
-- `trace validate` 检查实体 ID 唯一性、追溯链接、证据文件以及 VERIFIED 状态对应的证据引用。
+- `trace validate` 检查实体 ID 唯一性、追溯链接、按实体类型区分的状态词表、证据文件/引用，以及 VERIFIED 状态对应的 PASS 证据；路径字段类型错误会以结构化错误报告，不应导致 CLI 崩溃。
 - `evidence validate` 校验已记录的命令/测试/构建证据，不会执行其中的命令；可校验产物存在性和 SHA-256。
 - `context pack` 生成 `context-pack.json` 与 `HANDOFF.md`，记录上下文文件清单和哈希；不复制源文件、不执行项目命令。
 - 示例数据中的证据是格式演示，不代表真实项目已经执行过相关命令。
 
+
+### Token 效率与能力非退化基准
+
+Token 优化必须先证明工程能力不退化，不能把大幅压缩提示词作为默认手段。基准方案见 [Token 效率与能力非退化基准测试方案](docs/governance-upgrade/TOKEN-EFFICIENCY-BENCHMARK-PLAN-2026-10-18.md)，固定案例集见 [token-efficiency-suite.yaml](examples/evaluation/token-efficiency-suite.yaml)。
+
+```powershell
+# 仅校验固定案例集的结构；不会调用模型或 IDE
+aimes evaluation validate examples/evaluation/token-efficiency-suite.yaml
+```
+
+案例集定义了 8 类代表性任务和硬门禁，当前真实工具运行状态为 NOT_RUN。开始对照时，先记录现有规则下的 A 组基线，再一次只改变一个优化因素执行 B 组；同任务、同环境、同验收标准比较。没有平台真实 usage 时，Token 记为 UNKNOWN，不得用字符数冒充实际 Token。任何硬门禁失败或关键能力退化，都判定优化失败。
 
 ### V0.4：AI 开发准确度评测与回归
 
@@ -136,6 +148,61 @@ aimes context validate .aimes/context-pack/context-pack.json --handoff .aimes/co
 - `adapter report` 汇总各工具的 PASS/FAIL/BLOCKED/NOT_RUN/UNKNOWN 覆盖情况。缺少记录不等于通过或失败。
 - `context validate` 对照 Context Pack 中记录的 SHA-256 检查源文件是否变化，并可检查 HANDOFF 文件是否存在。变化会提示重新审阅，不自动判断修改是否正确。
 - PASS 记录必须采用运行时观察、自动化检查或用户确认的方法，并附证据文件或说明。CLI 不会自动操纵 IDE，也不会伪造运行时证据。
+
+### 文档完整性与薄入口检查
+
+```powershell
+# 只读检查 Markdown 本地链接、配置中的工具入口和治理核心引用
+aimes docs check --root . --format json --output .aimes/reports/docs-check.json
+```
+
+- 检查本地 Markdown 链接目标是否存在，并跳过代码围栏中的示例链接与外部 URL。
+- 对配置中登记的工具入口检查文件是否存在；对原生薄规则入口检查权威核心引用和行数上限（默认 40 行）。
+- 手动适配说明文件只检查存在性，不会被误判为原生薄规则入口。
+- 命令只读，不自动修复或删除文件；发现错误返回退出码 1。首次接入时建议先审阅报告，再决定是否作为 CI 阻断门禁。
+
+### 活动写入者与任务交接校验
+
+```powershell
+# 检查当前项目的活动写入者声明、分支、租约和文件范围
+aimes task validate --root . --format json
+# 要求当前必须存在有效的活动写入者声明
+aimes task validate --root . --require-active --format json
+
+# 取得当前分支与基线提交，再声明本任务的写入范围
+$branch = git branch --show-current
+$base = git rev-parse HEAD
+aimes task claim --task-id TASK-123 --tool-id trae-code --branch $branch --base-commit $base --allowed-path src/ --allowed-path tests/ --lease-hours 8 --confirm CLAIM
+
+# 完成交接文件后释放写入声明
+aimes task release --task-id TASK-123 --tool-id trae-code --handoff-file project-control/handoffs/2026-10-18-TASK-123-trae-code.md --confirm RELEASE
+```
+
+活动写入者声明位于 `.aimes/project-control/active-writer.yaml`，格式示例见 `examples/project-control/active-writer.example.yaml`。检查器可核对任务 ID、工具 ID、分支、基线提交、租约时间、允许修改的路径，以及基线之后的已跟踪/未跟踪变更是否越界。默认没有声明时仅提示 WARNING；使用 `--require-active` 可将缺失/过期声明作为错误。
+
+任务交接使用独立文件，建议命名为 `project-control/handoffs/YYYY-MM-DD-TASK-<ID>-<tool>.md`，模板见 `docs/templates/TASK-HANDOFF-TEMPLATE.md`。全局 `HANDOFF.md` 仅作为索引，不应替代每个任务的实际交接记录。
+
+**边界：** 当前 `task claim/release` 使用本地文件系统的独占创建锁来协调 AIMES 命令之间的声明更新；`task validate` 本身只读。该锁不能阻止不遵守 AIMES 协议的 IDE/编辑器直接写文件，也不应被视为跨机器分布式锁。多人/多工具并行仍应使用独立分支或 worktree，并在交接前后核验 Git 状态。
+
+### 临时产物审计与工程指标
+
+```powershell
+# 只读审计临时产物，不删除文件
+aimes cleanup audit --root . --format json --output .aimes/reports/cleanup-audit.json
+
+# 仅使用当前可验证数据计算工程指标；缺少数据源时显示 UNKNOWN
+aimes metrics report --root . --format json --output .aimes/reports/metrics.json
+# 发布前检查包版本、运行时版本、README、治理核心模板和 EXE 资源收集配置
+aimes release validate --root . --format json
+
+# 提供追溯、临时产物、交接试点和审计日志数据源
+aimes metrics report --root . --trace-manifest .aimes/traceability/trace-manifest.yaml --temp-registry .aimes/temp-registry.yaml --handoff-trials .aimes/evaluations/handoff-trials.yaml --audit-log .aimes/audit/events.jsonl --format json
+```
+
+- 临时登记表示例：`examples/project-control/temp-registry.example.yaml`；Schema：`schemas/temp-registry.schema.json`。
+- `cleanup audit` 检查登记项是否存在、是否过期，并扫描常见未登记临时目录/文件；只输出候选和风险分类，不会删除。
+- `metrics report` 对应 AIMES 核心规范的 9 项工程指标。只有在数据源可验证且分母有效时才计算比率；缺少追溯、交接试点、临时登记或审计日志时，指标显示 `UNKNOWN`，不会把缺失数据当作 0 或 100%。
+- 关键功能实现/测试映射率只统计明确标记为 `critical: true` 或 `criticality: high|critical` 的功能，避免模型自行猜测关键程度。
 
 ## 5. 安全机制
 
@@ -212,6 +279,7 @@ python -m unittest discover -s tests -v
 - `examples/`：可复制的示例记录
 - `skills/registry.yaml` 与 `skills/*/SKILL.md`：首批 7 个 P0 Skills 工作流模板；初始验证状态均为 `UNKNOWN`，需在真实工具/项目中评测后更新
 - `docs/v1.3-design/`：AIMES V1.3 设计基线文档
+- `docs/governance-upgrade/TOKEN-EFFICIENCY-DESIGN-2026-10-18.md`：Token 效率原则、上下文分层加载、指标与分阶段实施建议
 
 
 ## V0.5.1：提示词与 Skill 全量优化

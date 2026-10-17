@@ -1,0 +1,44 @@
+name: AIMES CLI tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "governance/**"
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install package and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Validate release metadata and packaged resources
+        run: aimes release validate --root . --format json
+      - name: Validate Token-efficiency benchmark suite
+        run: aimes evaluation validate examples/evaluation/token-efficiency-suite.yaml
+      - name: Baseline documentation audit (advisory)
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from aimes_cli.docs_check import check_docs
+          report = check_docs(Path("."))
+          print(json.dumps({
+              "ok": report["ok"],
+              "summary": report["summary"],
+              "sample_findings": report["findings"][:50],
+          }, ensure_ascii=False, indent=2))
+          PY
