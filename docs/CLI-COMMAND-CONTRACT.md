@@ -51,7 +51,7 @@ V0.2 JSON 报告固定包含 `schema_version`、`validator`、`source`、`ok`、
 
 | 命令 | 用途 | 写入行为 | 退出码 |
 |---|---|---|---|
-| `aimes trace validate <path>` | 检查实体链接、缺失目标、重复 ID，以及 VERIFIED 状态是否引用 PASS 证据 | 只读 | 0 通过；1 校验失败 |
+| `aimes trace validate <path>` | 检查实体链接、缺失目标、重复 ID、按实体类型区分的状态词表，以及 VERIFIED 状态是否引用 PASS 证据 | 只读 | 0 通过；1 校验失败 |
 | `aimes evidence validate <path>` | 检查证据结构、命令与退出码一致性、产物路径和可选哈希 | 只读 | 0 通过；1 校验失败 |
 | `aimes context pack <manifest> --output-dir <dir>` | 生成 `context-pack.json` 和 `HANDOFF.md` | 在项目根目录内生成文件 | 0 成功；2 输入/路径错误 |
 
