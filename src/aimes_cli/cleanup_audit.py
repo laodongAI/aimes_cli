@@ -144,10 +144,15 @@ def audit_temp_registry(root: Path, registry_path: Path | None = None, *, max_sc
             _finding(findings, "ERROR", "STATUS_INVALID", f"{loc}.status must be one of {sorted(VALID_STATUSES)}.", rel)
         if not isinstance(entry.get("purpose"), str) or not entry.get("purpose", "").strip():
             _finding(findings, "ERROR", "PURPOSE_REQUIRED", f"{loc}.purpose is required.", rel)
+        created = _parse_time(entry.get("created_at"))
+        if created is None:
+            _finding(findings, "ERROR", "CREATED_AT_INVALID", f"{loc}.created_at is required and must be ISO-8601 with timezone.", rel)
         expires = _parse_time(entry.get("expires_at"))
         if entry.get("expires_at") is not None and expires is None:
             _finding(findings, "ERROR", "EXPIRY_INVALID", f"{loc}.expires_at must be ISO-8601 with timezone.", rel)
         status = entry.get("status")
+        if status in {"ACTIVE", "CLEANUP_CANDIDATE"} and expires is None:
+            _finding(findings, "WARNING", "TEMP_EXPIRY_UNKNOWN", "Active/candidate temporary items need an expiry time.", rel)
         exists = path.exists()
         if status == "REMOVED" and exists:
             _finding(findings, "WARNING", "REMOVED_PATH_STILL_EXISTS", "Entry is marked REMOVED but the path still exists.", rel)
@@ -162,6 +167,7 @@ def audit_temp_registry(root: Path, registry_path: Path | None = None, *, max_sc
             "status": status,
             "exists": exists,
             "expired": bool(expires and expires <= now and status not in {"KEEP", "REMOVED"}),
+            "expiry_known": expires is not None,
             "size_bytes": _size_bytes(path) if exists else 0,
         })
 
@@ -230,7 +236,7 @@ def _result(root: Path, registry_path: Path, findings: list[dict[str, Any]], ite
     candidates = candidates or []
     compliant = sum(
         (item.get("status") in {"KEEP", "REMOVED"} and (item.get("status") == "KEEP" and item.get("exists") or item.get("status") == "REMOVED" and not item.get("exists")))
-        or (item.get("status") in {"ACTIVE", "CLEANUP_CANDIDATE"} and item.get("exists") and not item.get("expired"))
+        or (item.get("status") in {"ACTIVE", "CLEANUP_CANDIDATE"} and item.get("exists") and item.get("expiry_known") and not item.get("expired"))
         for item in registered
     )
     total = len(registered) + sum(not item.get("registered") for item in candidates)
