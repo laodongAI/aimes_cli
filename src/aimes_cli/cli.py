@@ -272,7 +272,7 @@ def interactive_wizard():
             continue
         if command == "upgrade":
             try:
-                run_upgrade_wizard(root)
+                run_upgrade_wizard(Path.cwd().resolve())
             except (ValueError, OSError, EOFError, KeyboardInterrupt) as exc:
                 print(f"升级已取消或失败：{exc}")
             continue
