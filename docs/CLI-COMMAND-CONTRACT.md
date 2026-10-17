@@ -124,3 +124,15 @@ V0.4 的 `evaluation` 命令不执行 AI 任务或命令。运行记录由实际
 | `aimes docs check [--root PATH]` | 检查 Markdown 本地链接、已配置工具入口是否存在，以及原生薄入口的核心引用/行数限制 | 只读；仅通过 `--output` 保存报告 | 0 通过；1 校验发现错误；2 参数或读取错误 |
 
 该命令当前实现于治理升级开发分支，尚未合并到主分支。手动适配说明文件只检查存在性，不按原生薄规则入口执行行数限制。文档检查不证明 IDE 已在运行时加载规则；运行时加载仍须通过 `adapter validate/report` 的独立证据流程验收。
+
+
+## V0.7.9 任务所有权与范围校验
+
+| 命令 | 用途 | 写入行为 | 退出码 |
+|---|---|---|---|
+| `aimes task validate [<active-writer.yaml>]` | 校验活动写入者声明、工具 ID、时间租约、分支、基线提交与变更文件范围 | 只读 | 0 通过（允许 WARNING）；1 校验错误；2 参数/读取错误 |
+| `aimes task validate --require-active` | 在需要开始受治理写入前，要求存在未过期的 ACTIVE 声明 | 只读 | 缺失/过期/非 ACTIVE 时返回 1 |
+
+声明 Schema：`schemas/active-writer.schema.json`；示例：`examples/project-control/active-writer.example.yaml`。任务交接模板：`docs/templates/TASK-HANDOFF-TEMPLATE.md`。任务控制文件路径不计入业务变更范围；其它未在 `allowed_paths` 中登记的变更会报告为错误。无 Git 仓库时会明确提示无法执行分支、基线与范围核验。
+
+此命令不是原子锁服务，不会自动取得或释放写权限，也不自动接管过期任务。写入权切换仍需责任人确认；需要并行工作时应使用独立 worktree/分支。
