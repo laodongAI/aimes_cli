@@ -3,9 +3,20 @@ import hashlib, json
 from pathlib import Path
 from typing import Any
 import yaml
+from .validators import GLOBAL_STATUSES, KNOWLEDGE_MATURITY
 
 VALID_ENTITY_TYPES = {"requirement", "knowledge", "reuse_decision", "task", "implementation", "test", "release", "skill"}
 VALID_EVIDENCE_KINDS = {"command", "test", "build", "review", "artifact", "manual"}
+ENTITY_STATUS_VOCABULARY = {
+    "knowledge": KNOWLEDGE_MATURITY,
+    "requirement": GLOBAL_STATUSES,
+    "reuse_decision": GLOBAL_STATUSES,
+    "task": GLOBAL_STATUSES,
+    "implementation": GLOBAL_STATUSES,
+    "test": GLOBAL_STATUSES,
+    "release": GLOBAL_STATUSES,
+    "skill": GLOBAL_STATUSES,
+}
 
 def _load(path: Path) -> Any:
     if not path.is_file(): raise ValueError(f"Input file does not exist or is not a file: {path}")
@@ -67,9 +78,20 @@ def validate_trace(path: Path, root: Path | None = None) -> dict:
         if not isinstance(eid,str) or not eid.strip(): _add(fs,"ERROR","ID_REQUIRED",f"entities[{i}].id is required"); continue
         if eid in ids: _add(fs,"ERROR","DUPLICATE_ID",f"Duplicate entity id: {eid}")
         ids[eid]=e
-        if e.get("type") not in VALID_ENTITY_TYPES: _add(fs,"ERROR","ENTITY_TYPE",f"{eid}: unsupported type {e.get('type')!r}")
-        if not isinstance(e.get("links",[]),list): _add(fs,"ERROR","LINKS_TYPE",f"{eid}.links must be a list")
-        if not isinstance(e.get("status","UNKNOWN"),str): _add(fs,"ERROR","STATUS_TYPE",f"{eid}.status must be a string")
+        entity_type = e.get("type")
+        if entity_type not in VALID_ENTITY_TYPES:
+            _add(fs,"ERROR","ENTITY_TYPE",f"{eid}: unsupported type {entity_type!r}")
+        if not isinstance(e.get("links",[]),list):
+            _add(fs,"ERROR","LINKS_TYPE",f"{eid}.links must be a list")
+        status = e.get("status","UNKNOWN")
+        if not isinstance(status,str):
+            _add(fs,"ERROR","STATUS_TYPE",f"{eid}.status must be a string")
+        elif entity_type in ENTITY_STATUS_VOCABULARY and status not in ENTITY_STATUS_VOCABULARY[entity_type]:
+            _add(fs,"ERROR","INVALID_STATUS",f"{eid}: status {status!r} is not valid for entity type {entity_type!r}")
+        if "evidence_refs" in e:
+            refs = e.get("evidence_refs")
+            if not isinstance(refs,list) or any(not isinstance(ref,str) or not ref.strip() for ref in refs):
+                _add(fs,"ERROR","EVIDENCE_REFS_TYPE",f"{eid}.evidence_refs must be a list of non-empty evidence IDs")
     for e in entities:
         if not isinstance(e,dict) or not isinstance(e.get("id"),str): continue
         eid=e["id"]
@@ -82,8 +104,11 @@ def validate_trace(path: Path, root: Path | None = None) -> dict:
             elif not data.get("evidence_file"):
                 _add(fs,"ERROR","EVIDENCE_FILE_REQUIRED",f"{eid} is VERIFIED but manifest has no evidence_file")
     evidence_path=None
-    if data.get("evidence_file"):
-        rel=data["evidence_file"]; evidence_path=(root/rel).resolve()
+    evidence_file = data.get("evidence_file")
+    if evidence_file is not None and (not isinstance(evidence_file,str) or not evidence_file.strip()):
+        _add(fs,"ERROR","EVIDENCE_FILE_TYPE","evidence_file must be a non-empty project-relative path string")
+    elif isinstance(evidence_file,str) and evidence_file.strip():
+        rel=evidence_file; evidence_path=(root/rel).resolve()
         try: evidence_path.relative_to(root)
         except ValueError: _add(fs,"ERROR","PATH_ESCAPE","evidence_file escapes project root"); evidence_path=None
         if evidence_path and not evidence_path.is_file(): _add(fs,"ERROR","EVIDENCE_FILE_NOT_FOUND",f"Evidence file not found: {rel}"); evidence_path=None
@@ -101,6 +126,8 @@ def validate_trace(path: Path, root: Path | None = None) -> dict:
                 evitem=evidence_by_id.get(ref)
                 if not evitem: _add(fs,"ERROR","EVIDENCE_REF_NOT_FOUND",f"{e.get('id')} references missing evidence {ref!r}")
                 elif evitem.get("result")!="PASS": _add(fs,"ERROR","VERIFIED_EVIDENCE_NOT_PASS",f"{e.get('id')} references evidence {ref!r} whose result is not PASS")
+    if "context_files" in data and not isinstance(data.get("context_files"),list):
+        _add(fs,"ERROR","CONTEXT_FILES_TYPE","context_files must be a list of project-relative path strings")
     for item in data.get("context_files",[]) if isinstance(data.get("context_files",[]),list) else []:
         if not isinstance(item,str): _add(fs,"ERROR","CONTEXT_FILE_TYPE","context_files entries must be path strings"); continue
         p=(root/item).resolve()
