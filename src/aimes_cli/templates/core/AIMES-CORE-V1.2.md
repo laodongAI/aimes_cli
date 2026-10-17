@@ -882,29 +882,33 @@ temporary_items:
 
 ## 11. 自动化治理工具接口
 
-本规范定义目标命令和行为；在实际实现之前，这些命令**只是设计约定，不代表当前已可运行**。
+本节同时记录当前已实现命令与后续目标命令。表中状态以当前 AIMES CLI 源码、自动化测试和 CI 证据为准；外部 IDE 的真实规则加载仍需独立运行时验收。
 
-建议 CLI 名称：`aimes`。也可先用 `pnpm`、`uv run`、`python scripts/...`
-等项目现有方式承载，避免早期为 CLI 包装投入过多。
+建议 CLI 名称：`aimes`。应优先复用现有 CLI 与校验模块，避免在项目内重复建设同类检查器。
 
-### 11.1 目标命令
+### 11.1 命令与当前实现边界
 
-以下是目标接口，不代表当前已实现或可运行。实现前应使用人工等效流程，并明确记录。
-
-| 命令 | 目标行为 | 安全等级 |
-|---|---|---|
-| `aimes init` | 检查项目并生成最小治理骨架，不覆盖现有文件 | 低风险，但须预览 |
-| `aimes project report` | 输出模块、任务、质量和追溯概览 | 只读 |
-| `aimes docs check` | 检查文档头部、必需章节、内部链接和状态字段 | 只读 |
-| `aimes trace check` | 检查 ID 唯一性、悬空引用、关键关系缺失和代码路径 | 只读 |
-| `aimes task create` | 创建带 ID、范围和验收标准的任务文件 | 写入新文件 |
-| `aimes task handoff` | 生成交接草稿并核对路径 | 写入新文件 |
-| `aimes task resume` | 基于任务和仓库状态生成恢复上下文 | 只读/生成草稿 |
-| `aimes cleanup audit` | 输出清理候选和风险分类 | 只读 |
-| `aimes cleanup safe` | 清理已登记且符合安全条件的 A 级文件 | 受控删除，需授权与预览 |
-| `aimes cleanup review` | 输出需要人工确认的候选清单 | 只读 |
-| `aimes verify` | 运行项目配置的检查、测试和构建 | 执行命令，需白名单 |
-| `aimes report` | 汇总状态、证据、追溯和文档健康度 | 只读 |
+| 命令 | 行为 | 安全等级 | 当前状态 |
+|---|---|---|---|
+| `aimes init` | 检查项目并生成最小治理骨架，不覆盖现有文件 | 低风险，但须预览 | 已实现 |
+| `aimes docs check` | 检查 Markdown 本地链接、配置入口存在性和原生薄入口约束 | 只读 | 已实现 |
+| `aimes trace validate` | 检查实体 ID、状态词表、悬空引用、证据关系和路径边界 | 只读 | 已实现 |
+| `aimes evidence validate` | 检查证据结构、产物路径和可选 SHA-256 | 只读 | 已实现 |
+| `aimes task validate` | 检查写入者声明、租约、分支、基线和变更范围 | 只读 | 已实现 |
+| `aimes task claim` | 在显式确认后声明任务写入权，拒绝覆盖未过期的活动租约 | 写入控制文件；独占本地锁 | 已实现，不能阻止不遵守 AIMES 的编辑器 |
+| `aimes task release` | 校验任务身份与完整交接文件后释放写入声明 | 更新控制文件 | 已实现 |
+| `aimes cleanup audit` | 检查登记项、过期项和常见未登记临时产物 | 只读 | 已实现 |
+| `aimes metrics report` | 根据可验证数据源计算工程指标，缺失数据返回 UNKNOWN | 只读 | 已实现 |
+| `aimes release validate` | 检查包/运行时/README/治理核心与打包资源兼容性 | 只读 | 已实现 |
+| `aimes adapter validate/report` | 校验并汇总工具规则加载证据 | 只读 | 已实现；不自动探测 IDE 内部加载状态 |
+| `aimes context pack/validate` | 生成上下文包和交接草稿，校验源文件哈希 | 生成文件/只读校验 | 已实现 |
+| `aimes project report` | 输出模块、任务、质量和追溯概览 | 只读 | 目标能力，尚未完整实现 |
+| `aimes task create` | 创建带 ID、范围和验收标准的任务文件 | 写入新文件 | 目标能力 |
+| `aimes task handoff` | 自动生成完整交接草稿并核对路径 | 写入新文件 | 目标能力；当前提供模板与 release 校验 |
+| `aimes task resume` | 基于任务和仓库状态生成恢复上下文 | 只读/生成草稿 | 目标能力；部分能力由 context pack 提供 |
+| `aimes cleanup safe/review` | 受控清理或输出人工复核候选 | 清理需授权与预览 | 未实现；当前仅提供只读 audit |
+| `aimes verify` | 运行项目配置的检查、测试和构建 | 执行命令，需白名单 | 目标能力 |
+| `aimes report` | 汇总状态、证据、追溯和文档健康度 | 只读 | 目标能力；当前可分别生成 docs/trace/metrics 报告 |
 
 ### 11.2 脚本设计原则
 
@@ -953,7 +957,7 @@ temporary_items:
         ↓
 同步文档与追溯关系
         ↓
-执行 `docs check` / `trace check`（CLI 尚未实现时，使用人工等效核查并记录检查项）
+执行 `aimes docs check` / `aimes trace validate`，并按需执行 `aimes metrics report`
         ↓
 更新真实状态与证据
         ↓
