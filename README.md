@@ -1,4 +1,4 @@
-# AIMES 本地治理 CLI（V0.7.8）
+# AIMES 本地治理 CLI（V0.7.9）
 
 AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具。它负责把 AIMES V1.2 治理核心部署到项目仓库，生成工具专属规则入口，检查配置与冲突，并输出部署状态。它不替代 Codex、Claude Code、Trae、ZCode 或 Copilot 执行开发任务。
 
@@ -149,6 +149,21 @@ aimes docs check --root . --format json --output .aimes/reports/docs-check.json
 - 对配置中登记的工具入口检查文件是否存在；对原生薄规则入口检查权威核心引用和行数上限（默认 40 行）。
 - 手动适配说明文件只检查存在性，不会被误判为原生薄规则入口。
 - 命令只读，不自动修复或删除文件；发现错误返回退出码 1。首次接入时建议先审阅报告，再决定是否作为 CI 阻断门禁。
+
+### 活动写入者与任务交接校验
+
+```powershell
+# 检查当前项目的活动写入者声明、分支、租约和文件范围
+aimes task validate --root . --format json
+# 要求当前必须存在有效的活动写入者声明
+aimes task validate --root . --require-active --format json
+```
+
+活动写入者声明位于 `.aimes/project-control/active-writer.yaml`，格式示例见 `examples/project-control/active-writer.example.yaml`。检查器可核对任务 ID、工具 ID、分支、基线提交、租约时间、允许修改的路径，以及基线之后的已跟踪/未跟踪变更是否越界。默认没有声明时仅提示 WARNING；使用 `--require-active` 可将缺失/过期声明作为错误。
+
+任务交接使用独立文件，建议命名为 `project-control/handoffs/YYYY-MM-DD-TASK-<ID>-<tool>.md`，模板见 `docs/templates/TASK-HANDOFF-TEMPLATE.md`。全局 `HANDOFF.md` 仅作为索引，不应替代每个任务的实际交接记录。
+
+**边界：** 当前 `task validate` 是只读声明与范围校验，不是原子写锁；不能单独防止两个 IDE 同时编辑同一工作区。多人/多工具并行应使用独立分支或 worktree，并在交接前后核验 Git 状态。
 
 ## 5. 安全机制
 
