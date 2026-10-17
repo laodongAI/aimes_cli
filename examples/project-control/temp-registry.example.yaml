@@ -1,0 +1,10 @@
+schema_version: 1
+entries:
+  - id: TMP-EXAMPLE-001
+    path: .aimes/tmp/example-build-output.tmp
+    purpose: "Example temporary build output; replace with a real item"
+    owner_task_id: TASK-EXAMPLE-001
+    created_at: "2026-10-18T09:00:00+08:00"
+    expires_at: "2026-10-19T09:00:00+08:00"
+    classification: B
+    status: ACTIVE
