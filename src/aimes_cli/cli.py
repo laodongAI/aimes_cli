@@ -22,6 +22,7 @@ from .cleanup_audit import audit_temp_registry
 from .metrics import build_metrics_report
 from .release_check import validate_release
 from .upgrade import plan_upgrade, apply_upgrade
+from .repair import build_repair_plan, apply_safe_repairs
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -57,6 +58,11 @@ def parser() -> argparse.ArgumentParser:
     for name, helptext in [('inspect','Inspect project and existing rule files'),('validate','Validate AIMES configuration and managed files'),('doctor','Check local tool executable availability'),('status','Show governance deployment status'),('diff','Show a deployment preview')]:
         sp=sub.add_parser(name,help=helptext); common(sp)
         if name=='diff': sp.add_argument('--tools', default='trae-code,vscode-codex,vscode-claude-code,vscode-copilot,zcode,qcode,claude-code,codex-cli')
+    repair = sub.add_parser('repair', help='Diagnose findings, preview remediation options, or safely auto-repair known issues')
+    common(repair)
+    repair.add_argument('--apply', action='store_true', help='Apply safe repairs; default is plan-only')
+    repair.add_argument('--confirm', help='Must be REPAIR (case-insensitive) with --apply')
+    repair.add_argument('--tools', help='Required if AIMES is not configured; comma-separated tool adapter IDs')
     task = sub.add_parser('task', help='Task ownership and change-scope governance')
     task_sub = task.add_subparsers(dest='task_command', required=True)
     task_validate = task_sub.add_parser('validate', help='Validate active-writer declaration, lease, branch and changed-file scope')
@@ -557,6 +563,14 @@ def main(argv=None):
     args=parser().parse_args(argv)
     root=(getattr(args, 'root', None) or find_root()).resolve()
     try:
+        if args.command == 'repair':
+            if args.apply:
+                result = apply_safe_repairs(root, confirm=args.confirm, tools=args.tools)
+            else:
+                result = build_repair_plan(root)
+                result['apply_hint'] = 'Review the options above, then rerun with --apply --confirm REPAIR; add --tools when .aimes/config.yaml is missing.'
+            emit(result, args.format, args.output)
+            return 0 if result.get('ok', False) else (1 if not args.apply else 2)
         if args.command == 'publish':
             return run_publish_wizard(args)
         if args.command == 'upgrade':
