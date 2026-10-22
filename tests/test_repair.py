@@ -54,6 +54,16 @@ class RepairPlanTests(unittest.TestCase):
         self.assertTrue((self.root / ".aimes/proposed/AGENTS.md.proposed").is_file())
         self.assertGreater(result["remaining_issue_count"], 0)
 
+    def test_unsupported_schema_blocks_auto_repair_without_writes(self):
+        init_project(self.root, ["codex-cli"])
+        config_path = self.root / ".aimes/config.yaml"
+        original = config_path.read_text(encoding="utf-8")
+        config_path.write_text(original.replace("schema_version: 1", "schema_version: 999", 1), encoding="utf-8")
+        changed = config_path.read_text(encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "SCHEMA_UNSUPPORTED"):
+            apply_safe_repairs(self.root, confirm="REPAIR")
+        self.assertEqual(config_path.read_text(encoding="utf-8"), changed)
+
     def test_unknown_manual_adapter_is_reported_not_auto_verified(self):
         init_project(self.root, ["zcode"])
         plan = build_repair_plan(self.root)
