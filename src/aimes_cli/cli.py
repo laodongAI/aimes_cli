@@ -9,6 +9,7 @@ from .v03 import validate_trace, validate_evidence, build_context_pack
 from .evaluation import validate_suite, validate_run, build_run_report, compare_runs
 from .v05 import validate_adapter_evidence, adapter_report, validate_context_pack
 from .skill_execution import validate_skill_execution
+from .workflow import validate_workflow_definition
 from .mock_runner import run_mock
 from .audit import append_event, validate_audit
 from .publish import publish_project
@@ -122,6 +123,10 @@ def parser() -> argparse.ArgumentParser:
     skill_execution_sub = skill_execution.add_subparsers(dest='skill_execution_command', required=True)
     skill_execution_validate = skill_execution_sub.add_parser('validate', help='Validate a structured Skill execution record; does not execute the Skill')
     common(skill_execution_validate); skill_execution_validate.add_argument('path', type=Path)
+    workflow = sub.add_parser('workflow', help='Declarative workflow state machine operations')
+    workflow_sub = workflow.add_subparsers(dest='workflow_command', required=True)
+    workflow_validate = workflow_sub.add_parser('validate', help='Validate workflow states, transitions, failure paths, and retry policy; does not execute the workflow')
+    common(workflow_validate); workflow_validate.add_argument('path', type=Path)
     trace = sub.add_parser('trace', help='End-to-end engineering traceability operations')
     trace_sub = trace.add_subparsers(dest='trace_command', required=True)
     trace_validate = trace_sub.add_parser('validate', help='Validate trace links and VERIFIED evidence gates')
@@ -548,6 +553,11 @@ def main(argv=None):
         if args.command == 'reuse':
             target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
             result = validate_reuse(target)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'workflow' and args.workflow_command == 'validate':
+            target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
+            result = validate_workflow_definition(target)
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'skill':
