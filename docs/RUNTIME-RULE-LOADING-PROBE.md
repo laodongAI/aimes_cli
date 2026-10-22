@@ -13,26 +13,32 @@
 
 ## 1. 创建探针
 
-在已安装最新 AIMES CLI 的终端中执行。版本字段必须填写实际工具版本，不要使用示例值：
+在已安装最新 AIMES CLI 的终端中执行。**建议使用位于真实项目之外的独立临时目录作为 root**，避免父级业务项目中的 AGENTS.md、CLAUDE.md 或其他规则影响探针结果。版本字段必须填写实际工具版本：
 
-    aimes adapter probe create --tool codex-cli --product-version "<实际 codex --version 输出>" --output-dir .aimes/probes/codex-cli --root . --format json
+```powershell
+$probeRoot = Join-Path $env:TEMP "aimes-runtime-probe"
+New-Item -ItemType Directory -Force -Path $probeRoot | Out-Null
 
-    aimes adapter probe create --tool claude-code --product-version "<实际 claude --version 输出>" --output-dir .aimes/probes/claude-code --root . --format json
+# Codex CLI
+aimes adapter probe create --tool codex-cli --product-version "$(codex --version)" --output-dir codex-cli --root $probeRoot --format json
 
-探针输出目录若已存在，AIMES 会拒绝覆盖。请保留每次探针的目录和原始结果，不要重复使用旧探针目录。
+# Claude Code CLI：使用另一个独立子目录
+aimes adapter probe create --tool claude-code --product-version "$(claude --version)" --output-dir claude-code --root $probeRoot --format json
+```
+
+如果命令显示输出目录已存在，请先保留旧探针证据，再使用新的独立目录（例如 codex-cli-2）重测。不要覆盖旧探针。
 
 ## 2. 在真实 CLI 中执行
 
-以 Codex CLI 为例：
+以 Codex CLI 为例，在同一 PowerShell 窗口中执行：
 
-1. 打开一个新的 PowerShell 终端。
-2. 进入 .aimes/probes/codex-cli 目录。
-3. 启动正常的 Codex CLI 命令。
-4. 创建新会话，不要复用已有对话。
-5. 将 PROMPT.txt 的完整内容作为用户消息发送。
-6. 将助手的完整原始回复保存为该目录下的 response.txt，不要改写、删减或自行补入 token。
+1. 进入独立探针目录：`Set-Location (Join-Path $probeRoot "codex-cli")`。
+2. 启动正常的 Codex CLI 命令。
+3. 创建新会话，不要复用已有对话。
+4. 将 PROMPT.txt 的完整内容作为用户消息发送。
+5. 将助手的完整原始回复保存为当前目录下的 response.txt，不要改写、删减或自行补入 token。
 
-Claude Code 同理，在 CLAUDE.md 所在目录启动 claude，并在新会话中执行提示。
+Claude Code 同理，进入 `Join-Path $probeRoot "claude-code"` 后启动 claude，并在新会话中执行提示。
 
 如果工具没有读取规则、返回解释文字、输出 Markdown 包装、响应 token 不一致，或无法确认是新会话，应保留原始响应并记录失败/阻塞，不要手动修成 PASS。
 
@@ -40,10 +46,10 @@ Claude Code 同理，在 CLAUDE.md 所在目录启动 claude，并在新会话�
 
 从项目根目录执行：
 
-    aimes adapter probe validate .aimes/probes/codex-cli --root . --format json
-    aimes adapter validate .aimes/probes/codex-cli/verification-evidence.yaml --root . --format json
+    aimes adapter probe validate codex-cli --root $probeRoot --format json
+    aimes adapter validate codex-cli/verification-evidence.yaml --root $probeRoot --format json
 
-Claude Code 对应使用 .aimes/probes/claude-code 路径。
+Claude Code 对应将命令中的 codex-cli 替换为 claude-code。验证命令可从任意当前目录执行，但必须传入相同的 --root $probeRoot。
 
 验证命令会：
 
