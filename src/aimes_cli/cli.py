@@ -606,8 +606,6 @@ def main(argv=None):
                 result = inspect_patch(root, args.repair_id)
             elif args.repair_code_command == 'diagnose':
                 result = diagnose_command(root, diagnostic_id=args.diagnostic_id, test_argv_json=args.test_argv_json, timeout_seconds=args.timeout_seconds)
-            elif args.repair_code_command == 'inspect':
-                result = inspect_patch(root, args.repair_id)
             elif args.repair_code_command == 'propose':
                 patch_file = (root / args.patch_file).resolve() if not args.patch_file.is_absolute() else args.patch_file.resolve()
                 result = propose_patch(root, patch_file, repair_id=args.repair_id, finding=args.finding, rationale=args.rationale)
