@@ -17,7 +17,7 @@ def validate_adapter_evidence(path: Path, root: Path | None = None) -> dict:
         _add(fs,"ERROR","ROOT_SHAPE","Adapter evidence must be an object with a checks list")
         return _report("adapter-evidence",path,fs,checked_checks=0)
     schema_version = data.get("schema_version", 1)
-    if schema_version not in VALID_SCHEMA_VERSIONS:
+    if isinstance(schema_version, bool) or not isinstance(schema_version, int) or schema_version not in VALID_SCHEMA_VERSIONS:
         _add(fs, "ERROR", "SCHEMA_VERSION", f"schema_version must be one of {sorted(VALID_SCHEMA_VERSIONS)}")
         schema_version = 1
     seen=set(); checked=0
@@ -29,23 +29,27 @@ def validate_adapter_evidence(path: Path, root: Path | None = None) -> dict:
         elif cid in seen: _add(fs,"ERROR","DUPLICATE_ID",f"Duplicate check id: {cid}")
         else: seen.add(cid)
         tool=item.get("tool")
-        if tool not in ADAPTERS: _add(fs,"ERROR","UNKNOWN_TOOL",f"{loc}.tool must be one of {sorted(ADAPTERS)}")
-        if item.get("verification") not in VALID_VERIFICATION: _add(fs,"ERROR","VERIFICATION_STATUS",f"{loc}.verification must be one of {sorted(VALID_VERIFICATION)}")
-        if item.get("method") not in VALID_METHODS: _add(fs,"ERROR","VERIFICATION_METHOD",f"{loc}.method must be one of {sorted(VALID_METHODS)}")
-        if item.get("verification")=="PASS" and item.get("method") not in {"runtime_observation","automated_check","user_confirmed"}:
+        if not isinstance(tool, str) or tool not in ADAPTERS: _add(fs,"ERROR","UNKNOWN_TOOL",f"{loc}.tool must be one of {sorted(ADAPTERS)}")
+        verification=item.get("verification")
+        if not isinstance(verification, str) or verification not in VALID_VERIFICATION: _add(fs,"ERROR","VERIFICATION_STATUS",f"{loc}.verification must be one of {sorted(VALID_VERIFICATION)}")
+        method=item.get("method")
+        if not isinstance(method, str) or method not in VALID_METHODS: _add(fs,"ERROR","VERIFICATION_METHOD",f"{loc}.method must be one of {sorted(VALID_METHODS)}")
+        if verification=="PASS" and method not in {"runtime_observation","automated_check","user_confirmed"}:
             _add(fs,"ERROR","INSUFFICIENT_PASS_METHOD",f"{loc}: PASS requires runtime_observation, automated_check, or user_confirmed")
         context_fields = ("product_version", "execution_mode", "platform", "rule_entry", "observed_at", "observer", "case_id", "aimes_cli_version", "governance_version")
         for field in context_fields:
             missing = not isinstance(item.get(field), str) or not item[field].strip()
-            if missing and item.get("verification") == "PASS" and schema_version >= 2:
+            if missing and verification == "PASS" and schema_version >= 2:
                 _add(fs, "ERROR", "PASS_CONTEXT_FIELD_REQUIRED", f"{loc}.{field} is required for schema_version 2 PASS evidence")
             elif missing:
                 _add(fs, "WARNING", "FIELD_RECOMMENDED_MISSING", f"{loc}.{field} should be recorded")
         execution_mode = item.get("execution_mode")
-        if execution_mode is not None and execution_mode not in VALID_EXECUTION_MODES:
+        if execution_mode is not None and (not isinstance(execution_mode, str) or execution_mode not in VALID_EXECUTION_MODES):
             _add(fs, "ERROR", "EXECUTION_MODE", f"{loc}.execution_mode must be one of {sorted(VALID_EXECUTION_MODES)}")
         artifact=item.get("artifact_path")
-        if artifact:
+        if artifact is not None and not isinstance(artifact, str):
+            _add(fs, "ERROR", "ARTIFACT_PATH_TYPE", f"{loc}.artifact_path must be a project-relative string")
+        elif artifact:
             candidate=(root/artifact).resolve()
             try: candidate.relative_to(root)
             except ValueError: _add(fs,"ERROR","PATH_ESCAPE",f"{loc}.artifact_path escapes project root")
@@ -54,9 +58,9 @@ def validate_adapter_evidence(path: Path, root: Path | None = None) -> dict:
                 elif item.get("sha256"):
                     digest=hashlib.sha256(candidate.read_bytes()).hexdigest()
                     if digest.lower()!=str(item["sha256"]).lower(): _add(fs,"ERROR","HASH_MISMATCH",f"{loc} artifact SHA-256 does not match")
-        elif item.get("verification")=="PASS" and not (isinstance(item.get("evidence_note"),str) and item["evidence_note"].strip()):
+        elif verification=="PASS" and not (isinstance(item.get("evidence_note"),str) and item["evidence_note"].strip()):
             _add(fs,"WARNING","PASS_WITHOUT_ARTIFACT","PASS check should include an artifact_path or an explicit evidence_note")
-        if item.get("verification")=="PASS" and not (isinstance(item.get("evidence_note"),str) and item["evidence_note"].strip()) and not artifact:
+        if verification=="PASS" and not (isinstance(item.get("evidence_note"),str) and item["evidence_note"].strip()) and not artifact:
             _add(fs,"ERROR","PASS_WITHOUT_EVIDENCE","PASS requires artifact_path or evidence_note")
     return _report("adapter-evidence",path,fs,checked_checks=checked,check_ids=sorted(seen))
 
