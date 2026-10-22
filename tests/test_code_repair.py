@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from aimes_cli.code_repair import apply_patch, propose_patch, rollback_patch, verify_patch
+from aimes_cli.code_repair import apply_patch, inspect_patch, propose_patch, rollback_patch, verify_patch
 
 
 class CodeRepairTests(unittest.TestCase):
@@ -91,6 +91,46 @@ class CodeRepairTests(unittest.TestCase):
             rollback_patch(self.root, "fix-007", confirm="ROLLBACK-FIX")
         self.assertEqual(self.source.read_text(encoding="utf-8"), "VALUE = 99\n")
 
+
+    def test_inspect_reports_proposed_state_and_safe_next_actions(self):
+        propose_patch(self.root, self.patch_path, repair_id="fix-inspect-1", finding="TEST-INSPECT")
+        result = inspect_patch(self.root, "fix-inspect-1")
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["read_only"])
+        self.assertEqual(result["status"], "PROPOSED")
+        self.assertTrue(result["patch_integrity_ok"])
+        self.assertEqual(result["issues"], [])
+        self.assertEqual(result["next_actions"][0]["id"], "review")
+        self.assertEqual(self.source.read_text(encoding="utf-8"), "VALUE = 1\n")
+
+    def test_inspect_detects_preimage_and_patch_tampering(self):
+        propose_patch(self.root, self.patch_path, repair_id="fix-inspect-2", finding="TEST-INSPECT")
+        self.source.write_text("VALUE = 9\n", encoding="utf-8")
+        patch = self.root / ".aimes/repairs/fix-inspect-2/change.patch"
+        patch.write_text(patch.read_text(encoding="utf-8") + "# tampered\n", encoding="utf-8")
+        result = inspect_patch(self.root, "fix-inspect-2")
+        self.assertFalse(result["patch_integrity_ok"])
+        self.assertIn("PATCH_HASH_MISMATCH", {issue["code"] for issue in result["issues"]})
+        self.assertIn("PREIMAGE_CHANGED", {issue["code"] for issue in result["issues"]})
+
+    def test_inspect_after_verification_points_to_acceptance_not_false_completion(self):
+        propose_patch(self.root, self.patch_path, repair_id="fix-inspect-3", finding="TEST-INSPECT")
+        apply_patch(self.root, "fix-inspect-3", confirm="APPLY-FIX")
+        verify_patch(self.root, "fix-inspect-3", test_argv_json=json.dumps([sys.executable, "-c", "raise SystemExit(0)"]))
+        result = inspect_patch(self.root, "fix-inspect-3")
+        self.assertEqual(result["status"], "VERIFIED")
+        self.assertTrue(any(item["id"] == "acceptance" for item in result["next_actions"]))
+        self.assertIn("不代表任务最终验收通过", result["note"])
+
+
+    def test_inspect_after_rollback_confirms_original_baseline(self):
+        propose_patch(self.root, self.patch_path, repair_id="fix-inspect-rollback", finding="TEST-ROLLBACK")
+        apply_patch(self.root, "fix-inspect-rollback", confirm="APPLY-FIX")
+        rollback_patch(self.root, "fix-inspect-rollback", confirm="ROLLBACK-FIX")
+        result = inspect_patch(self.root, "fix-inspect-rollback")
+        self.assertEqual(result["status"], "ROLLED_BACK")
+        self.assertTrue(result["ok"], result["issues"])
+        self.assertTrue(all(item["matches_expected"] for item in result["touched_paths"]))
 
 if __name__ == "__main__":
     unittest.main()
