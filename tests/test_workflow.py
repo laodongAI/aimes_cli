@@ -51,7 +51,7 @@ class WorkflowDefinitionTests(unittest.TestCase):
 
     def test_nonterminal_state_requires_failure_path(self):
         data = self.example
-        data["transitions"] = [t for t in data["transitions"] if not (t["from"] == "intake" and t["on"] == "failure")]
+        data["transitions"] = [t for t in data["transitions"] if not (t["from"] == "intake" and t["on"] in {"failure", "blocked", "cancelled"})]
         result = validate_workflow_definition(self.write_workflow(data))
         self.assertIn("FAILURE_TRANSITION_REQUIRED", {item["code"] for item in result["findings"]})
 
