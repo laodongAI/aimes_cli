@@ -100,7 +100,20 @@ def _manifest_path(root: Path, repair_id: str) -> Path:
 
 
 def _load_manifest(root: Path, repair_id: str) -> tuple[dict[str, Any], Path]:
+    root = root.resolve()
     manifest_path = _manifest_path(root, repair_id)
+    folder = manifest_path.parent
+    cursor = root
+    for part in (".aimes", "repairs", repair_id):
+        cursor = cursor / part
+        if cursor.is_symlink():
+            raise ValueError(f"修复提案路径包含符号链接，拒绝读取：{cursor}")
+    if manifest_path.is_symlink():
+        raise ValueError(f"修复提案清单是符号链接，拒绝读取：{manifest_path}")
+    try:
+        folder.resolve().relative_to(root)
+    except ValueError as exc:
+        raise ValueError("修复提案目录越过项目根目录") from exc
     if not manifest_path.is_file():
         raise ValueError(f"找不到修复提案：{repair_id}")
     try:
@@ -417,9 +430,14 @@ def inspect_patch(root: Path, repair_id: str) -> dict[str, Any]:
     manifest, folder = _load_manifest(root, repair_id)
     status = manifest.get("status", "UNKNOWN")
     issues: list[dict[str, str]] = []
-    patch_path = folder / manifest.get("patch_file", "change.patch")
+    patch_file = manifest.get("patch_file", "change.patch")
+    patch_path = folder / "change.patch"
     patch_hash_ok = False
-    if patch_path.is_file():
+    if patch_file != "change.patch":
+        issues.append({"code": "PATCH_PATH_INVALID", "path": str(patch_file), "message": "提案清单中的补丁路径不是受支持的 change.patch，拒绝读取任意路径。"})
+    elif patch_path.is_symlink():
+        issues.append({"code": "PATCH_PATH_SYMLINK", "path": str(patch_path), "message": "补丁文件是符号链接，拒绝读取。"})
+    elif patch_path.is_file():
         patch_hash_ok = _sha(patch_path.read_bytes()) == manifest.get("patch_sha256")
         if not patch_hash_ok:
             issues.append({"code": "PATCH_HASH_MISMATCH", "path": str(patch_path), "message": "补丁内容与提案记录的 SHA-256 不一致。"})
