@@ -2,7 +2,7 @@
 
 ## 1. 目标和边界
 
-工作流定义描述允许的状态、转换、审批要求、失败恢复和重试策略。V1 提供只读定义校验；它不会执行 AI 工具、保存运行状态、自动批准操作或自动恢复失败步骤。
+工作流定义描述允许的状态、转换、审批要求、失败恢复和重试策略。V1 提供只读定义校验，以及需要显式确认的本地运行记录创建/状态转换。它不会执行 AI 工具或自动批准操作；状态转换必须由操作者提交事件与审批/守卫证据。
 
 定义文件示例：`examples/workflows/engineering-workflow.example.yaml`。
 
@@ -50,7 +50,23 @@ aimes workflow validate examples/workflows/engineering-workflow.example.yaml --r
 
 JSON Schema：`schemas/workflow-definition.schema.json`；打包副本位于 `src/aimes_cli/schemas/workflow-definition.schema.json`。CI 校验示例定义。
 
-## 5. 当前限制和后续
+## 5. 本地运行记录与状态转换
+
+命令支持：
+
+```powershell
+aimes workflow run start examples/workflows/engineering-workflow.example.yaml --record .aimes/workflows/runs/task-001.json --run-id TASK-001-RUN-1 --task-id TASK-001 --baseline-commit <commit-sha> --confirm START --root . --format json
+aimes workflow run validate examples/workflows/engineering-workflow.example.yaml .aimes/workflows/runs/task-001.json --root . --format json
+aimes workflow run transition examples/workflows/engineering-workflow.example.yaml .aimes/workflows/runs/task-001.json --event success --approval-ref APPROVAL-001 --evidence-ref EVIDENCE-001 --confirm TRANSITION --root . --format json
+```
+
+- 启动需要 `START` 确认；转换需要 `TRANSITION` 确认，均大小写不敏感。
+- 已存在的运行记录不会被覆盖；每次成功转换前会将旧记录备份到 `.aimes/backups/workflow-runs/<run-id>/`，然后原子更新运行记录。
+- 运行记录保存工作流定义 SHA-256；定义发生变化时，验证器会阻止继续转换，需先审查并明确处理旧运行记录。
+- 进入要求审批的状态时必须提供 `--approval-ref`；守卫转换和 guarded 重试必须提供 `--guard-evidence`。
+- 转换只记录状态，不运行外部命令。`evidence-ref` 必须指向实际存在且可复核的外部证据；CLI 不会替用户生成该证据。
+
+## 6. 当前限制和后续
 
 当前能力只检查定义结构和图的一致性。它还不会：
 

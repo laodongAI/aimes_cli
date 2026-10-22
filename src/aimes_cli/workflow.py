@@ -111,6 +111,7 @@ def validate_workflow_definition(path: Path) -> dict:
         transitions = []
     allowed_transition = {"from", "to", "on", "guard"}
     seen_transitions: set[tuple[str, str, str]] = set()
+    seen_source_events: set[tuple[str, str]] = set()
     outgoing: dict[str, list[dict]] = {sid: [] for sid in state_by_id}
     adjacency: dict[str, set[str]] = {sid: set() for sid in state_by_id}
     for i, transition in enumerate(transitions):
@@ -131,9 +132,13 @@ def validate_workflow_definition(path: Path) -> dict:
             _add(findings, "ERROR", "TRANSITION_EVENT", f"{loc}.on must be one of {sorted(VALID_TRANSITION_EVENTS)}")
             continue
         signature = (source, target, event)
+        source_event = (source, event)
         if signature in seen_transitions:
             _add(findings, "ERROR", "DUPLICATE_TRANSITION", f"Duplicate transition: {source} -> {target} on {event}")
+        if source_event in seen_source_events and signature not in seen_transitions:
+            _add(findings, "ERROR", "AMBIGUOUS_TRANSITION", f"State {source} has more than one target for event {event}; V1 requires each state/event pair to select exactly one target")
         seen_transitions.add(signature)
+        seen_source_events.add(source_event)
         if state_by_id[source].get("terminal_outcome") is not None:
             _add(findings, "ERROR", "TERMINAL_HAS_OUTGOING", f"Terminal state {source} cannot have outgoing transitions")
         if source == target and event != "retry":

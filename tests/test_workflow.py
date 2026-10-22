@@ -79,6 +79,12 @@ class WorkflowDefinitionTests(unittest.TestCase):
         self.assertIn("TRANSITION_SOURCE", codes)
         self.assertIn("TERMINAL_OUTCOME", codes)
 
+    def test_ambiguous_state_event_routes_are_rejected(self):
+        data = self.example
+        data["transitions"].append({"from": "intake", "to": "success", "on": "success"})
+        result = validate_workflow_definition(self.write_workflow(data))
+        self.assertIn("AMBIGUOUS_TRANSITION", {item["code"] for item in result["findings"]})
+
     def test_cli_validates_workflow_example(self):
         repo_root = Path(__file__).resolve().parents[1]
         output = io.StringIO()
