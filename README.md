@@ -26,6 +26,7 @@ aimes repair --apply --confirm REPAIR --tools codex-cli --root . --format json
 AIMES 支持对 AI 编码工具生成的业务代码补丁进行受控处理：创建提案不会修改业务文件；显式确认后才应用，保存备份，并可运行指定测试、记录结果和安全回滚。
 
 ```powershell
+aimes repair-code diagnose --id diag-001 --test-argv-json '["python","-m","unittest","discover","-s","tests"]' --root . --format json
 aimes repair-code propose candidate.patch --id fix-001 --finding "TEST-42" --root . --format json
 aimes repair-code apply fix-001 --confirm APPLY-FIX --root . --format json
 aimes repair-code verify fix-001 --test-argv-json '["python","-m","unittest","discover","-s","tests"]' --root . --format json
