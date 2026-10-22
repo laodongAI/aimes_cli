@@ -132,5 +132,45 @@ class CodeRepairTests(unittest.TestCase):
         self.assertTrue(result["ok"], result["issues"])
         self.assertTrue(all(item["matches_expected"] for item in result["touched_paths"]))
 
+
+    def _symlink_or_skip(self, link: Path, target: Path, *, target_is_directory: bool = False):
+        try:
+            link.symlink_to(target, target_is_directory=target_is_directory)
+        except (OSError, NotImplementedError) as exc:
+            self.skipTest(f"当前环境不支持创建符号链接：{exc}")
+
+    def test_inspect_rejects_diagnostic_report_symlink(self):
+        propose_patch(self.root, self.patch_path, repair_id="fix-diag-symlink", finding="diag-secret")
+        diagnostics = self.root / ".aimes/repairs/diagnostics"
+        diagnostics.mkdir(parents=True)
+        outside = self.root.parent / (self.root.name + "-outside-diagnostic.json")
+        outside.write_text(json.dumps({
+            "diagnostic_id": "outside-secret",
+            "status": "FAIL",
+            "finding": {"code": "OUTSIDE_SECRET"},
+        }), encoding="utf-8")
+        self.addCleanup(lambda: outside.unlink(missing_ok=True))
+        self._symlink_or_skip(diagnostics / "diag-secret.json", outside)
+        result = inspect_patch(self.root, "fix-diag-symlink")
+        self.assertIn("DIAGNOSTIC_PATH_UNSAFE", {item["code"] for item in result["issues"]})
+        self.assertIsNone(result["diagnostic"])
+
+    def test_inspect_rejects_diagnostic_directory_symlink(self):
+        propose_patch(self.root, self.patch_path, repair_id="fix-diag-dir-symlink", finding="diag-secret")
+        repairs = self.root / ".aimes/repairs"
+        external_dir = self.root.parent / (self.root.name + "-outside-diagnostics")
+        external_dir.mkdir()
+        (external_dir / "diag-secret.json").write_text(json.dumps({
+            "diagnostic_id": "outside-secret",
+            "status": "FAIL",
+            "finding": {"code": "OUTSIDE_SECRET"},
+        }), encoding="utf-8")
+        self.addCleanup(lambda: external_dir.rmdir() if external_dir.exists() else None)
+        self.addCleanup(lambda: (external_dir / "diag-secret.json").unlink(missing_ok=True))
+        self._symlink_or_skip(repairs / "diagnostics", external_dir, target_is_directory=True)
+        result = inspect_patch(self.root, "fix-diag-dir-symlink")
+        self.assertIn("DIAGNOSTIC_PATH_UNSAFE", {item["code"] for item in result["issues"]})
+        self.assertIsNone(result["diagnostic"])
+
 if __name__ == "__main__":
     unittest.main()

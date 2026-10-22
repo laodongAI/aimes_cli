@@ -477,18 +477,39 @@ def inspect_patch(root: Path, repair_id: str) -> dict[str, Any]:
     finding = manifest.get("finding", "")
     if isinstance(finding, str) and ID_RE.fullmatch(finding):
         report_path = root / REPAIR_DIR / "diagnostics" / f"{finding}.json"
-        if report_path.is_file():
+        # Diagnostics are auxiliary metadata, but must obey the same root-boundary
+        # policy as repair manifests. Check every component before any file read.
+        unsafe_report_path = False
+        cursor = root
+        try:
+            for part in (".aimes", "repairs", "diagnostics", f"{finding}.json"):
+                cursor = cursor / part
+                if cursor.is_symlink():
+                    raise ValueError(f"关联诊断路径包含符号链接：{cursor}")
+            resolved_report = report_path.resolve()
+            resolved_report.relative_to(root)
+        except (OSError, ValueError) as exc:
+            unsafe_report_path = True
+            issues.append({
+                "code": "DIAGNOSTIC_PATH_UNSAFE",
+                "path": str(report_path),
+                "message": f"关联诊断路径不安全，拒绝读取：{exc}",
+            })
+        if not unsafe_report_path and report_path.is_file():
             try:
                 report = json.loads(report_path.read_text(encoding="utf-8"))
+                if not isinstance(report, dict):
+                    raise json.JSONDecodeError("诊断报告根节点必须是 JSON 对象", "", 0)
+                report_finding = report.get("finding")
                 diagnostic = {
                     "diagnostic_id": report.get("diagnostic_id", finding),
                     "status": report.get("status"),
-                    "finding_code": (report.get("finding") or {}).get("code"),
+                    "finding_code": report_finding.get("code") if isinstance(report_finding, dict) else None,
                     "report_path": str(report_path),
                 }
             except (OSError, json.JSONDecodeError):
-                issues.append({"code": "DIAGNOSTIC_REPORT_INVALID", "path": str(report_path), "message": "关联诊断报告无法读取。"})
-        else:
+                issues.append({"code": "DIAGNOSTIC_REPORT_INVALID", "path": str(report_path), "message": "关联诊断报告无法读取或格式无效。"})
+        elif not unsafe_report_path:
             diagnostic = {"diagnostic_id": finding, "status": "NOT_FOUND", "report_path": str(report_path)}
 
     actions = {
