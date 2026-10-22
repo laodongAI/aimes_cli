@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/laodongAI/aimes_cli/blob/main/schemas/adapter-verification-evidence.schema.json",
+  "title": "AIMES Adapter Verification Evidence",
+  "description": "Versioned evidence records for configuration, runtime loading, and behavior verification of AI development tool adapters.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "checks"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "project": {
+      "type": "string",
+      "minLength": 1
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "tool",
+          "verification",
+          "method"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tool": {
+            "type": "string",
+            "enum": [
+              "trae-code",
+              "vscode-codex",
+              "vscode-claude-code",
+              "vscode-copilot",
+              "zcode",
+              "qcode",
+              "claude-code",
+              "codex-cli"
+            ]
+          },
+          "product_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "execution_mode": {
+            "type": "string",
+            "enum": [
+              "ide_extension",
+              "cli",
+              "desktop_app",
+              "other"
+            ]
+          },
+          "rule_entry": {
+            "type": "string",
+            "minLength": 1
+          },
+          "verification": {
+            "type": "string",
+            "enum": [
+              "NOT_RUN",
+              "PASS",
+              "FAIL",
+              "BLOCKED",
+              "UNKNOWN"
+            ]
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "manual_prompt",
+              "file_inspection",
+              "runtime_observation",
+              "automated_check",
+              "user_confirmed"
+            ]
+          },
+          "observed_at": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observer": {
+            "type": "string",
+            "minLength": 1
+          },
+          "artifact_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{64}$"
+          },
+          "evidence_note": {
+            "type": "string"
+          },
+          "case_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "aimes_cli_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "governance_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "skill_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "platform": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "verification": {
+                  "const": "PASS"
+                }
+              },
+              "required": [
+                "verification"
+              ]
+            },
+            "then": {
+              "properties": {
+                "method": {
+                  "enum": [
+                    "runtime_observation",
+                    "automated_check",
+                    "user_confirmed"
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": 2
+          }
+        },
+        "required": [
+          "schema_version"
+        ]
+      },
+      "then": {
+        "properties": {
+          "checks": {
+            "items": {
+              "if": {
+                "properties": {
+                  "verification": {
+                    "const": "PASS"
+                  }
+                },
+                "required": [
+                  "verification"
+                ]
+              },
+              "then": {
+                "required": [
+                  "product_version",
+                  "execution_mode",
+                  "platform",
+                  "rule_entry",
+                  "observed_at",
+                  "observer",
+                  "case_id",
+                  "aimes_cli_version",
+                  "governance_version"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

@@ -73,6 +73,8 @@ V0.4 的 `evaluation` 命令不执行 AI 任务或命令。运行记录由实际
 
 ## V0.5.0 命令契约
 
+适配验证证据支持 Schema V1/V2。V2 的 PASS 记录必须包含产品版本、执行模式、平台、规则入口、观察时间、观察者、评测案例 ID、AIMES CLI 版本与治理核心版本；报告按工具和执行模式分别统计。V1 旧记录仍可读取，但缺失上下文仅产生警告。Schema 定义见 `schemas/adapter-verification-evidence.schema.json`。
+
 - `aimes adapter validate <path>`：只读校验工具验证证据记录。PASS 必须采用 `runtime_observation`、`automated_check` 或 `user_confirmed`，并包含 `artifact_path` 或 `evidence_note`。
 - `aimes adapter report <path>`：输出工具覆盖统计；不推断未记录工具的状态。
 - `aimes context validate <path> [--handoff <path>]`：校验 Context Pack 类型、路径边界、源文件存在性与 SHA-256，并可检查 HANDOFF 文件。

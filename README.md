@@ -147,8 +147,8 @@ aimes context pack examples/traceability/trace-manifest.example.yaml --output-di
 aimes context validate .aimes/context-pack/context-pack.json --handoff .aimes/context-pack/HANDOFF.md --format json
 ```
 
-- `adapter validate` 校验各工具规则入口的验证记录，包括工具 ID、版本、入口路径、验证方法、观察时间、证据文件与哈希。静态检查文件不等于运行时已加载。
-- `adapter report` 汇总各工具的 PASS/FAIL/BLOCKED/NOT_RUN/UNKNOWN 覆盖情况。缺少记录不等于通过或失败。
+- `adapter validate` 校验工具规则入口验证记录。新记录使用 `schema_version: 2`；PASS 必须记录产品版本、执行模式、操作系统、规则入口、观察时间、观察者、案例 ID、AIMES CLI 版本与治理核心版本。V1 旧记录仍可读取，但缺失上下文会产生警告。
+- `adapter report` 按工具和执行模式分别汇总 PASS/FAIL/BLOCKED/NOT_RUN/UNKNOWN 覆盖情况。缺少记录不等于通过或失败；静态检查文件不等于运行时已加载。
 - `context validate` 对照 Context Pack 中记录的 SHA-256 检查源文件是否变化，并可检查 HANDOFF 文件是否存在。变化会提示重新审阅，不自动判断修改是否正确。
 - PASS 记录必须采用运行时观察、自动化检查或用户确认的方法，并附证据文件或说明。CLI 不会自动操纵 IDE，也不会伪造运行时证据。
 

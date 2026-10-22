@@ -28,6 +28,10 @@ jobs:
         run: aimes release validate --root . --format json
       - name: Validate Token-efficiency benchmark suite
         run: aimes evaluation validate examples/evaluation/token-efficiency-suite.yaml
+      - name: Validate adapter verification evidence V2 example
+        run: |
+          aimes adapter validate examples/adapters/verification-evidence.example.yaml --format json
+          aimes adapter report examples/adapters/verification-evidence.example.yaml --format json
       - name: Baseline documentation audit (advisory)
         continue-on-error: true
         run: |

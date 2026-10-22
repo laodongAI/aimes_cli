@@ -220,6 +220,15 @@ def emit(data, fmt='text', output: Path | None=None):
                     found = ', '.join(tool.get('commands_found', [])) or 'no matching CLI executable detected'
                     lines.append(f"  - {tool['name']}: {found} [{tool['adapter_status']}]")
                 lines.append('Detection is advisory; it does not prove extension availability or rule loading.')
+            if data.get('tools') and isinstance(data['tools'], dict):
+                lines.append('Adapter verification by tool:')
+                for tool_id, stats in data['tools'].items():
+                    if isinstance(stats, dict) and stats.get('checks', 0):
+                        lines.append(f"  - {tool_id}: PASS={stats.get('pass', 0)}, FAIL={stats.get('fail', 0)}, BLOCKED={stats.get('blocked', 0)}, NOT_RUN={stats.get('not_run', 0)}, UNKNOWN={stats.get('unknown', 0)}")
+            if data.get('execution_modes') and isinstance(data['execution_modes'], dict):
+                lines.append('Adapter verification by execution mode:')
+                for mode, stats in data['execution_modes'].items():
+                    lines.append(f"  - {mode}: PASS={stats.get('pass', 0)}, FAIL={stats.get('fail', 0)}, BLOCKED={stats.get('blocked', 0)}, NOT_RUN={stats.get('not_run', 0)}, UNKNOWN={stats.get('unknown', 0)}")
             if data.get('remote_empty'):
                 lines.append('Remote repository: empty (no commits yet); first publish will create the initial commit.')
             if data.get('changes'):
