@@ -76,32 +76,32 @@ states:
 transitions:
   - from: intake
     to: implementation
-    on: success
+    "on": success
   - from: intake
     to: failure
-    on: failure
+    "on": failure
   - from: intake
     to: blocked
-    on: blocked
+    "on": blocked
   - from: implementation
     to: verification
-    on: success
+    "on": success
   - from: implementation
     to: failure
-    on: failure
+    "on": failure
   - from: implementation
     to: blocked
-    on: blocked
+    "on": blocked
   - from: implementation
     to: implementation
-    on: retry
+    "on": retry
     guard: "Retry guard in implementation state must be satisfied."
   - from: verification
     to: success
-    on: success
+    "on": success
   - from: verification
     to: failure
-    on: failure
+    "on": failure
   - from: verification
     to: blocked
-    on: blocked
+    "on": blocked
