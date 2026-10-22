@@ -14,6 +14,7 @@
 - 新增 `examples/evaluation/rule-following-suite.yaml`，覆盖 8 类核心治理行为；新增 `aimes evaluation validate-run`，按固定套件检查案例完整度、套件版本、硬门禁覆盖与 PASS 证据引用。
 - 新增 `aimes repair` 诊断修复闭环：输出带根因、风险和选项的修复计划；通过 `--apply --confirm REPAIR` 执行安全修复；修复后自动复诊，保护用户修改并明确未解决问题。
 - 新增 `aimes repair-code` 业务代码修复提案流程：统一 diff 预检、显式应用、文件哈希冲突保护、应用前备份、无 shell 测试验证、验证记录与受保护回滚。
+- 新增 `aimes repair-code diagnose`：执行用户指定的测试命令并记录证据，按常见错误特征提供修复建议和后续补丁提案指引；明确区分辅助分类与根因确认。
 
 ## 0.7.7 - 交互确认大小写不敏感并支持错误重输
 
