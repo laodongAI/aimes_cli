@@ -403,6 +403,112 @@ def verify_patch(root: Path, repair_id: str, *, test_argv_json: str, timeout_sec
             "note": "测试通过仅代表指定命令返回 0；请结合原始诊断与回归覆盖判断修复是否真正解决问题。失败时补丁仍保留，可进一步修复或在确认后回滚。"}
 
 
+def inspect_patch(root: Path, repair_id: str) -> dict[str, Any]:
+    """Return a read-only lifecycle snapshot, integrity checks, and safe next-step guidance."""
+    root = root.resolve()
+    manifest, folder = _load_manifest(root, repair_id)
+    status = manifest.get("status", "UNKNOWN")
+    issues: list[dict[str, str]] = []
+    patch_path = folder / manifest.get("patch_file", "change.patch")
+    patch_hash_ok = False
+    if patch_path.is_file():
+        patch_hash_ok = _sha(patch_path.read_bytes()) == manifest.get("patch_sha256")
+        if not patch_hash_ok:
+            issues.append({"code": "PATCH_HASH_MISMATCH", "path": str(patch_path), "message": "补丁内容与提案记录的 SHA-256 不一致。"})
+    else:
+        issues.append({"code": "PATCH_MISSING", "path": str(patch_path), "message": "提案补丁文件缺失。"})
+
+    path_checks: list[dict[str, Any]] = []
+    touched_paths = manifest.get("touched_paths", [])
+    if not isinstance(touched_paths, list):
+        raise ValueError("修复提案清单损坏：touched_paths 必须是数组")
+    preimages = manifest.get("preimage_sha256", {})
+    applied = manifest.get("applied_sha256", {})
+    for raw_rel in touched_paths:
+        if not isinstance(raw_rel, str):
+            raise ValueError("修复提案清单损坏：目标路径必须是字符串")
+        rel = _safe_relative(raw_rel)
+        target = _within(root, rel)
+        current_hash = _sha(target.read_bytes()) if target.is_file() else None
+        expected = applied.get(rel) if status in {"APPLIED", "VERIFIED", "VERIFICATION_FAILED", "ROLLED_BACK"} else preimages.get(rel)
+        matches = current_hash == expected
+        entry = {
+            "path": rel,
+            "exists": target.is_file(),
+            "expected_hash": expected,
+            "current_hash": current_hash,
+            "matches_expected": matches,
+        }
+        path_checks.append(entry)
+        if status == "PROPOSED" and not matches:
+            issues.append({"code": "PREIMAGE_CHANGED", "path": rel, "message": "提案创建后目标文件发生变化；应用前会拒绝覆盖。"})
+        elif status in {"APPLIED", "VERIFIED", "VERIFICATION_FAILED"} and not matches:
+            issues.append({"code": "POST_APPLY_CHANGED", "path": rel, "message": "补丁应用后目标文件再次变化；回滚会拒绝覆盖这些修改。"})
+        elif status == "ROLLED_BACK" and not matches:
+            # The expected hash here is the post-apply hash; changed state is expected after rollback.
+            entry["matches_expected"] = None
+
+    diagnostic = None
+    finding = manifest.get("finding", "")
+    if isinstance(finding, str) and ID_RE.fullmatch(finding):
+        report_path = root / REPAIR_DIR / "diagnostics" / f"{finding}.json"
+        if report_path.is_file():
+            try:
+                report = json.loads(report_path.read_text(encoding="utf-8"))
+                diagnostic = {
+                    "diagnostic_id": report.get("diagnostic_id", finding),
+                    "status": report.get("status"),
+                    "finding_code": (report.get("finding") or {}).get("code"),
+                    "report_path": str(report_path),
+                }
+            except (OSError, json.JSONDecodeError):
+                issues.append({"code": "DIAGNOSTIC_REPORT_INVALID", "path": str(report_path), "message": "关联诊断报告无法读取。"})
+        else:
+            diagnostic = {"diagnostic_id": finding, "status": "NOT_FOUND", "report_path": str(report_path)}
+
+    actions = {
+        "PROPOSED": [
+            {"id": "review", "label": "人工审阅 change.patch 与 proposal.json", "command": None},
+            {"id": "apply", "label": "确认审阅无误后应用补丁", "command": f"aimes repair-code apply {repair_id} --confirm APPLY-FIX"},
+        ],
+        "APPLIED": [
+            {"id": "verify", "label": "运行针对性测试并记录结果", "command": f'aimes repair-code verify {repair_id} --test-argv-json \'["python","-m","unittest"]\''},
+            {"id": "inspect", "label": "先检查变更与测试输出，再决定是否继续", "command": None},
+        ],
+        "VERIFICATION_FAILED": [
+            {"id": "revise", "label": "根据失败证据生成新的最小补丁提案，或人工检查当前变更", "command": None},
+            {"id": "rollback", "label": "如需撤销且文件未再变化，可回滚", "command": f"aimes repair-code rollback {repair_id} --confirm ROLLBACK-FIX"},
+        ],
+        "VERIFIED": [
+            {"id": "acceptance", "label": "复跑原始失败用例与相关回归，并按任务验收标准确认", "command": None},
+            {"id": "rollback", "label": "如确认需要撤销且文件未再变化，可回滚", "command": f"aimes repair-code rollback {repair_id} --confirm ROLLBACK-FIX"},
+        ],
+        "ROLLED_BACK": [
+            {"id": "recheck", "label": "确认工作区已恢复，并保留本提案作为审计证据", "command": None},
+        ],
+    }
+    if status not in actions:
+        issues.append({"code": "UNKNOWN_STATUS", "path": str(folder / "proposal.json"), "message": f"未知提案状态：{status}"})
+    return {
+        "ok": not any(issue["code"] in {"PATCH_HASH_MISMATCH", "PATCH_MISSING", "UNKNOWN_STATUS"} for issue in issues),
+        "repair_id": repair_id,
+        "status": status,
+        "created_at": manifest.get("created_at"),
+        "finding": finding,
+        "rationale": manifest.get("rationale", ""),
+        "patch_sha256": manifest.get("patch_sha256"),
+        "patch_integrity_ok": patch_hash_ok,
+        "touched_paths": path_checks,
+        "issues": issues,
+        "diagnostic": diagnostic,
+        "verification": manifest.get("verification"),
+        "rollback": manifest.get("rollback"),
+        "next_actions": actions.get(status, []),
+        "read_only": True,
+        "note": "本命令只读取提案和工作区状态，不应用补丁、不执行测试、不回滚。VERIFIED 仅表示指定验证命令通过，不代表任务最终验收通过。",
+    }
+
+
 def rollback_patch(root: Path, repair_id: str, *, confirm: str | None) -> dict[str, Any]:
     root = root.resolve()
     if (confirm or "").strip().casefold() != "rollback-fix":
