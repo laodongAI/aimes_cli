@@ -199,17 +199,33 @@ def apply_safe_repairs(root: Path, *, confirm: str | None, tools: str | None = N
     before = build_repair_plan(root)
     result = init_project(root, selected_tools, scope=scope, dry_run=False)
     after = build_repair_plan(root)
-    resolved = sorted({item["code"] for item in before["repair_actions"]} - {item["code"] for item in after["repair_actions"]})
-    remaining = after["repair_actions"]
+    remaining = list(after["repair_actions"])
+    # A conflict is still an unresolved remediation item even if safe merge removes the file from
+    # the managed manifest and the next ordinary validation no longer reports its old hash.
+    for index, conflict in enumerate(result.get("conflicts", []), start=1):
+        remaining.append({
+            "issue_id": f"REPAIR-CONFLICT-{index:03d}",
+            "code": "REPAIR_CONFLICT_PRESERVED",
+            "level": "warning",
+            "message": f"Preserved existing file due to ownership/content conflict: {conflict.get('path')}",
+            "title": "复核被保留的现有文件",
+            "risk": "high",
+            "reason": "文件可能包含用户自定义内容；AIMES 未覆盖它。",
+            "options": [{"id": "review-diff", "label": "比较原文件与候选文件后人工决定", "mode": "manual", "requires_approval": True}],
+            "auto_repair_available": False,
+        })
+    before_codes = {item["code"] for item in before["repair_actions"]}
+    remaining_codes = {item["code"] for item in remaining}
+    resolved = sorted(before_codes - remaining_codes)
     return {
-        "ok": after["issue_count"] == 0 and result.get("ok", False),
+        "ok": not remaining and result.get("ok", False),
         "root": str(root),
         "mode": "safe-auto-repair",
         "selected_tools": selected_tools,
         "before_issue_count": before["issue_count"],
         "resolved_issue_codes": resolved,
-        "remaining_issue_count": after["issue_count"],
+        "remaining_issue_count": len(remaining),
         "remaining_actions": remaining,
         "write_result": result,
-        "note": "已重新诊断。只对 AIMES 能够安全管理的文件应用常规初始化/合并规则；不覆盖用户修改，不删除文件，不执行远端操作。剩余问题需按 repair plan 逐项处理。",
+        "note": "已重新诊断。只对 AIMES 能够安全管理的文件应用常规初始化/合并规则；不覆盖用户修改，不删除文件，不执行远端操作。冲突保留项仍视为未解决，需人工比较后处理。",
     }
