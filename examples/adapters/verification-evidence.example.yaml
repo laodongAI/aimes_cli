@@ -5,16 +5,21 @@ checks:
     tool: codex-cli
     product_version: "填写实际安装版本"
     execution_mode: cli
+    platform: "填写操作系统与版本"
     rule_entry: AGENTS.md
     verification: UNKNOWN
     method: file_inspection
     observed_at: ""
     observer: ""
+    case_id: "填写评测案例 ID"
+    aimes_cli_version: "填写 AIMES CLI 版本"
+    governance_version: "1.2"
     evidence_note: "此示例尚未进行真实运行时验证；检查文件存在不等于规则已加载。"
   - id: ADAPTER-CHECK-CLAUDE-001
     tool: claude-code
     product_version: "填写实际安装版本"
     execution_mode: cli
+    platform: "填写操作系统与版本"
     rule_entry: CLAUDE.md
     verification: NOT_RUN
     method: manual_prompt
