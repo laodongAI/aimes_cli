@@ -136,7 +136,7 @@ def _check_project_records_and_env(root: Path, findings: list[dict[str, Any]]) -
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
             continue
-        match = re.match(r"^(?:export\\s+)?([A-Za-z_][A-Za-z0-9_]*)\\s*=", stripped)
+        match = re.match(r"^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=", stripped)
         if not match:
             continue
         key = match.group(1)
