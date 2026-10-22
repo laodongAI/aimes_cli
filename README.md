@@ -2,7 +2,7 @@
 
 AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具。它负责把 AIMES V1.2 治理核心部署到项目仓库，生成工具专属规则入口，检查配置与冲突，并输出部署状态。它不替代 Codex、Claude Code、Trae、ZCode 或 Copilot 执行开发任务。
 
-> 当前版本是可运行的 MVP 原型，不是生产级安装器。V0.7.4 在保留原有能力的基础上增加空 GitHub 仓库首次发布支持；Windows 独立 EXE 仍需在 Windows 环境中构建和验证。
+> 当前版本是本地优先的工程治理 CLI。包版本与运行时版本由同一版本源驱动；真实 AI 工具运行时是否加载规则、行为是否改善，必须以独立验证记录为准。CI 中的 Windows EXE 构建/冒烟测试不等于 GitHub Release 或下载资产已经发布。
 
 ## 0. 交互式启动与 Windows 独立 EXE
 
@@ -44,23 +44,22 @@ VS Code 插件和独立 CLI 是不同执行上下文，必须分别验证。若�
 
 ## 3. 安装（Windows PowerShell）
 
-需要 Python 3.10+。安装时需能获取 PyYAML 依赖，或提前将该依赖安装到当前 Python 环境。
+需要 Python 3.10+。推荐从仓库源码安装，避免复制历史版本的 wheel 文件名：
 
 ```powershell
-# 解压发布包后，进入 aimes-cli-v0.5.3 目录
+git clone https://github.com/laodongAI/aimes_cli.git
+cd aimes_cli
 py -3 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install .\dist\aimes_governance_cli-0.5.3-py3-none-any.whl
-
+.\\.venv\\Scripts\\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -e .
 aimes --version
+aimes release validate --root .
 ```
 
-如果希望从源码安装：
+如果使用 GitHub Release 提供的 wheel，请安装该 Release 附带的确切版本文件，不要复用旧文档中的 `0.5.3` 文件名。正式发布状态和下载资产以 [GitHub Releases](https://github.com/laodongAI/aimes_cli/releases) 页面为准。
 
-```powershell
-python -m pip install .
-aimes --version
-```
+Windows 独立 EXE 的构建和部署说明见 [Windows EXE 部署指南](docs/WINDOWS-EXE-DEPLOYMENT.md)。EXE 需要按发布流程验证版本、资源打包和冒烟行为；不要仅凭源码测试通过就宣称用户环境已验证。
 
 ## 4. 第一次初始化
 
