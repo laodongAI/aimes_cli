@@ -97,7 +97,6 @@ def create_runtime_probe(
         "execution_mode": "cli",
         "platform": f"{platform_module.system()} {platform_module.release()}",
         "rule_entry": spec["entry"],
-        "expected_token": token,
         "case_id": case_id,
         "aimes_cli_version": __version__,
         "governance_version": governance_version.strip(),
@@ -157,8 +156,12 @@ def validate_runtime_probe(root: Path, probe_dir: Path, *, observer: str = "") -
     rule_path = target / PROBE_TOOLS[tool]["entry"]
     if not rule_path.is_file() or _sha256(rule_path) != manifest.get("rule_sha256"):
         raise ValueError("Native rule entry is missing or changed since probe creation; do not trust this probe")
-    token = manifest.get("expected_token")
-    if not isinstance(token, str) or not token.startswith("AIMES_PROBE_"):
+    rule_text = rule_path.read_text(encoding="utf-8-sig")
+    marker = "reply with exactly the following token and no other text:\\n\\n"
+    if marker not in rule_text:
+        raise ValueError("Probe token instruction is missing from the native rule entry")
+    token = rule_text.split(marker, 1)[1].splitlines()[0].strip()
+    if not token.startswith("AIMES_PROBE_") or len(token) != len("AIMES_PROBE_") + 32:
         raise ValueError("Probe token is missing or invalid")
     response_path = target / "response.txt"
     if not response_path.is_file():
