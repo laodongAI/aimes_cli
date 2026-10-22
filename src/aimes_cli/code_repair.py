@@ -160,7 +160,7 @@ def diagnose_command(root: Path, *, diagnostic_id: str, test_argv_json: str, tim
          "检查依赖是否安装、导入路径/包名是否正确，并核对项目声明的依赖清单。"),
         ("SYNTAX_ERROR", ("SyntaxError", "IndentationError", "Unexpected token", "SyntaxError:"),
          "先定位报告中的文件与行号，修复语法/缩进问题，再运行最小范围的语法检查。"),
-        ("ASSERTION_FAILURE", ("AssertionError", "Assertion failed", "Expected", "expected")),
+        ("ASSERTION_FAILURE", ("AssertionError", "Assertion failed", "Expected", "expected"),
          "对比预期值与实际值，检查业务分支、测试数据、边界条件及最近变更；不要为了通过测试而随意放宽断言。"),
         ("TYPE_OR_INTERFACE_ERROR", ("TypeError", "AttributeError", "KeyError", "NullReferenceException", "undefined is not a function"),
          "检查输入类型、空值处理、调用方与被调用方的接口契约，以及缺失字段/属性的路径。"),
