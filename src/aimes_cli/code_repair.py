@@ -479,7 +479,7 @@ def inspect_patch(root: Path, repair_id: str) -> dict[str, Any]:
             {"id": "apply", "label": "确认审阅无误后应用补丁", "command": f"aimes repair-code apply {repair_id} --confirm APPLY-FIX"},
         ],
         "APPLIED": [
-            {"id": "verify", "label": "运行针对性测试并记录结果", "command": f'aimes repair-code verify {repair_id} --test-argv-json \'["python","-m","unittest"]\''},
+            {"id": "verify", "label": "使用项目实际测试命令运行针对性测试并记录结果", "command": None},
             {"id": "inspect", "label": "先检查变更与测试输出，再决定是否继续", "command": None},
         ],
         "VERIFICATION_FAILED": [
