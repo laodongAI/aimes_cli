@@ -127,7 +127,18 @@ aimes doctor
 aimes status
 aimes validate --format json --output .aimes/reports/validation.json
 aimes docs check --root . --format json --output .aimes/reports/docs-check.json
+
+# Git 分支只读盘点；默认分支基于 origin/HEAD，缺失时回退 origin/main/master
+aimes branches inspect --root . --format json
+
+# 预览可清理的本地分支（仅限已合并到远端默认分支的分支）
+aimes branches cleanup-plan --root . --format json
+
+# 仅在确认预览后清理本地已合并分支；不会删除 GitHub 远端分支
+aimes branches cleanup --root . --apply --confirm DELETE-BRANCHES
 ```
+
+`branches inspect` 会同时列出本地分支与远端跟踪分支；执行前建议先运行 `git fetch --prune` 更新远端状态。清理仅针对能证明已合并的本地分支，保护当前分支和常见主干分支。默认只预览，实际删除必须显式提供 `--apply --confirm DELETE-BRANCHES`（确认词大小写不敏感）；未合并分支不会进入候选，远端分支不会被删除。
 
 `--scope` 当前仅支持 `project`。全局配置和卸载尚未实现，不应使用本版本执行全局部署。现有项目的安全升级请使用 `aimes upgrade`；它先列出文件差异，逐项确认后才写入，并保留冲突文件。
 
