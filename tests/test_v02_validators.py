@@ -191,5 +191,110 @@ skills:
         self.assertFalse(result["ok"])
 
 
+    def _skill_registry_record(self, **overrides):
+        skill_file = self.write_yaml("skills/SKILL.md", '''---
+skill_id: SKL-T-001
+---
+# Skill
+## Purpose
+Test purpose
+## Trigger conditions
+test
+## Required inputs
+task
+## Preconditions
+ready
+## Workflow
+do work
+## Outputs
+report
+## Safety and permissions
+no unsafe writes
+## Failure handling
+stop and report
+## Completion criteria
+criteria met
+''')
+        item = {
+            "id": "SKL-T-001", "name": "test-skill", "version": "0.1.0",
+            "file": "skills/SKILL.md", "purpose": "Test skill",
+            "triggers": ["test"], "inputs": ["task"], "outputs": ["report"],
+            "applies_to": ["all"], "risk_level": "low",
+            "required_capabilities": ["read_project_files"],
+            "forbidden_actions": ["overwrite_user_changes"], "prerequisites": ["baseline_checked"],
+            "dependencies": [], "validation_status": "UNKNOWN",
+            "evaluation_suite": None, "evidence": [],
+            "lifecycle_stage": "proposed", "stop_conditions": ["required input missing"],
+            "failure_recovery": ["preserve draft and report blocker"],
+            "completion_criteria": ["output report exists"],
+            "approval_required": True, "side_effects": ["writes report only"],
+            "idempotency": "guarded"
+        }
+        item.update(overrides)
+        return self.write_yaml("registry.yaml", "schema_version: 2\nskills:\n" + __import__("yaml").safe_dump([item], sort_keys=False, allow_unicode=True, indent=2))
+
+    def test_skill_registry_v2_contract_is_valid(self):
+        path = self._skill_registry_record()
+        result = validate_skill_registry(path, self.root)
+        self.assertTrue(result["ok"], result["findings"])
+
+    def test_skill_registry_v2_requires_stop_failure_and_completion_contracts(self):
+        path = self._skill_registry_record(stop_conditions=[], failure_recovery=[], completion_criteria=[])
+        result = validate_skill_registry(path, self.root)
+        self.assertFalse(result["ok"])
+        self.assertGreaterEqual(
+            len([f for f in result["findings"] if f["code"] == "CONTRACT_LIST_REQUIRED"]), 3
+        )
+
+    def test_skill_registry_v2_verified_requires_suite_and_evidence(self):
+        path = self._skill_registry_record(validation_status="VERIFIED", evaluation_suite=None, evidence=[])
+        result = validate_skill_registry(path, self.root)
+        self.assertFalse(result["ok"])
+        self.assertIn("VERIFIED_EVIDENCE_REQUIRED", {f["code"] for f in result["findings"]})
+
+    def test_skill_registry_v1_remains_compatible(self):
+        skill_file = self.write_yaml("skills/SKILL.md", '''---
+skill_id: SKL-T-OLD
+---
+Purpose
+Trigger conditions
+Required inputs
+Preconditions
+Workflow
+Outputs
+Safety and permissions
+Failure handling
+Completion criteria
+''')
+        registry = self.write_yaml("registry-v1.yaml", '''schema_version: 1
+skills:
+  - id: SKL-T-OLD
+    name: old-skill
+    version: 0.1.0
+    file: skills/SKILL.md
+    purpose: Legacy skill
+    triggers: [test]
+    inputs: [task]
+    outputs: [report]
+    applies_to: [all]
+    risk_level: low
+    required_capabilities: []
+    forbidden_actions: [unsafe_write]
+    prerequisites: []
+    dependencies: []
+    validation_status: UNKNOWN
+    evaluation_suite: null
+    evidence: []
+''')
+        result = validate_skill_registry(registry, self.root)
+        self.assertTrue(result["ok"], result["findings"])
+
+    def test_skill_registry_schema_copies_match_and_support_v2(self):
+        repo_root = Path(__file__).resolve().parents[1]
+        root_schema = json.loads((repo_root / "schemas" / "skill-registry.schema.json").read_text(encoding="utf-8"))
+        package_schema = json.loads((repo_root / "src" / "aimes_cli" / "schemas" / "skill-registry.schema.json").read_text(encoding="utf-8"))
+        self.assertEqual(root_schema, package_schema)
+        self.assertEqual(root_schema["properties"]["schema_version"]["enum"], [1, 2])
+
 if __name__ == "__main__":
     unittest.main()

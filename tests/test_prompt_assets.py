@@ -29,7 +29,7 @@ class PromptAssetTests(unittest.TestCase):
                 self.assertIn(key, case)
             self.assertTrue(case["scoring"]["hard_gates"])
     def test_contract_docs_exist(self):
-        for rel in ["docs/PROMPT-SYSTEM-CONTRACT-V1.0.md", "docs/SKILL-ORCHESTRATION-V1.0.md", "docs/PROMPT-AUDIT-AND-OPTIMIZATION-REPORT.md", "docs/PROMPT-OUTPUT-EXAMPLES-V1.0.md", "docs/CONTEXT-BUDGET-AND-FILE-PLAN-V1.0.md", "docs/TOOL-FAILURE-DEGRADATION-PROTOCOL-V1.0.md", "docs/AUDIT-TRAIL-V1.0.md"]:
+        for rel in ["docs/PROMPT-SYSTEM-CONTRACT-V1.0.md", "docs/SKILL-CONTRACT-V2.md", "docs/SKILL-ORCHESTRATION-V1.0.md", "docs/PROMPT-AUDIT-AND-OPTIMIZATION-REPORT.md", "docs/PROMPT-OUTPUT-EXAMPLES-V1.0.md", "docs/CONTEXT-BUDGET-AND-FILE-PLAN-V1.0.md", "docs/TOOL-FAILURE-DEGRADATION-PROTOCOL-V1.0.md", "docs/AUDIT-TRAIL-V1.0.md"]:
             self.assertTrue((ROOT / rel).is_file(), rel)
 
 if __name__ == "__main__":

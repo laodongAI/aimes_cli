@@ -1,4 +1,4 @@
-schema_version: 1
+schema_version: 2
 skills:
   - id: SKL-CORE-REQ-001
     name: requirement-cognition
@@ -17,3 +17,18 @@ skills:
     validation_status: UNKNOWN
     evaluation_suite: EVAL-REQ-BASELINE
     evidence: []
+    lifecycle_stage: proposed
+    stop_conditions:
+      - "需求目标、关键约束或验收标准存在阻断级未知时，停止进入实施"
+      - "项目权威来源互相冲突且未获得负责人澄清时，停止写操作"
+    failure_recovery:
+      - "保留已生成的草稿和问题清单，明确标记 BLOCKED"
+      - "请求补充缺失输入后，从最后一个已验证步骤恢复"
+    completion_criteria:
+      - "输出需求认知记录，区分事实、推断、未知和冲突"
+      - "每条需求具有可检查的验收标准和来源引用"
+      - "未解决问题与审批状态已明确记录"
+    approval_required: true
+    side_effects:
+      - "仅生成分析记录，不自动批准需求或覆盖用户文件"
+    idempotency: guarded

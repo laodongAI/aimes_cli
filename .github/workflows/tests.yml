@@ -32,6 +32,8 @@ jobs:
         run: |
           aimes adapter validate examples/adapters/verification-evidence.example.yaml --format json
           aimes adapter report examples/adapters/verification-evidence.example.yaml --format json
+      - name: Validate Skill contract V2 example
+        run: aimes skill validate examples/skills/registry.example.yaml --root . --format json
       - name: Baseline documentation audit (advisory)
         continue-on-error: true
         run: |
