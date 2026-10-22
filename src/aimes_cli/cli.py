@@ -278,7 +278,13 @@ def emit(data, fmt='text', output: Path | None=None):
                     lines.append(f"  - {action['action']}: {action['path']}{suffix}")
             if data.get('conflicts'):
                 lines.append('Conflicts:')
-                for conflict in data['conflicts']: lines.append(f"  - {conflict['path']} (preserved; review proposal)")
+                for conflict in data['conflicts']:
+                    if isinstance(conflict, dict):
+                        path = conflict.get('path', '?')
+                        lines.append(f"  - {path} (preserved; review proposal)")
+                    else:
+                        # Init reports conflicts as strings; upgrade reports structured items.
+                        lines.append(f"  - {conflict} (preserved; review proposal)")
             if data.get('findings'):
                 lines.append('Findings:')
                 for finding in data['findings']: lines.append(f"  - [{finding['level']}] {finding['code']}: {finding['message']}")
