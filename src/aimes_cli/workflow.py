@@ -142,7 +142,8 @@ def validate_workflow_definition(path: Path) -> dict:
             source_state = state_by_id[source]
             if source != target:
                 _add(findings, "ERROR", "RETRY_TARGET", f"{loc}: retry transition must return to the same state")
-            if source_state.get("retry_mode") == "never" or source_state.get("max_attempts", 1) <= 1:
+            source_attempts = source_state.get("max_attempts", 1)
+            if source_state.get("retry_mode") == "never" or type(source_attempts) is not int or source_attempts <= 1:
                 _add(findings, "ERROR", "RETRY_NOT_ALLOWED", f"{loc}: state retry policy does not allow retries")
         outgoing[source].append(transition)
         if event != "retry":
