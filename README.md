@@ -4,6 +4,23 @@ AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具
 
 > 当前版本是本地优先的工程治理 CLI。包版本与运行时版本由同一版本源驱动；真实 AI 工具运行时是否加载规则、行为是否改善，必须以独立验证记录为准。CI 中的 Windows EXE 构建/冒烟测试不等于 GitHub Release 或下载资产已经发布。
 
+## 0.1 诊断后生成修复选项，并安全自动修复
+
+`aimes repair` 默认只生成诊断和修复计划；检查选项后，显式确认才会应用可安全自动修复的配置问题：
+
+```powershell
+# 诊断并查看每项问题的根因、风险、修复选项
+aimes repair --root . --format json
+
+# 已配置项目：预览后确认执行安全修复
+aimes repair --apply --confirm REPAIR --root . --format json
+
+# 尚未配置 AIMES 的项目：必须明确指定适配器
+aimes repair --apply --confirm REPAIR --tools codex-cli --root . --format json
+```
+
+该流程会在修复后复诊，并列出已解决与剩余问题。用户修改过的规则文件不会被强制覆盖；配置无法解析、清单损坏或适配器未验证时，会提供人工/引导式选项，而不是假装已修复。完整安全边界见 [诊断与安全修复指南](docs/REPAIR-LOOP.md)。
+
 ## 0. 交互式启动与 Windows 独立 EXE
 
 在交互式终端中只输入 `aimes` 即可进入菜单，逐步选择初始化、配置、检查或验证任务。初始化向导支持多选工具，默认先预览；确认实际写入时需要输入 `YES`。原有参数命令仍然保留，适合脚本和 CI。
@@ -118,13 +135,13 @@ aimes context pack examples/traceability/trace-manifest.example.yaml --output-di
 
 新增 [核心规则遵循回归集](examples/evaluation/rule-following-suite.yaml)，覆盖需求歧义、证据真实性、用户改动保护、不可信内容、修改范围、边界测试、审批门禁和代码/文档追溯。
 
-\`\`\`powershell
+```powershell
 # 校验固定案例集结构，不调用模型
 aimes evaluation validate examples/evaluation/rule-following-suite.yaml --root .
 
 # 校验实际运行记录是否覆盖全部案例和硬门禁
 aimes evaluation validate-run .aimes/evaluation/rule-following-run.json --suite examples/evaluation/rule-following-suite.yaml --root . --format json
-\`\`\`
+```
 
 `validate-run` 会拒绝缺失案例、额外案例、套件版本不匹配、缺少硬门禁或无证据的 PASS。执行步骤和验收协议见 [核心规则遵循回归测试指南](docs/RULE-FOLLOWING-REGRESSION.md)。案例集目前是测试定义，不代表已在真实 AI 工具中执行或通过。
 
