@@ -1,10 +1,13 @@
 import json
+import io
+from contextlib import redirect_stdout
 import tempfile
 import unittest
 from unittest.mock import call, patch
 from pathlib import Path
 from aimes_cli.adapters import normalize_tools
 from aimes_cli.core import init_project, inspect_project, validate_project
+from aimes_cli.cli import emit
 
 class AimesCliTests(unittest.TestCase):
     def setUp(self):
@@ -13,6 +16,13 @@ class AimesCliTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_emit_handles_string_conflicts_from_init_report(self):
+        report = {"ok": False, "conflicts": ["CLAUDE.md"], "actions": []}
+        output = io.StringIO()
+        with redirect_stdout(output):
+            emit(report)
+        self.assertIn("CLAUDE.md (preserved; review proposal)", output.getvalue())
 
     def test_normalize_aliases_and_deduplicate(self):
         self.assertEqual(normalize_tools('codex,codex-cli,claude'), ['codex-cli','claude-code'])
