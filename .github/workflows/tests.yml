@@ -36,6 +36,8 @@ jobs:
         run: aimes skill validate examples/skills/registry.example.yaml --root . --format json
       - name: Validate Skill execution record example
         run: aimes skill execution validate examples/skills/execution-record.example.yaml --root . --format json
+      - name: Validate workflow state machine example
+        run: aimes workflow validate examples/workflows/engineering-workflow.example.yaml --root . --format json
       - name: Baseline documentation audit (advisory)
         continue-on-error: true
         run: |
