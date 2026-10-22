@@ -67,7 +67,8 @@ def complete_required_arguments(
                 is_required_option = bool(action.option_strings and any(
                     old_required for old_action, old_required, _ in saved if old_action is action
                 ))
-                is_required_positional = not action.option_strings and action.nargs == "?" and action.dest != argparse.SUPPRESS
+                original_nargs = next((old_nargs for old_action, _, old_nargs in saved if old_action is action), action.nargs)
+                is_required_positional = not action.option_strings and original_nargs is None and action.dest != argparse.SUPPRESS
                 if not (is_required_option or is_required_positional):
                     continue
                 existing = getattr(namespace, action.dest, None)
