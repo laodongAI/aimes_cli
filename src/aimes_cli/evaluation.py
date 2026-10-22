@@ -107,6 +107,96 @@ def validate_run(path: Path) -> dict:
     return _report("run-validation",path,fs,checked_cases=len(data["case_results"]),case_ids=sorted(seen))
 
 
+
+def validate_run_against_suite(suite_path: Path, run_path: Path) -> dict:
+    """Validate a recorded run against its fixed suite, including exact case and hard-gate coverage."""
+    suite = _load(suite_path)
+    run = _load(run_path)
+    findings = []
+
+    suite_check = validate_suite(suite_path)
+    run_check = validate_run(run_path)
+    if not suite_check["ok"]:
+        _finding(findings, "ERROR", "SUITE_INVALID", "Evaluation suite failed structural validation")
+    if not run_check["ok"]:
+        _finding(findings, "ERROR", "RUN_INVALID", "Evaluation run failed structural validation")
+
+    if not isinstance(suite, dict) or not isinstance(suite.get("cases"), list):
+        _finding(findings, "ERROR", "SUITE_SHAPE", "Suite must contain a cases list")
+        return _report("run-suite-coverage", run_path, findings, suite=str(suite_path), checked_cases=0)
+    if not isinstance(run, dict) or not isinstance(run.get("case_results"), list):
+        _finding(findings, "ERROR", "RUN_SHAPE", "Run must contain a case_results list")
+        return _report("run-suite-coverage", run_path, findings, suite=str(suite_path), checked_cases=0)
+
+    suite_cases = {
+        item.get("case_id"): item
+        for item in suite["cases"]
+        if isinstance(item, dict) and isinstance(item.get("case_id"), str)
+    }
+    run_cases = {
+        item.get("case_id"): item
+        for item in run["case_results"]
+        if isinstance(item, dict) and isinstance(item.get("case_id"), str)
+    }
+    expected_ids, actual_ids = set(suite_cases), set(run_cases)
+    missing = sorted(expected_ids - actual_ids)
+    unexpected = sorted(actual_ids - expected_ids)
+    if missing:
+        _finding(findings, "ERROR", "SUITE_CASES_MISSING", f"Run is missing suite cases: {', '.join(missing)}")
+    if unexpected:
+        _finding(findings, "ERROR", "UNEXPECTED_RUN_CASES", f"Run contains cases not in the suite: {', '.join(unexpected)}")
+
+    metadata = run.get("metadata") if isinstance(run.get("metadata"), dict) else {}
+    if metadata.get("suite_id") != suite.get("suite_id"):
+        _finding(findings, "ERROR", "SUITE_ID_MISMATCH", "Run metadata.suite_id does not match the selected suite")
+    if metadata.get("suite_version") != suite.get("version"):
+        _finding(findings, "ERROR", "SUITE_VERSION_MISMATCH", "Run metadata.suite_version does not match the selected suite version")
+
+    gate_coverage = []
+    for case_id in sorted(expected_ids & actual_ids):
+        suite_case, result = suite_cases[case_id], run_cases[case_id]
+        scoring = suite_case.get("scoring", {})
+        expected_gates = []
+        if isinstance(scoring, dict):
+            for gate in scoring.get("hard_gates", []) if isinstance(scoring.get("hard_gates", []), list) else []:
+                if isinstance(gate, str) and gate.strip():
+                    expected_gates.append(gate.strip())
+                elif isinstance(gate, dict) and isinstance(gate.get("id"), str) and gate["id"].strip():
+                    expected_gates.append(gate["id"].strip())
+        recorded = result.get("hard_gates", {})
+        recorded_names = set(recorded) if isinstance(recorded, dict) else set()
+        missing_gates = sorted(set(expected_gates) - recorded_names)
+        unexpected_gates = sorted(recorded_names - set(expected_gates))
+        gate_coverage.append({
+            "case_id": case_id,
+            "expected_gates": sorted(set(expected_gates)),
+            "recorded_gates": sorted(recorded_names),
+            "missing_gates": missing_gates,
+            "unexpected_gates": unexpected_gates,
+        })
+        if missing_gates:
+            _finding(findings, "ERROR", "HARD_GATES_MISSING", f"{case_id} is missing required hard gates: {', '.join(missing_gates)}")
+        if unexpected_gates:
+            _finding(findings, "WARNING", "UNDECLARED_HARD_GATES", f"{case_id} records gates not declared by the suite: {', '.join(unexpected_gates)}")
+        if result.get("status") == "PASS" and not result.get("evidence_refs"):
+            _finding(findings, "ERROR", "PASS_EVIDENCE_REQUIRED", f"{case_id} cannot be accepted as PASS without evidence_refs")
+        if result.get("status") == "PASS" and any(recorded.get(name) != "PASS" for name in expected_gates):
+            _finding(findings, "ERROR", "PASS_WITH_INCOMPLETE_SUITE_GATES", f"{case_id} is PASS but one or more suite hard gates are missing or non-PASS")
+
+    return _report(
+        "run-suite-coverage", run_path, findings,
+        suite=str(suite_path),
+        suite_id=suite.get("suite_id"),
+        suite_version=suite.get("version"),
+        expected_case_count=len(expected_ids),
+        recorded_case_count=len(actual_ids),
+        checked_cases=len(expected_ids & actual_ids),
+        missing_cases=missing,
+        unexpected_cases=unexpected,
+        hard_gate_coverage=gate_coverage,
+        note="A structurally valid run is not proof that the recorded outcomes are truthful. Keep raw outputs, execution logs, and independently verifiable evidence for each case.",
+    )
+
 def build_run_report(path: Path) -> dict:
     data=_load(path)
     if not isinstance(data,dict) or not isinstance(data.get("case_results"),list): raise ValueError("Run record must contain case_results list")
