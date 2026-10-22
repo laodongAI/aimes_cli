@@ -110,7 +110,7 @@ def _check_project_records_and_env(root: Path, findings: list[dict[str, Any]]) -
                     if not isinstance(value, str):
                         _finding(findings, "ERROR", "RECORD_PATH_INVALID", f"records.{key} must be a project-relative path", ".aimes/config.yaml")
                         continue
-                    normalized = value.strip().replace("\\\\", "/")
+                    normalized = value.strip().replace("\\", "/")
                     if normalized.startswith("/") or re.match(r"^[A-Za-z]:", normalized) or ".." in normalized.split("/"):
                         _finding(findings, "ERROR", "RECORD_PATH_ESCAPE", f"records.{key} must stay inside the project root", ".aimes/config.yaml")
                         continue

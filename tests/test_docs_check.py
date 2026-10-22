@@ -58,7 +58,7 @@ class DocsCheckTests(unittest.TestCase):
 
     def test_generic_markdown_repo_does_not_require_aimes_core(self):
         (self.root / "AGENTS.md").unlink()
-        (self.root / "README.md").write_text("# Plain docs repo\\n", encoding="utf-8")
+        (self.root / "README.md").write_text("# Plain docs repo\n", encoding="utf-8")
         (self.root / "docs" / "_governance" / "AIMES-CORE-V1.2.md").unlink()
         result = check_docs(self.root)
         self.assertTrue(result["ok"], result["findings"])
@@ -66,23 +66,23 @@ class DocsCheckTests(unittest.TestCase):
     def test_packaged_core_template_links_are_not_checked_at_template_location(self):
         template = self.root / "src" / "aimes_cli" / "templates" / "core"
         template.mkdir(parents=True)
-        (template / "AIMES-CORE-V1.2.md").write_text("[Project task file](project-control/TASKS.md)\\n", encoding="utf-8")
+        (template / "AIMES-CORE-V1.2.md").write_text("[Project task file](project-control/TASKS.md)\n", encoding="utf-8")
         result = check_docs(self.root)
         self.assertFalse(any(item["code"] == "BROKEN_LINK" for item in result["findings"]))
 
     def test_configured_task_and_handoff_paths_are_checked(self):
         (self.root / ".aimes").mkdir(exist_ok=True)
         (self.root / ".aimes" / "config.yaml").write_text(
-            "governance:\\n  core: docs/_governance/AIMES-CORE-V1.2.md\\n"
-            "records:\\n  tasks: project-control/TASKS.md\\n  handoff: HANDOFF.md\\n"
-            "tools:\\n  - id: codex-cli\\n    entry_paths: [AGENTS.md]\\n", encoding="utf-8")
+            "governance:\n  core: docs/_governance/AIMES-CORE-V1.2.md\n"
+            "records:\n  tasks: project-control/TASKS.md\n  handoff: HANDOFF.md\n"
+            "tools:\n  - id: codex-cli\n    entry_paths: [AGENTS.md]\n", encoding="utf-8")
         result = check_docs(self.root)
         missing = [item for item in result["findings"] if item["code"] == "RECORD_PATH_MISSING"]
         self.assertEqual({item["path"] for item in missing}, {"project-control/TASKS.md", "HANDOFF.md"})
 
     def test_duplicate_env_example_assignments_are_reported(self):
         (self.root / ".env.example").write_text(
-            "# first declaration\\nCOSYVOICE_MODEL_DIR=/models\\n# duplicate\\nCOSYVOICE_MODEL_DIR=/other\\n", encoding="utf-8")
+            "# first declaration\nCOSYVOICE_MODEL_DIR=/models\n# duplicate\nCOSYVOICE_MODEL_DIR=/other\n", encoding="utf-8")
         result = check_docs(self.root)
         duplicates = [item for item in result["findings"] if item["code"] == "ENV_KEY_DUPLICATE"]
         self.assertEqual(len(duplicates), 1)
@@ -91,9 +91,9 @@ class DocsCheckTests(unittest.TestCase):
     def test_record_path_escape_is_rejected(self):
         (self.root / ".aimes").mkdir(exist_ok=True)
         (self.root / ".aimes" / "config.yaml").write_text(
-            "governance:\\n  core: docs/_governance/AIMES-CORE-V1.2.md\\n"
-            "records:\\n  tasks: ../outside/TASKS.md\\n"
-            "tools:\\n  - id: codex-cli\\n    entry_paths: [AGENTS.md]\\n", encoding="utf-8")
+            "governance:\n  core: docs/_governance/AIMES-CORE-V1.2.md\n"
+            "records:\n  tasks: ../outside/TASKS.md\n"
+            "tools:\n  - id: codex-cli\n    entry_paths: [AGENTS.md]\n", encoding="utf-8")
         result = check_docs(self.root)
         self.assertTrue(any(item["code"] == "RECORD_PATH_ESCAPE" for item in result["findings"]))
 
