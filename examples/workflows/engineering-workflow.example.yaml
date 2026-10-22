@@ -1,0 +1,107 @@
+# DEMO definition only; validates the state machine, but does not execute it.
+schema_version: 1
+workflow_id: WF-ENGINEERING-001
+version: 1.0.0
+name: "Controlled engineering workflow"
+purpose: "Demonstrate explicit success/failure/blocked paths, approval metadata, and guarded retry."
+entry_state: intake
+states:
+  - state_id: intake
+    name: "Establish project baseline and requirements"
+    entry_conditions: ["A task request exists"]
+    required_artifacts: ["task-id", "baseline-commit"]
+    completion_criteria: ["Goal and acceptance criteria are recorded"]
+    failure_recovery: ["Preserve analysis notes and report missing context"]
+    side_effects: ["Read project files only"]
+    approval_required: false
+    retry_mode: idempotent
+    max_attempts: 2
+    terminal_outcome: null
+  - state_id: implementation
+    name: "Implement approved changes"
+    entry_conditions: ["Requirements are sufficiently clear", "Required approval is recorded"]
+    required_artifacts: ["approved-scope"]
+    completion_criteria: ["Changes stay within approved scope"]
+    failure_recovery: ["Preserve the diff and report the failing step before retry"]
+    side_effects: ["May modify project files within approved scope"]
+    approval_required: true
+    retry_mode: guarded
+    max_attempts: 2
+    retry_guard: "Retry only after checking workspace diff and confirming the prior attempt did not partially apply the same change."
+    terminal_outcome: null
+  - state_id: verification
+    name: "Run independent verification"
+    entry_conditions: ["Implementation step completed"]
+    required_artifacts: ["change-diff"]
+    completion_criteria: ["Required tests and acceptance checks have evidence"]
+    failure_recovery: ["Keep failing logs and route to a failure terminal; do not claim success"]
+    side_effects: ["Runs only authorized verification commands"]
+    approval_required: false
+    retry_mode: idempotent
+    max_attempts: 2
+    terminal_outcome: null
+  - state_id: success
+    name: "Completed with evidence"
+    entry_conditions: ["All acceptance checks passed"]
+    required_artifacts: ["evidence-refs"]
+    completion_criteria: ["Outputs and evidence are traceable"]
+    failure_recovery: ["If evidence is missing, downgrade to UNKNOWN and request review"]
+    side_effects: ["No additional writes"]
+    approval_required: false
+    retry_mode: never
+    max_attempts: 1
+    terminal_outcome: SUCCESS
+  - state_id: failure
+    name: "Failed"
+    entry_conditions: ["A required step failed"]
+    required_artifacts: []
+    completion_criteria: ["Failure cause and next safe action are recorded"]
+    failure_recovery: ["Return to a human owner for triage"]
+    side_effects: ["No automatic destructive recovery"]
+    approval_required: false
+    retry_mode: never
+    max_attempts: 1
+    terminal_outcome: FAILURE
+  - state_id: blocked
+    name: "Blocked"
+    entry_conditions: ["Required permission, context, or capability is unavailable"]
+    required_artifacts: []
+    completion_criteria: ["Blocker and required decision are recorded"]
+    failure_recovery: ["Resume only after the blocker is resolved and the baseline is rechecked"]
+    side_effects: ["No additional writes"]
+    approval_required: false
+    retry_mode: never
+    max_attempts: 1
+    terminal_outcome: BLOCKED
+transitions:
+  - from: intake
+    to: implementation
+    "on": success
+  - from: intake
+    to: failure
+    "on": failure
+  - from: intake
+    to: blocked
+    "on": blocked
+  - from: implementation
+    to: verification
+    "on": success
+  - from: implementation
+    to: failure
+    "on": failure
+  - from: implementation
+    to: blocked
+    "on": blocked
+  - from: implementation
+    to: implementation
+    "on": retry
+    guard: "Retry guard in implementation state must be satisfied."
+  - from: verification
+    to: success
+    "on": success
+  - from: verification
+    to: failure
+    "on": failure
+  - from: verification
+    to: blocked
+    "on": blocked

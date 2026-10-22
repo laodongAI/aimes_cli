@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/laodongAI/aimes_cli/blob/main/schemas/workflow-definition.schema.json",
+  "title": "AIMES Declarative Workflow Definition",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "workflow_id",
+    "version",
+    "name",
+    "purpose",
+    "entry_state",
+    "states",
+    "transitions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "workflow_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "entry_state": {
+      "type": "string",
+      "minLength": 1
+    },
+    "states": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "state_id",
+          "name",
+          "entry_conditions",
+          "required_artifacts",
+          "completion_criteria",
+          "failure_recovery",
+          "side_effects",
+          "approval_required",
+          "retry_mode",
+          "max_attempts",
+          "terminal_outcome"
+        ],
+        "properties": {
+          "state_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "entry_conditions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required_artifacts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "completion_criteria": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "failure_recovery": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "side_effects": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "approval_required": {
+            "type": "boolean"
+          },
+          "retry_mode": {
+            "type": "string",
+            "enum": [
+              "idempotent",
+              "guarded",
+              "never"
+            ]
+          },
+          "max_attempts": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "retry_guard": {
+            "type": "string",
+            "minLength": 1
+          },
+          "terminal_outcome": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "SUCCESS",
+              "FAILURE",
+              "BLOCKED",
+              "CANCELLED",
+              null
+            ]
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "retry_mode": {
+                  "const": "never"
+                }
+              },
+              "required": [
+                "retry_mode"
+              ]
+            },
+            "then": {
+              "properties": {
+                "max_attempts": {
+                  "const": 1
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "retry_mode": {
+                  "const": "guarded"
+                },
+                "max_attempts": {
+                  "minimum": 2
+                }
+              },
+              "required": [
+                "retry_mode",
+                "max_attempts"
+              ]
+            },
+            "then": {
+              "required": [
+                "retry_guard"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "terminal_outcome": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "terminal_outcome"
+              ]
+            },
+            "then": {
+              "properties": {
+                "retry_mode": {
+                  "const": "never"
+                },
+                "max_attempts": {
+                  "const": 1
+                }
+              }
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    "transitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "on"
+        ],
+        "properties": {
+          "from": {
+            "type": "string",
+            "minLength": 1
+          },
+          "to": {
+            "type": "string",
+            "minLength": 1
+          },
+          "on": {
+            "type": "string",
+            "enum": [
+              "success",
+              "failure",
+              "blocked",
+              "cancelled",
+              "retry",
+              "approval_granted",
+              "approval_denied"
+            ]
+          },
+          "guard": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
