@@ -20,6 +20,7 @@ class ReleaseCheckTests(unittest.TestCase):
             encoding="utf-8",
         )
         (self.root / "README.md").write_text("# AIMES local CLI（V0.7.9）\n", encoding="utf-8")
+        (self.root / "CHANGELOG.md").write_text("## 0.7.9 - Test release\\n\\n- Test.\\n", encoding="utf-8")
         (self.root / "build_windows_exe.ps1").write_text("pyinstaller --collect-data aimes_cli\n", encoding="utf-8")
 
     def tearDown(self):
@@ -64,6 +65,23 @@ class ReleaseCheckTests(unittest.TestCase):
         result = validate_release(self.root)
         self.assertFalse(result["ok"])
         self.assertTrue(any(item["name"] == "version_source_is_canonical" and item["status"] == "FAIL" for item in result["checks"]))
+
+    def test_changelog_version_mismatch_fails(self):
+        (self.root / "CHANGELOG.md").write_text("## 0.7.8 - Old release\n", encoding="utf-8")
+        result = validate_release(self.root)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any(item["name"] == "changelog_package_version_match" and item["status"] == "FAIL" for item in result["checks"]))
+
+    def test_stale_wheel_filename_in_install_section_fails(self):
+        (self.root / "README.md").write_text(
+            "# AIMES local CLI (V0.7.9)\n\n## 3. 安装（Windows PowerShell）\n"
+            "python -m pip install .\\dist\\aimes_governance_cli-0.5.3-py3-none-any.whl\n\n"
+            "## 4. 第一次初始化\n",
+            encoding="utf-8",
+        )
+        result = validate_release(self.root)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any(item["name"] == "readme_installation_not_pinned_to_historical_wheel" and item["status"] == "FAIL" for item in result["checks"]))
 
 
 if __name__ == "__main__":
