@@ -1,3 +1,5 @@
+import contextlib
+import io
 import json
 import tempfile
 import unittest
@@ -6,6 +8,7 @@ from pathlib import Path
 import yaml
 
 from aimes_cli.workflow_run import start_workflow_run, transition_workflow_run, validate_workflow_run
+from aimes_cli.cli import main
 
 
 class WorkflowRunTests(unittest.TestCase):
@@ -103,6 +106,38 @@ class WorkflowRunTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn("RUN_ID_INVALID", {item["code"] for item in result["findings"]})
 
+
+    def test_cli_start_transition_and_validate(self):
+        record = Path(".aimes/workflows/runs/CLI-RUN-001.json")
+        args = [
+            "workflow", "run", "start", str(self.definition),
+            "--record", str(record), "--run-id", "CLI-RUN-001",
+            "--task-id", "CLI-TASK-001", "--baseline-commit", "abc1234",
+            "--confirm", "START", "--root", str(self.root), "--format", "json"
+        ]
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            code = main(args)
+        self.assertEqual(code, 0, output.getvalue())
+        transition_args = [
+            "workflow", "run", "transition", str(self.definition), str(record),
+            "--event", "success", "--approval-ref", "APR-CLI-001",
+            "--confirm", "TRANSITION", "--root", str(self.root), "--format", "json"
+        ]
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            code = main(transition_args)
+        self.assertEqual(code, 0, output.getvalue())
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            code = main(["workflow", "run", "validate", str(self.definition), str(record), "--root", str(self.root), "--format", "json"])
+        self.assertEqual(code, 0, output.getvalue())
+
+    def test_run_schema_copies_match(self):
+        repo_root = Path(__file__).resolve().parents[1]
+        root_schema = json.loads((repo_root / "schemas" / "workflow-run.schema.json").read_text(encoding="utf-8"))
+        package_schema = json.loads((repo_root / "src" / "aimes_cli" / "schemas" / "workflow-run.schema.json").read_text(encoding="utf-8"))
+        self.assertEqual(root_schema, package_schema)
 
 if __name__ == "__main__":
     unittest.main()
