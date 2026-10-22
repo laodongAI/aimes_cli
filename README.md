@@ -21,6 +21,19 @@ aimes repair --apply --confirm REPAIR --tools codex-cli --root . --format json
 
 该流程会在修复后复诊，并列出已解决与剩余问题。用户修改过的规则文件不会被强制覆盖；配置无法解析、清单损坏或适配器未验证时，会提供人工/引导式选项，而不是假装已修复。完整安全边界见 [诊断与安全修复指南](docs/REPAIR-LOOP.md)。
 
+## 0.2 业务代码修复提案：先审阅，再应用与验证
+
+AIMES 支持对 AI 编码工具生成的业务代码补丁进行受控处理：创建提案不会修改业务文件；显式确认后才应用，保存备份，并可运行指定测试、记录结果和安全回滚。
+
+```powershell
+aimes repair-code propose candidate.patch --id fix-001 --finding "TEST-42" --root . --format json
+aimes repair-code apply fix-001 --confirm APPLY-FIX --root . --format json
+aimes repair-code verify fix-001 --test-argv-json '["python","-m","unittest","discover","-s","tests"]' --root . --format json
+aimes repair-code rollback fix-001 --confirm ROLLBACK-FIX --root . --format json
+```
+
+该流程不会自动生成或执行模型补丁；它负责验证补丁边界、基线哈希、备份、测试记录和回滚保护。完整说明见 [业务代码修复提案指南](docs/CODE-REPAIR-PROPOSALS.md)。
+
 ## 0. 交互式启动与 Windows 独立 EXE
 
 在交互式终端中只输入 `aimes` 即可进入菜单，逐步选择初始化、配置、检查或验证任务。初始化向导支持多选工具，默认先预览；确认实际写入时需要输入 `YES`。原有参数命令仍然保留，适合脚本和 CI。
