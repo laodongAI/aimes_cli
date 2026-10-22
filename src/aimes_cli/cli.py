@@ -6,7 +6,7 @@ from .adapters import ADAPTERS, normalize_tools
 from .core import find_root, init_project, inspect_project, validate_project, doctor, status, render_text
 from .validators import validate_requirement, validate_knowledge, validate_reuse, validate_skill_registry
 from .v03 import validate_trace, validate_evidence, build_context_pack
-from .evaluation import validate_suite, validate_run, build_run_report, compare_runs
+from .evaluation import validate_suite, validate_run, validate_run_against_suite, build_run_report, compare_runs
 from .v05 import validate_adapter_evidence, adapter_report, validate_context_pack
 from .skill_execution import validate_skill_execution
 from .workflow import validate_workflow_definition
@@ -155,6 +155,8 @@ def parser() -> argparse.ArgumentParser:
     evaluation_sub = evaluation.add_subparsers(dest='evaluation_command', required=True)
     evaluation_validate = evaluation_sub.add_parser('validate', help='Validate a versioned evaluation suite')
     common(evaluation_validate); evaluation_validate.add_argument('path', type=Path)
+    evaluation_run_validate = evaluation_sub.add_parser('validate-run', help='Validate run completeness and hard-gate coverage against a fixed suite')
+    common(evaluation_run_validate); evaluation_run_validate.add_argument('run', type=Path); evaluation_run_validate.add_argument('--suite', type=Path, required=True)
     evaluation_report = evaluation_sub.add_parser('report', help='Summarize a recorded evaluation run; does not execute tasks')
     common(evaluation_report); evaluation_report.add_argument('path', type=Path)
     evaluation_compare = evaluation_sub.add_parser('compare', help='Compare baseline and candidate run records')
@@ -661,6 +663,12 @@ def main(argv=None):
             if args.evaluation_command == 'validate':
                 target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
                 result = validate_suite(target)
+                emit(result, args.format, args.output)
+                return 0 if result['ok'] else 1
+            if args.evaluation_command == 'validate-run':
+                run_path = (root / args.run).resolve() if not args.run.is_absolute() else args.run.resolve()
+                suite_path = (root / args.suite).resolve() if not args.suite.is_absolute() else args.suite.resolve()
+                result = validate_run_against_suite(suite_path, run_path)
                 emit(result, args.format, args.output)
                 return 0 if result['ok'] else 1
             if args.evaluation_command == 'report':
