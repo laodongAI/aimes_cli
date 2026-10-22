@@ -30,6 +30,7 @@ def validate_release(root: Path) -> dict[str, Any]:
     pyproject = root / "pyproject.toml"
     init_file = root / "src" / "aimes_cli" / "__init__.py"
     readme = root / "README.md"
+    changelog = root / "CHANGELOG.md"
     core_dir = root / "src" / "aimes_cli" / "templates" / "core"
     build_script = root / "build_windows_exe.ps1"
 
@@ -85,6 +86,37 @@ def validate_release(root: Path) -> dict[str, Any]:
               f"README version={readme_version!r}; package version={package_version!r}.", "README.md")
     else:
         check("readme_package_version_match", None, "README/package version comparison is unavailable.")
+
+    if changelog.is_file():
+        text = changelog.read_text(encoding="utf-8-sig")
+        match = re.search(r"(?mi)^##\s*[vV]?(\d+\.\d+\.\d+)\b", text)
+        changelog_version = match.group(1) if match else None
+        check("changelog_current_version_present", changelog_version is not None,
+              "CHANGELOG.md starts with a semantic-version release heading.", "CHANGELOG.md")
+        if package_version is not None and changelog_version is not None:
+            check("changelog_package_version_match", package_version == changelog_version,
+                  f"CHANGELOG version={changelog_version!r}; package version={package_version!r}.", "CHANGELOG.md")
+        else:
+            check("changelog_package_version_match", None, "CHANGELOG/package version comparison is unavailable.", "CHANGELOG.md")
+    else:
+        check("changelog_current_version_present", None, "CHANGELOG.md is absent; current release notes cannot be checked.", "CHANGELOG.md")
+        check("changelog_package_version_match", None, "CHANGELOG/package version comparison is unavailable.", "CHANGELOG.md")
+
+    if readme.is_file():
+        readme_text = readme.read_text(encoding="utf-8-sig")
+        install_start = readme_text.find("## 3. 安装")
+        install_end = readme_text.find("## 4. 第一次初始化", install_start) if install_start >= 0 else -1
+        if install_start >= 0 and install_end > install_start:
+            install_section = readme_text[install_start:install_end]
+            stale_wheel = re.search(r"aimes_governance_cli-\d+\.\d+\.\d+-py3-none-any\.whl", install_section)
+            check("readme_installation_not_pinned_to_historical_wheel", stale_wheel is None,
+                  "Installation instructions must not pin a historical wheel filename.", "README.md")
+        else:
+            check("readme_installation_not_pinned_to_historical_wheel", None,
+                  "Could not isolate the README installation section; manually verify install instructions.", "README.md")
+    else:
+        check("readme_installation_not_pinned_to_historical_wheel", None,
+              "README.md is absent; installation instructions cannot be checked.", "README.md")
 
     core_files = sorted(core_dir.glob("AIMES-CORE-V*.md")) if core_dir.is_dir() else []
     if governance_version is not None:
