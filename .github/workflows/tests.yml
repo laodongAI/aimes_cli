@@ -28,6 +28,8 @@ jobs:
         run: aimes release validate --root . --format json
       - name: Validate Token-efficiency benchmark suite
         run: aimes evaluation validate examples/evaluation/token-efficiency-suite.yaml
+      - name: Validate core rule-following regression suite
+        run: aimes evaluation validate examples/evaluation/rule-following-suite.yaml --root . --format json
       - name: Validate adapter verification evidence V2 example
         run: |
           aimes adapter validate examples/adapters/verification-evidence.example.yaml --format json
