@@ -97,6 +97,24 @@ class DocsCheckTests(unittest.TestCase):
         result = check_docs(self.root)
         self.assertTrue(any(item["code"] == "RECORD_PATH_ESCAPE" for item in result["findings"]))
 
+    def test_pending_proposal_is_reported_without_modification(self):
+        proposal = self.root / ".aimes" / "proposed" / "CLAUDE.md.proposed"
+        proposal.parent.mkdir(parents=True)
+        proposal.write_text("# Proposed entry\\n", encoding="utf-8")
+        result = check_docs(self.root)
+        self.assertTrue(any(item["code"] == "PROPOSAL_PENDING" and item["path"] == ".aimes/proposed/CLAUDE.md.proposed" for item in result["findings"]))
+        self.assertEqual(proposal.read_text(encoding="utf-8"), "# Proposed entry\\n")
+
+    def test_git_untracked_files_are_reported_read_only(self):
+        import subprocess
+        subprocess.run(["git", "init", str(self.root)], capture_output=True, check=True)
+        untracked = self.root / ".trae" / "rules" / "example.md"
+        untracked.parent.mkdir(parents=True)
+        untracked.write_text("rule\\n", encoding="utf-8")
+        result = check_docs(self.root)
+        self.assertTrue(any(item["code"] == "GIT_UNTRACKED_FILE" and item["path"] == ".trae/rules/example.md" for item in result["findings"]))
+        self.assertTrue(untracked.is_file())
+
     def test_external_links_are_ignored(self):
         (self.root / "README.md").write_text(
             "[External](https://example.com/not-local)\n[Email](mailto:test@example.com)\n",

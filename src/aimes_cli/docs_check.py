@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -146,6 +147,49 @@ def _check_project_records_and_env(root: Path, findings: list[dict[str, Any]]) -
             seen[key] = line_no
 
 
+
+
+def _check_pending_proposals(root: Path, findings: list[dict[str, Any]]) -> None:
+    """Report staged proposal files without applying or changing them."""
+    proposal_dir = root / ".aimes" / "proposed"
+    if not proposal_dir.is_dir():
+        return
+    for path in sorted(proposal_dir.rglob("*.proposed")):
+        if not path.is_file() or path.is_symlink():
+            continue
+        rel = path.relative_to(root).as_posix()
+        _finding(findings, "WARNING", "PROPOSAL_PENDING", "A generated proposal is waiting for review; compare it with the current file and apply manually or through an explicit approved repair.", rel)
+
+
+def _check_git_untracked(root: Path, findings: list[dict[str, Any]]) -> None:
+    """Read-only audit of untracked files; never stages or deletes anything."""
+    try:
+        probe = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return
+    if probe.returncode != 0:
+        return
+    try:
+        status = subprocess.run(
+            ["git", "-C", str(root), "-c", "core.quotepath=false", "status", "--porcelain=v1", "-z", "--untracked-files=all", "--", "."],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        _finding(findings, "WARNING", "GIT_STATUS_UNAVAILABLE", "Could not inspect Git status; untracked-file audit was skipped.")
+        return
+    if status.returncode != 0:
+        _finding(findings, "WARNING", "GIT_STATUS_UNAVAILABLE", "Git status returned an error; untracked-file audit was skipped.")
+        return
+    for entry in status.stdout.split("\\0"):
+        if len(entry) < 4 or entry[:2] != "?? ":
+            continue
+        rel = entry[3:].replace("\\\\", "/")
+        _finding(findings, "WARNING", "GIT_UNTRACKED_FILE", "Untracked file: decide whether it belongs in version control or should be ignored; AIMES will not stage it automatically.", rel)
+
+
 def check_docs(root: Path, *, max_entry_lines: int = 40) -> dict[str, Any]:
     """Read-only documentation and thin-entry check. It never modifies project files."""
     root = root.resolve()
@@ -156,6 +200,8 @@ def check_docs(root: Path, *, max_entry_lines: int = 40) -> dict[str, Any]:
 
     core_rel, entry_paths = _load_project_config(root, findings)
     _check_project_records_and_env(root, findings)
+    _check_pending_proposals(root, findings)
+    _check_git_untracked(root, findings)
     core_path = (root / core_rel).resolve()
     try:
         core_path.relative_to(root)
