@@ -1,3 +1,5 @@
+import contextlib
+import io
 import json
 import tempfile
 import unittest
@@ -5,6 +7,7 @@ from pathlib import Path
 
 from aimes_cli.runtime_probe import create_runtime_probe, validate_runtime_probe
 from aimes_cli.v05 import validate_adapter_evidence
+from aimes_cli.cli import main
 
 
 class RuntimeProbeTests(unittest.TestCase):
@@ -87,6 +90,28 @@ class RuntimeProbeTests(unittest.TestCase):
         self.assertTrue((target / "CLAUDE.md").is_file())
         self.assertFalse((target / "AGENTS.md").exists())
 
+
+    def test_cli_create_and_validate_probe(self):
+        target = self.root / ".aimes" / "probes" / "cli"
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            code = main([
+                "adapter", "probe", "create", "--tool", "claude-code",
+                "--product-version", "claude-code-test", "--output-dir", str(target),
+                "--root", str(self.root), "--format", "json"
+            ])
+        self.assertEqual(code, 0, output.getvalue())
+        token_text = (target / "CLAUDE.md").read_text(encoding="utf-8")
+        token = token_text.split("reply with exactly the following token and no other text:\n\n", 1)[1].splitlines()[0]
+        (target / "response.txt").write_text(token + "\n", encoding="utf-8")
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            code = main([
+                "adapter", "probe", "validate", str(target),
+                "--root", str(self.root), "--format", "json"
+            ])
+        self.assertEqual(code, 0, output.getvalue())
+        self.assertTrue((target / "verification-evidence.yaml").is_file())
 
 if __name__ == "__main__":
     unittest.main()
