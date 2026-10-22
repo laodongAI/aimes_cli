@@ -114,6 +114,20 @@ aimes context pack examples/traceability/trace-manifest.example.yaml --output-di
 - 示例数据中的证据是格式演示，不代表真实项目已经执行过相关命令。
 
 
+### 核心规则遵循固定回归集
+
+新增 [核心规则遵循回归集](examples/evaluation/rule-following-suite.yaml)，覆盖需求歧义、证据真实性、用户改动保护、不可信内容、修改范围、边界测试、审批门禁和代码/文档追溯。
+
+\`\`\`powershell
+# 校验固定案例集结构，不调用模型
+aimes evaluation validate examples/evaluation/rule-following-suite.yaml --root .
+
+# 校验实际运行记录是否覆盖全部案例和硬门禁
+aimes evaluation validate-run .aimes/evaluation/rule-following-run.json --suite examples/evaluation/rule-following-suite.yaml --root . --format json
+\`\`\`
+
+`validate-run` 会拒绝缺失案例、额外案例、套件版本不匹配、缺少硬门禁或无证据的 PASS。执行步骤和验收协议见 [核心规则遵循回归测试指南](docs/RULE-FOLLOWING-REGRESSION.md)。案例集目前是测试定义，不代表已在真实 AI 工具中执行或通过。
+
 ### Token 效率与能力非退化基准
 
 Token 优化必须先证明工程能力不退化，不能把大幅压缩提示词作为默认手段。基准方案见 [Token 效率与能力非退化基准测试方案](docs/governance-upgrade/TOKEN-EFFICIENCY-BENCHMARK-PLAN-2026-10-18.md)，固定案例集见 [token-efficiency-suite.yaml](examples/evaluation/token-efficiency-suite.yaml)。
