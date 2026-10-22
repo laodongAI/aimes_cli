@@ -32,13 +32,13 @@ def _safe_relative(value: str) -> str:
     raw_parts = value.split("/")
     if any(part in ("", ".", "..") for part in raw_parts):
         raise ValueError(f"补丁路径包含不安全片段：{value!r}")
-    if any(part.lower() in BLOCKED_PARTS for part in parts):
+    if any(part.lower() in BLOCKED_PARTS for part in raw_parts):
         raise ValueError(f"补丁不能修改治理元数据或依赖/运行目录：{value!r}")
     if Path(value).suffix.lower() in BLOCKED_SUFFIXES:
         raise ValueError(f"补丁不能修改编译缓存文件：{value!r}")
     if any(ord(ch) < 32 for ch in value):
         raise ValueError("补丁路径包含控制字符")
-    return Path(*parts).as_posix()
+    return Path(*raw_parts).as_posix()
 
 
 def _parse_patch(raw: str) -> list[str]:
