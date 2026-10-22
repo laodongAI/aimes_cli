@@ -11,6 +11,7 @@ from .v05 import validate_adapter_evidence, adapter_report, validate_context_pac
 from .skill_execution import validate_skill_execution
 from .workflow import validate_workflow_definition
 from .workflow_run import start_workflow_run, transition_workflow_run, validate_workflow_run
+from .runtime_probe import create_runtime_probe, validate_runtime_probe
 from .mock_runner import run_mock
 from .audit import append_event, validate_audit
 from .publish import publish_project
@@ -168,6 +169,14 @@ def parser() -> argparse.ArgumentParser:
     common(adapter_validate); adapter_validate.add_argument('path', type=Path)
     adapter_report_cmd = adapter_sub.add_parser('report', help='Summarize tool verification coverage')
     common(adapter_report_cmd); adapter_report_cmd.add_argument('path', type=Path)
+    adapter_probe = adapter_sub.add_parser('probe', help='Create or validate an isolated native rule-loading probe')
+    adapter_probe_sub = adapter_probe.add_subparsers(dest='adapter_probe_command', required=True)
+    adapter_probe_create = adapter_probe_sub.add_parser('create', help='Create a disposable probe project; does not launch an AI tool')
+    common(adapter_probe_create); adapter_probe_create.add_argument('--tool', choices=['codex-cli','claude-code'], required=True)
+    adapter_probe_create.add_argument('--output-dir', type=Path, required=True); adapter_probe_create.add_argument('--product-version', required=True)
+    adapter_probe_create.add_argument('--governance-version', default='1.2'); adapter_probe_create.add_argument('--observer', default='')
+    adapter_probe_validate = adapter_probe_sub.add_parser('validate', help='Validate the raw response and write a V2 runtime evidence record')
+    common(adapter_probe_validate); adapter_probe_validate.add_argument('probe_dir', type=Path); adapter_probe_validate.add_argument('--observer', default='')
     audit = sub.add_parser('audit', help='Local structured audit event operations')
     audit_sub = audit.add_subparsers(dest='audit_command', required=True)
     audit_validate = audit_sub.add_parser('validate', help='Validate JSONL audit event structure')
@@ -689,8 +698,16 @@ def main(argv=None):
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'adapter':
-            target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
-            result = validate_adapter_evidence(target, root) if args.adapter_command == 'validate' else adapter_report(target, root)
+            if args.adapter_command == 'probe':
+                if args.adapter_probe_command == 'create':
+                    output_dir = (root / args.output_dir).resolve() if not args.output_dir.is_absolute() else args.output_dir.resolve()
+                    result = create_runtime_probe(root, output_dir, tool=args.tool, product_version=args.product_version, governance_version=args.governance_version, observer=args.observer)
+                else:
+                    probe_dir = (root / args.probe_dir).resolve() if not args.probe_dir.is_absolute() else args.probe_dir.resolve()
+                    result = validate_runtime_probe(root, probe_dir, observer=args.observer)
+            else:
+                target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
+                result = validate_adapter_evidence(target, root) if args.adapter_command == 'validate' else adapter_report(target, root)
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'context' and args.context_command == 'validate':
