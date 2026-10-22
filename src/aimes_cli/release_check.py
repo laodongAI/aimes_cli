@@ -37,9 +37,16 @@ def validate_release(root: Path) -> dict[str, Any]:
     if pyproject.is_file():
         text = pyproject.read_text(encoding="utf-8-sig")
         project_match = re.search(r"(?ms)^\[project\]\s*(.*?)(?=^\[|\Z)", text)
-        version_match = re.search(r'''(?m)^\s*version\s*=\s*["']([^"']+)["']''', project_match.group(1)) if project_match else None
-        package_version = version_match.group(1) if version_match else None
-        check("package_version_present", package_version is not None, "pyproject.toml [project].version is present.", "pyproject.toml")
+        project_body = project_match.group(1) if project_match else ""
+        version_match = re.search(r'''(?m)^\s*version\s*=\s*["']([^"']+)["']''', project_body)
+        dynamic_version = bool(re.search(r'''(?m)^\s*dynamic\s*=\s*\[[^\]]*["']version["'][^\]]*\]''', project_body))
+        dynamic_match = re.search(r'''(?m)^\s*version\s*=\s*\{\s*attr\s*=\s*["']([^"']+)["']\s*\}''', text)
+        dynamic_attr = dynamic_match.group(1) if dynamic_match else None
+        package_version = version_match.group(1) if version_match else ("__DYNAMIC__" if dynamic_version and dynamic_attr == "aimes_cli.__version__" else None)
+        check("package_version_present", package_version is not None, "Package version is declared statically or sourced from aimes_cli.__version__.", "pyproject.toml")
+        canonical_version_source = bool(version_match) or (dynamic_version and dynamic_attr == "aimes_cli.__version__")
+        check("version_source_is_canonical", canonical_version_source,
+              "Use either a static package version or dynamic version sourced from aimes_cli.__version__.", "pyproject.toml")
     else:
         check("package_version_present", None, "pyproject.toml is absent; source package version cannot be checked.", "pyproject.toml")
 
@@ -51,6 +58,10 @@ def validate_release(root: Path) -> dict[str, Any]:
         governance_version = gov_match.group(1) if gov_match else None
         check("runtime_version_present", runtime_version is not None, "Runtime __version__ is present.", "src/aimes_cli/__init__.py")
         check("governance_version_present", governance_version is not None, "GOVERNANCE_VERSION is present.", "src/aimes_cli/__init__.py")
+        if package_version == "__DYNAMIC__":
+            package_version = runtime_version
+            check("dynamic_version_source_resolves", package_version is not None,
+                  "Dynamic package version resolves from aimes_cli.__version__.", "src/aimes_cli/__init__.py")
     else:
         check("runtime_version_present", None, "src/aimes_cli/__init__.py is absent; source package version cannot be checked.", "src/aimes_cli/__init__.py")
         check("governance_version_present", None, "GOVERNANCE_VERSION cannot be checked without source package.", "src/aimes_cli/__init__.py")
