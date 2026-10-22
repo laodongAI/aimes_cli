@@ -2,40 +2,40 @@
 
 ## 目标
 
-\`aimes repair\` 将诊断结果转换成带风险说明、可选方案和执行边界的修复计划。默认只诊断和生成方案；只有显式使用 \`--apply --confirm REPAIR\` 才会执行安全修复。
+`aimes repair` 将诊断结果转换成带风险说明、可选方案和执行边界的修复计划。默认只诊断和生成方案；只有显式使用 `--apply --confirm REPAIR` 才会执行安全修复。
 
 ## 1. 先诊断并查看修复选项
 
-\`\`\`powershell
+```powershell
 aimes repair --root . --format json
-\`\`\`
+```
 
 每个问题包含：
 
-- \`issue_id\`、诊断代码、级别和原始信息；
+- `issue_id`、诊断代码、级别和原始信息；
 - 建议标题、风险等级和根因说明；
 - 一个或多个可选方案；
-- 方案类型：\`safe-auto\`、\`guided\` 或 \`manual\`；
+- 方案类型：`safe-auto`、`guided` 或 `manual`；
 - 是否具备受控自动修复能力。
 
-\`safe-auto\` 只表示 AIMES 有确定性、可复核的修复路径，不代表会绕过确认自动写入。
+`safe-auto` 只表示 AIMES 有确定性、可复核的修复路径，不代表会绕过确认自动写入。
 
 ## 2. 预览后执行安全修复
 
-如果项目已有有效的 \`.aimes/config.yaml\`，可复用其中的工具适配器：
+如果项目已有有效的 `.aimes/config.yaml`，可复用其中的工具适配器：
 
-\`\`\`powershell
+```powershell
 aimes repair --root . --format json
 aimes repair --apply --confirm REPAIR --root . --format json
-\`\`\`
+```
 
 如果项目还没有 AIMES 配置，必须明确指定工具，避免猜测：
 
-\`\`\`powershell
+```powershell
 aimes repair --apply --confirm REPAIR --tools codex-cli --root . --format json
-\`\`\`
+```
 
-确认词 \`REPAIR\` 不区分大小写。没有 \`--apply\` 时不会执行写入；缺少正确确认词时会拒绝执行。
+确认词 `REPAIR` 不区分大小写。没有 `--apply` 时不会执行写入；缺少正确确认词时会拒绝执行。
 
 ## 3. 自动修复的安全边界
 
@@ -57,7 +57,7 @@ aimes repair --apply --confirm REPAIR --tools codex-cli --root . --format json
 - 剩余问题和下一步选项；
 - 初始化/合并过程中的文件操作及冲突信息。
 
-退出码为 0 表示复诊无剩余问题且写入流程成功；若仍有未解决问题，命令会返回非零状态。请始终检查 JSON 中的 \`remaining_actions\` 和 \`write_result\`，不要只看退出码。
+退出码为 0 表示复诊无剩余问题且写入流程成功；若仍有未解决问题，命令会返回非零状态。请始终检查 JSON 中的 `remaining_actions` 和 `write_result`，不要只看退出码。
 
 ## 5. 诊断类型与处理策略
 
