@@ -152,6 +152,15 @@ aimes context validate .aimes/context-pack/context-pack.json --handoff .aimes/co
 - `context validate` 对照 Context Pack 中记录的 SHA-256 检查源文件是否变化，并可检查 HANDOFF 文件是否存在。变化会提示重新审阅，不自动判断修改是否正确。
 - PASS 记录必须采用运行时观察、自动化检查或用户确认的方法，并附证据文件或说明。CLI 不会自动操纵 IDE，也不会伪造运行时证据。
 
+
+#### Codex CLI / Claude Code CLI 真实规则加载探针
+
+    aimes adapter probe create --tool codex-cli --product-version "<codex --version>" --output-dir .aimes/probes/codex-cli --root .
+    aimes adapter probe validate .aimes/probes/codex-cli --root .
+    aimes adapter validate .aimes/probes/codex-cli/verification-evidence.yaml --root .
+
+Claude Code CLI 将工具参数改为 --tool claude-code，版本填写实际 claude --version 输出，并使用独立的 .aimes/probes/claude-code 目录。创建后必须在全新 CLI 会话中从探针目录启动对应工具，将 PROMPT.txt 作为用户消息，并把未修改的完整回复保存为 response.txt。AIMES 不会启动 AI 工具。探针结果只证明该工具版本/CLI 模式下的隔离规则加载行为，不代表真实项目全部治理规则有效。完整流程、安全边界和证据解释见 [运行时规则加载探针指南](docs/RUNTIME-RULE-LOADING-PROBE.md)。
+
 ### 文档完整性与薄入口检查
 
 ```powershell
