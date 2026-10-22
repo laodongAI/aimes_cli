@@ -23,6 +23,7 @@ from .metrics import build_metrics_report
 from .release_check import validate_release
 from .upgrade import plan_upgrade, apply_upgrade
 from .repair import build_repair_plan, apply_safe_repairs
+from .code_repair import propose_patch, apply_patch, verify_patch, rollback_patch
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -63,6 +64,27 @@ def parser() -> argparse.ArgumentParser:
     repair.add_argument('--apply', action='store_true', help='Apply safe repairs; default is plan-only')
     repair.add_argument('--confirm', help='Must be REPAIR (case-insensitive) with --apply')
     repair.add_argument('--tools', help='Required if AIMES is not configured; comma-separated tool adapter IDs')
+    code_repair = sub.add_parser('repair-code', help='Review, apply, verify, or roll back a business-code patch proposal')
+    code_repair_sub = code_repair.add_subparsers(dest='repair_code_command', required=True)
+    code_repair_propose = code_repair_sub.add_parser('propose', help='Validate and save a unified diff proposal without modifying business files')
+    common(code_repair_propose)
+    code_repair_propose.add_argument('patch_file', type=Path)
+    code_repair_propose.add_argument('--id', required=True, dest='repair_id')
+    code_repair_propose.add_argument('--finding', required=True, help='Original diagnostic finding or issue ID')
+    code_repair_propose.add_argument('--rationale', default='', help='Root-cause reasoning and proposed fix summary')
+    code_repair_apply = code_repair_sub.add_parser('apply', help='Apply a reviewed patch after explicit confirmation and create backups')
+    common(code_repair_apply)
+    code_repair_apply.add_argument('repair_id')
+    code_repair_apply.add_argument('--confirm', required=True, help='Must be APPLY-FIX (case-insensitive)')
+    code_repair_verify = code_repair_sub.add_parser('verify', help='Run a test command as argv (no shell) and record the result')
+    common(code_repair_verify)
+    code_repair_verify.add_argument('repair_id')
+    code_repair_verify.add_argument('--test-argv-json', required=True, help='JSON array, e.g. ["python","-m","unittest"]')
+    code_repair_verify.add_argument('--timeout-seconds', type=int, default=300)
+    code_repair_rollback = code_repair_sub.add_parser('rollback', help='Restore pre-apply backups if touched files have not changed since apply')
+    common(code_repair_rollback)
+    code_repair_rollback.add_argument('repair_id')
+    code_repair_rollback.add_argument('--confirm', required=True, help='Must be ROLLBACK-FIX (case-insensitive)')
     task = sub.add_parser('task', help='Task ownership and change-scope governance')
     task_sub = task.add_subparsers(dest='task_command', required=True)
     task_validate = task_sub.add_parser('validate', help='Validate active-writer declaration, lease, branch and changed-file scope')
@@ -571,6 +593,18 @@ def main(argv=None):
                 result['apply_hint'] = 'Review the options above, then rerun with --apply --confirm REPAIR; add --tools when .aimes/config.yaml is missing.'
             emit(result, args.format, args.output)
             return 0 if result.get('ok', False) else (1 if not args.apply else 2)
+        if args.command == 'repair-code':
+            if args.repair_code_command == 'propose':
+                patch_file = (root / args.patch_file).resolve() if not args.patch_file.is_absolute() else args.patch_file.resolve()
+                result = propose_patch(root, patch_file, repair_id=args.repair_id, finding=args.finding, rationale=args.rationale)
+            elif args.repair_code_command == 'apply':
+                result = apply_patch(root, args.repair_id, confirm=args.confirm)
+            elif args.repair_code_command == 'verify':
+                result = verify_patch(root, args.repair_id, test_argv_json=args.test_argv_json, timeout_seconds=args.timeout_seconds)
+            else:
+                result = rollback_patch(root, args.repair_id, confirm=args.confirm)
+            emit(result, args.format, args.output)
+            return 0 if result.get('ok', False) else 1
         if args.command == 'publish':
             return run_publish_wizard(args)
         if args.command == 'upgrade':
