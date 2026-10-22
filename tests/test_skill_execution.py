@@ -1,3 +1,6 @@
+import contextlib
+import io
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -5,6 +8,7 @@ from pathlib import Path
 import yaml
 
 from aimes_cli.skill_execution import validate_skill_execution
+from aimes_cli.cli import main
 
 
 class SkillExecutionTests(unittest.TestCase):
@@ -102,6 +106,20 @@ class SkillExecutionTests(unittest.TestCase):
         self.assertTrue(result["ok"], result["findings"])
         self.assertEqual(result["status"], "UNKNOWN")
 
+
+    def test_schema_copies_match(self):
+        repo_root = Path(__file__).resolve().parents[1]
+        root_schema = json.loads((repo_root / "schemas" / "skill-execution-record.schema.json").read_text(encoding="utf-8"))
+        package_schema = json.loads((repo_root / "src" / "aimes_cli" / "schemas" / "skill-execution-record.schema.json").read_text(encoding="utf-8"))
+        self.assertEqual(root_schema, package_schema)
+
+    def test_cli_validates_execution_record(self):
+        repo_root = Path(__file__).resolve().parents[1]
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            code = main(["skill", "execution", "validate", "examples/skills/execution-record.example.yaml", "--root", str(repo_root), "--format", "json"])
+        self.assertEqual(code, 0, output.getvalue())
+        self.assertIn('"status": "UNKNOWN"', output.getvalue())
 
 if __name__ == "__main__":
     unittest.main()
