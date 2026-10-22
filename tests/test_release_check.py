@@ -83,6 +83,15 @@ class ReleaseCheckTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(any(item["name"] == "readme_installation_not_pinned_to_historical_wheel" and item["status"] == "FAIL" for item in result["checks"]))
 
+    def test_historical_root_release_artifact_fails(self):
+        (self.root / "RELEASE-MANIFEST.json").write_text(
+            '{"release": "AIMES CLI V0.5.3"}\n',
+            encoding="utf-8",
+        )
+        result = validate_release(self.root)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any(item["name"] == "historical_release_artifacts_archived" and item["status"] == "FAIL" for item in result["checks"]))
+
 
 if __name__ == "__main__":
     unittest.main()
