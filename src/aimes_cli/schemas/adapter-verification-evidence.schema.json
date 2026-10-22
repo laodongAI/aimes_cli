@@ -123,6 +123,10 @@
           "skill_version": {
             "type": "string",
             "minLength": 1
+          },
+          "platform": {
+            "type": "string",
+            "minLength": 1
           }
         },
         "allOf": [
@@ -184,9 +188,13 @@
                 "required": [
                   "product_version",
                   "execution_mode",
+                  "platform",
                   "rule_entry",
                   "observed_at",
-                  "observer"
+                  "observer",
+                  "case_id",
+                  "aimes_cli_version",
+                  "governance_version"
                 ]
               }
             }
