@@ -1,5 +1,8 @@
 schema_version: 1
 skills:
+# ==========================================
+# P0 Core Skills - 已有的核心工程治理Skills
+# ==========================================
 - id: SKL-CORE-ONB-001
   name: project-onboarding
   version: 0.3.0
@@ -283,4 +286,211 @@ skills:
   dependencies: []
   validation_status: UNKNOWN
   evaluation_suite: AIMES-UI-QUALITY-GOVERNANCE
+  evidence: []
+
+# ==========================================
+# P1 Product Analysis Skills - 新增的产品分析类Skills
+# ==========================================
+
+- id: SKL-CORE-MKT-001
+  name: market-analysis
+  version: 0.2.0
+  file: skills/product-analysis/market-analysis/SKILL.md
+  purpose: \u7cfb\u7edf\u6027\u5730\u5206\u6790\u5e02\u573a\u7ed3\u6784\u3001\u4f7f\u7528\u6ce2\u7279\u4e94\u529b\u3001PESTEL\u548cSWOT\u6846\u67b6\u3001\u8bc6\u522b\u5f71\u54cd\u4ea7\u54c1\u7684\u5916\u90e8\u529b\u91cf\u3002\u7528\u4e8e\u652f\u6301\u5e02\u573a\u8fdb\u5165\u51b3\u7b56\u3001\u6218\u7565\u89c4\u5212\u6216\u98ce\u9669\u8bc4\u4f30\u3002
+  triggers:
+  - market_entry_decision
+  - strategy_review
+  - risk_assessment
+  - competitive_analysis
+  inputs:
+  - industry_segment
+  - decision_context
+  - geographic_boundary
+  - existing_research
+  outputs:
+  - five_forces_analysis
+  - pestel_analysis
+  - swot_analysis
+  - market_structure_insights
+  - profit_pool_analysis
+  - evidence_map
+  applies_to:
+  - all
+  risk_level: medium
+  required_capabilities:
+  - market_research
+  - data_analysis
+  - strategic_thinking
+  forbidden_actions:
+  - fabricate_market_data
+  - bypass_evidence_requirements
+  - override_validation_protocols
+  prerequisites:
+  - clear_analysis_scope
+  - available_research_resources
+  dependencies: []
+  validation_status: UNKNOWN
+  evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
+  evidence: []
+
+- id: SKL-CORE-FIN-001
+  name: financial-evaluation
+  version: 0.2.0
+  file: skills/product-analysis/financial-evaluation/SKILL.md
+  purpose: \u8bc4\u4f30\u83b7\u5ba2\u6750\u53e3\u3001\u4e1a\u52a1\u5065\u5eb7\u5ea6\u548c\u529f\u80fd\u6295\u8d44\u7684\u8d22\u529b\u5f71\u54cd\u3002\u4f7f\u7528\u8865\u4e01\u5347\u7ea7\u3001\u63a5\u53e3\u6d4b\u8bd5\u548c\u547d\u4ee4\u884c\u4e3a\u8981\u6c42\u5206\u6790\u3001\u8bc4\u4f30\u83b7\u5ba2\u652f\u51fa\u3001\u8d22\u529b\u5065\u5eb7\u548c\u529f\u80fd\u6295\u8d44ROI\u3002
+  triggers:
+  - acquisition_channel_optimization
+  - business_health_check
+  - feature_investment_decision
+  - budget_allocation
+  inputs:
+  - channel_data
+  - business_metrics
+  - investment_proposals
+  - market_data
+  outputs:
+  - channel_evaluation_matrix
+  - business_health_scorecard
+  - investment_roi_analysis
+  - priority_recommendations
+  - red_flag_indicators
+  - evidence_map
+  applies_to:
+  - all
+  risk_level: medium
+  required_capabilities:
+  - financial_analysis
+  - data_interpretation
+  - business_acumen
+  forbidden_actions:
+  - fabricate_financial_data
+  - bypass_validation_checks
+  - override_decision_matrices
+  prerequisites:
+  - access_to_financial_data
+  - clear_evaluation_criteria
+  dependencies: []
+  validation_status: UNKNOWN
+  evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
+  evidence: []
+
+- id: SKL-CORE-STRAT-001
+  name: strategic-positioning
+  version: 0.2.0
+  file: skills/product-analysis/strategic-positioning/SKILL.md
+  purpose: \u57fa\u4e8e Geoffrey Moore \u5b9a\u4f4d\u6846\u67b6\u548c\u8def\u7531\u56fe\u8ba1\u529b\u3002\u63a7\u52a8\u5e02\u573a\u5b9a\u4f4d\u3001\u6784\u5efa\u4ea7\u54c1\u8def\u5f00\u5316\u4e0e\u6216\u66f4\u65b0\u3002\u9009\u62e9\u4f18\u5148\u7ea7\u6846\u67b6\u4ee5\u4f18\u5316\u8d44\u4ea7\u914d\u7f6e\u3002
+  triggers:
+  - product_positioning
+  - roadmap_planning
+  - strategy_alignment
+  - value_proposition_refinement
+  inputs:
+  - product_name
+  - target_customer
+  - unmet_need
+  - competitive_landscape
+  outputs:
+  - positioning_statement
+  - roadmap_prioritization
+  - framework_selection
+  - strategic_recommendations
+  - evidence_map
+  applies_to:
+  - all
+  risk_level: medium
+  required_capabilities:
+  - strategic_thinking
+  - market_analysis
+  - product_management
+  forbidden_actions:
+  - fabricate_positioning_data
+  - bypass_stakeholder_validation
+  - override_prioritization_matrices
+  prerequisites:
+  - clear_product_vision
+  - stakeholder_alignment
+  dependencies: []
+  validation_status: UNKNOWN
+  evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
+  evidence: []
+
+- id: SKL-CORE-OST-001
+  name: opportunity-solution-tree
+  version: 0.2.0
+  file: skills/product-analysis/opportunity-solution-tree/SKILL.md
+  purpose: \u57fa\u4e8e Teresa Torres \u7684\u673a\u4f1a\u201c\u89e3\u51b3\u6811\u6846\u67b6\u3002\u7cfb\u7edf\u6027\u5730\u63a2\u7d20\u3001\u9a8c\u8bc1\u548c\u4f18\u5148\u7ea7\u6392\u5e8f\u4ea7\u54c1\u673a\u4f1a\u3002\u5e26\u52a9\u4e1a\u52a1\u5668\u9765\u4e3a\u5ba2\u6237\u95ee\u9898\u51fa\u53e3\u3001\u4e0d\u662f\u4e3a\u89e3\u51b3\u65b9\u6848\u51fa\u53e3\u3002
+  triggers:
+  - opportunity_exploration
+  - problem_validation
+  - solution_prioritization
+  - product_discovery
+  inputs:
+  - opportunity_space
+  - customer_feedback
+  - market_data
+  - team_assumptions
+  outputs:
+  - opportunity_tree
+  - solution_options
+  - experiment_designs
+  - prioritization_matrix
+  - evidence_map
+  applies_to:
+  - all
+  risk_level: medium
+  required_capabilities:
+  - customer_empathy
+  - structured_thinking
+  - experimentation_design
+  forbidden_actions:
+  - fabricate_customer_data
+  - bypass_experiment_validation
+  - override_prioritization_logic
+  prerequisites:
+  - customer_understanding
+  - problem_clarity
+  dependencies: []
+  validation_status: UNKNOWN
+  evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
+  evidence: []
+
+- id: SKL-CORE-CJM-001
+  name: customer-journey-mapping
+  version: 0.2.0
+  file: skills/product-analysis/customer-journey-mapping/SKILL.md
+  purpose: \u57fa\u4e8e\u5ba2\u6237\u65c5\u7ec8\u6620\u56fe\u6846\u67b6\u3002\u7cfb\u7edf\u6027\u5730\u5206\u6790\u548c\u53ef\u89c2\u5316\u5ba2\u6237\u4e0e\u4ea7\u54c1\u7684\u4e92\u52a0\u5168\u6d41\u7a0b\u3002\u8bc6\u522b\u75db\u7347\u548c\u673a\u4f1a\u3001\u4f18\u5316\u5ba2\u6237\u65c5\u7ec8\u4ee5\u63d0\u5347\u6ee1\u5ea6\u5ea6\u548c\u8f6c\u6362\u7387\u3002
+  triggers:
+  - customer_experience_analysis
+  - pain_point_identification
+  - journey_optimization
+  - cross_team_alignment
+  inputs:
+  - customer_personas
+  - journey_stages
+  - user_feedback
+  - product_usage_data
+  outputs:
+  - journey_maps
+  - persona_definitions
+  - pain_point_analysis
+  - opportunity_identification
+  - improvement_recommendations
+  - evidence_map
+  applies_to:
+  - all
+  risk_level: low
+  required_capabilities:
+  - customer_empathy
+  - visualization_skills
+  - data_analysis
+  forbidden_actions:
+  - fabricate_customer_data
+  - bypass_evidence_requirements
+  - override_customer_feedback
+  prerequisites:
+  - customer_data_access
+  - journey_definition
+  dependencies: []
+  validation_status: UNKNOWN
+  evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
   evidence: []
