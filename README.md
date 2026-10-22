@@ -155,11 +155,14 @@ aimes context validate .aimes/context-pack/context-pack.json --handoff .aimes/co
 
 #### Codex CLI / Claude Code CLI 真实规则加载探针
 
-    aimes adapter probe create --tool codex-cli --product-version "<codex --version>" --output-dir .aimes/probes/codex-cli --root .
-    aimes adapter probe validate .aimes/probes/codex-cli --root .
-    aimes adapter validate .aimes/probes/codex-cli/verification-evidence.yaml --root .
+    $probeRoot = Join-Path $env:TEMP "aimes-runtime-probe"
+    New-Item -ItemType Directory -Force -Path $probeRoot | Out-Null
+    aimes adapter probe create --tool codex-cli --product-version "$(codex --version)" --output-dir codex-cli --root $probeRoot
+    # 在新会话中从 $probeRoot\codex-cli 启动 Codex，并把原始回复保存为 response.txt
+    aimes adapter probe validate codex-cli --root $probeRoot
+    aimes adapter validate codex-cli/verification-evidence.yaml --root $probeRoot
 
-Claude Code CLI 将工具参数改为 --tool claude-code，版本填写实际 claude --version 输出，并使用独立的 .aimes/probes/claude-code 目录。创建后必须在全新 CLI 会话中从探针目录启动对应工具，将 PROMPT.txt 作为用户消息，并把未修改的完整回复保存为 response.txt。AIMES 不会启动 AI 工具。探针结果只证明该工具版本/CLI 模式下的隔离规则加载行为，不代表真实项目全部治理规则有效。完整流程、安全边界和证据解释见 [运行时规则加载探针指南](docs/RUNTIME-RULE-LOADING-PROBE.md)。
+Claude Code CLI 将工具参数改为 --tool claude-code，版本填写实际 claude --version 输出，并使用 $probeRoot 下独立的 claude-code 目录。建议将探针放在业务项目之外，避免父目录规则污染结果。创建后必须在全新 CLI 会话中从探针目录启动对应工具，将 PROMPT.txt 作为用户消息，并把未修改的完整回复保存为 response.txt。AIMES 不会启动 AI 工具。探针结果只证明该工具版本/CLI 模式下的隔离规则加载行为，不代表真实项目全部治理规则有效。完整流程、安全边界和证据解释见 [运行时规则加载探针指南](docs/RUNTIME-RULE-LOADING-PROBE.md)。
 
 ### 文档完整性与薄入口检查
 
