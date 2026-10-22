@@ -42,6 +42,29 @@ class ReleaseCheckTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(any("package data" in item["message"] for item in result["findings"]))
 
+    def test_dynamic_package_version_uses_runtime_version(self):
+        (self.root / "pyproject.toml").write_text(
+            '[project]\\nname = "aimes-governance-cli"\\ndynamic = ["version"]\\n'
+            '[tool.setuptools.dynamic]\\nversion = { attr = "aimes_cli.__version__" }\\n'
+            '[tool.setuptools.package-data]\\naimes_cli = ["templates/**/*.md", "schemas/*.json"]\\n',
+            encoding="utf-8",
+        )
+        result = validate_release(self.root)
+        self.assertTrue(result["ok"], result["findings"])
+        self.assertEqual(result["versions"]["package"], "0.7.9")
+        self.assertTrue(any(item["name"] == "version_source_is_canonical" and item["status"] == "PASS" for item in result["checks"]))
+
+    def test_dynamic_package_version_rejects_noncanonical_source(self):
+        (self.root / "pyproject.toml").write_text(
+            '[project]\\nname = "aimes-governance-cli"\\ndynamic = ["version"]\\n'
+            '[tool.setuptools.dynamic]\\nversion = { attr = "other_package.__version__" }\\n'
+            '[tool.setuptools.package-data]\\naimes_cli = ["templates/**/*.md", "schemas/*.json"]\\n',
+            encoding="utf-8",
+        )
+        result = validate_release(self.root)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any(item["name"] == "version_source_is_canonical" and item["status"] == "FAIL" for item in result["checks"]))
+
 
 if __name__ == "__main__":
     unittest.main()
