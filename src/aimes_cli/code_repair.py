@@ -315,7 +315,7 @@ def verify_patch(root: Path, repair_id: str, *, test_argv_json: str, timeout_sec
 
 def rollback_patch(root: Path, repair_id: str, *, confirm: str | None) -> dict[str, Any]:
     root = root.resolve()
-    if (confirm or "").strip().casefold() != "ROLLBACK-FIX":
+    if (confirm or "").strip().casefold() != "rollback-fix":
         raise ValueError("回滚补丁必须显式确认：--confirm ROLLBACK-FIX（不区分大小写）")
     manifest, folder = _load_manifest(root, repair_id)
     if manifest.get("status") not in {"APPLIED", "VERIFICATION_FAILED", "VERIFIED"}:
