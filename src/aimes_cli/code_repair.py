@@ -120,6 +120,96 @@ def _git(root: Path, args: list[str]) -> subprocess.CompletedProcess[str]:
         raise ValueError(f"无法执行 Git 补丁检查：{exc}") from exc
 
 
+def diagnose_command(root: Path, *, diagnostic_id: str, test_argv_json: str, timeout_seconds: int = 300) -> dict[str, Any]:
+    root = root.resolve()
+    if not ID_RE.fullmatch(diagnostic_id):
+        raise ValueError("诊断 ID 仅允许字母、数字、点、下划线和连字符")
+    try:
+        argv = json.loads(test_argv_json)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"--test-argv-json 不是有效 JSON：{exc}") from exc
+    if not isinstance(argv, list) or not argv or any(not isinstance(arg, str) for arg in argv):
+        raise ValueError("--test-argv-json 必须是非空字符串数组，例如 '[\"python\",\"-m\",\"unittest\"]'")
+    if timeout_seconds < 1 or timeout_seconds > 1800:
+        raise ValueError("--timeout-seconds 必须在 1 到 1800 之间")
+
+    directory = root / REPAIR_DIR / "diagnostics"
+    report_path = directory / f"{diagnostic_id}.json"
+    if report_path.exists():
+        raise ValueError(f"诊断记录已存在，拒绝覆盖：{report_path}")
+    started = _now()
+    try:
+        result = subprocess.run(
+            argv, cwd=root, text=True, encoding="utf-8", errors="replace",
+            capture_output=True, check=False, timeout=timeout_seconds, shell=False,
+        )
+        stdout, stderr = result.stdout, result.stderr
+        returncode = result.returncode
+        timed_out = False
+        launch_error = None
+    except subprocess.TimeoutExpired as exc:
+        stdout, stderr = str(exc.stdout or ""), str(exc.stderr or "")
+        returncode, timed_out, launch_error = None, True, None
+    except OSError as exc:
+        stdout, stderr = "", str(exc)
+        returncode, timed_out, launch_error = None, False, str(exc)
+
+    combined = (stderr + "\n" + stdout)[-50000:]
+    rules = [
+        ("DEPENDENCY_OR_IMPORT", ("ModuleNotFoundError", "ImportError", "Cannot find module", "Module not found"),
+         "检查依赖是否安装、导入路径/包名是否正确，并核对项目声明的依赖清单。"),
+        ("SYNTAX_ERROR", ("SyntaxError", "IndentationError", "Unexpected token", "SyntaxError:"),
+         "先定位报告中的文件与行号，修复语法/缩进问题，再运行最小范围的语法检查。"),
+        ("ASSERTION_FAILURE", ("AssertionError", "Assertion failed", "Expected", "expected"),
+         "对比预期值与实际值，检查业务分支、测试数据、边界条件及最近变更；不要为了通过测试而随意放宽断言。"),
+        ("TYPE_OR_INTERFACE_ERROR", ("TypeError", "AttributeError", "KeyError", "NullReferenceException", "undefined is not a function"),
+         "检查输入类型、空值处理、调用方与被调用方的接口契约，以及缺失字段/属性的路径。"),
+        ("TEST_DISCOVERY_OR_COLLECTION", ("collected 0 items", "no tests ran", "test collection", "Cannot find any tests"),
+         "先检查测试发现规则、文件命名、测试路径和依赖导入；确认测试确实被执行，不能把未发现测试当作通过。"),
+        ("TIMEOUT", (), "检查死循环、阻塞 I/O、外部服务等待和测试夹具清理；缩小测试范围并设置合理超时。"),
+    ]
+    if timed_out:
+        code = "TIMEOUT"
+        advice = next(item[2] for item in rules if item[0] == code)
+    elif launch_error:
+        code = "COMMAND_LAUNCH_FAILED"
+        advice = "确认命令已安装、可从当前环境调用，并检查工作目录与虚拟环境。诊断命令未能启动。"
+    elif returncode == 0:
+        code = "NO_FAILURE_DETECTED"
+        advice = "指定命令返回 0。若原始问题仍存在，请运行针对该问题的复现用例；本结果不代表整个项目已通过验收。"
+    else:
+        match = next((item for item in rules if item[0] != "TIMEOUT" and any(token.casefold() in combined.casefold() for token in item[1])), None)
+        code = match[0] if match else "UNCLASSIFIED_FAILURE"
+        advice = match[2] if match else "先检查完整输出中的首个根因错误和最早相关调用栈，再让编码工具提出最小补丁；不要只修复最后一条连带错误。"
+
+    status = "PASS" if returncode == 0 else "FAIL"
+    report = {
+        "schema_version": 1,
+        "diagnostic_id": diagnostic_id,
+        "created_at": started,
+        "root": str(root),
+        "command_argv": argv,
+        "status": status,
+        "returncode": returncode,
+        "timeout": timed_out,
+        "launch_error": launch_error,
+        "finding": {"code": code, "summary": advice},
+        "recommendations": [
+            {"id": "inspect-evidence", "label": "检查原始输出、失败用例和相关调用栈", "mode": "manual"},
+            {"id": "propose-patch", "label": "让 AI 编码工具生成最小 unified diff，再通过 repair-code propose 创建提案", "mode": "guided"},
+            {"id": "review-apply-verify", "label": "人工审阅补丁后显式应用，并运行针对性测试与回归测试", "mode": "approval-gated"},
+        ] if status == "FAIL" else [
+            {"id": "check-original-issue", "label": "确认本次命令覆盖了原始问题的复现路径", "mode": "manual"},
+        ],
+        "stdout_tail": stdout[-16000:],
+        "stderr_tail": stderr[-16000:],
+        "note": "这是基于命令退出码与常见错误特征的辅助诊断，不等同于根因已确认；命令通过不代表原始问题已解决或整个项目通过验收；没有自动修改业务代码。",
+    }
+    directory.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return {"ok": status == "PASS", **report, "report_path": str(report_path)}
+
+
 def propose_patch(root: Path, patch_file: Path, *, repair_id: str, finding: str, rationale: str = "") -> dict[str, Any]:
     root = root.resolve()
     patch_file = patch_file.resolve()

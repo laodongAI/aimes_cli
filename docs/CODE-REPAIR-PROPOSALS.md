@@ -6,6 +6,15 @@
 
 当前实现接收统一 diff（unified diff）文件；它不自行调用模型，也不自动推断根因。用户或 AI 编码工具先生成补丁，AIMES 负责路径/基线校验、提案留档、应用确认、测试记录和回滚保护。
 
+## 0. 先运行诊断命令并生成修复建议
+
+如果你已经知道需要复现问题的测试命令，可以先让 AIMES 运行该命令、记录退出码和输出，并给出基于常见错误特征的修复建议：
+
+```powershell
+aimes repair-code diagnose --id diag-2026-001 --test-argv-json '["python","-m","unittest","discover","-s","tests"]' --timeout-seconds 300 --root . --format json
+```
+
+诊断记录保存在 `.aimes/repairs/diagnostics/diag-2026-001.json`。它会区分依赖/导入错误、语法错误、断言失败、类型/接口错误、测试发现失败、超时及未分类失败，并给出检查建议和下一步补丁提案流程。此分类是辅助提示，不保证根因已确认；命令返回 0 也只表示这条命令成功。
 ## 1. 准备补丁
 
 让编码工具先给出最小 unified diff，并保存为项目内或可访问的 UTF-8 文本文件，例如 `candidate.patch`。v1 接受普通文本文件修改和新增，不接受删除、重命名、二进制文件或修改 AIMES 元数据/虚拟环境/依赖目录。
