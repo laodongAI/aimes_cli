@@ -27,6 +27,8 @@ AIMES 的目标不是单纯安装规则和 Skills，而是帮助 Codex、Claude 
 - [x] 建立能力与验证状态矩阵。
 - [x] 将 Python 包版本配置改为从 `aimes_cli.__version__` 动态读取，避免包元数据和运行版本各自维护。
 - [x] 扩展发布校验测试，覆盖动态版本来源及不合法配置（GitHub Actions 单元测试已通过）。
+- [x] 归档 V0.5.3 旧构建/测试报告与哈希清单，并让发布校验阻止历史制品重新出现在仓库根目录。
+- [x] 修复 README 的历史 wheel 安装路径，改为源码安装流程并链接能力矩阵与路线图。
 - [ ] 校验 CHANGELOG 当前版本、README 安装步骤和发布产物元数据。
 - [ ] 对照 GitHub Actions 运行结果核验主干测试、Windows EXE 构建和冒烟检查。
 - [ ] 生成当前版本发布清单并确认正式 Release/tag/资产状态。
