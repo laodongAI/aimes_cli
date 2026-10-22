@@ -37,6 +37,7 @@ class BranchLifecycleTests(unittest.TestCase):
         run_git(self.root, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main")
         run_git(self.root, "branch", "feature-merged")
         run_git(self.root, "branch", "feature-unmerged")
+        run_git(self.root, "checkout", "feature-unmerged")
         (self.root / "new.txt").write_text("unmerged\n", encoding="utf-8")
         run_git(self.root, "add", "new.txt")
         run_git(self.root, "commit", "-m", "unmerged change")
