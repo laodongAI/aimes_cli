@@ -7,6 +7,7 @@ import yaml
 
 from .adapters import normalize_tools
 from .core import CONFIG_REL, init_project, load_config, validate_project
+from .docs_check import check_docs
 
 
 _REMEDIATION = {
@@ -115,48 +116,107 @@ _REMEDIATION = {
         "risk": "low",
         "reason": "这是能力验证任务，不是简单配置缺失；不能仅靠写文件标记为已验证。",
     },
+    "RECORD_PATH_MISSING": {
+        "title": "补齐任务或交接记录文件",
+        "options": [{"id": "manual-review", "label": "核对 records 路径；确认格式后再从模板创建", "mode": "guided", "requires_approval": True}],
+        "risk": "medium",
+        "reason": "任务/交接文件格式取决于项目约定；不会自动创建空文件或猜测格式。",
+    },
+    "RECORD_PATH_ESCAPE": {
+        "title": "修正越界的任务/交接路径",
+        "options": [{"id": "manual-review", "label": "将 records 路径改为项目根目录内的相对路径", "mode": "guided", "requires_approval": True}],
+        "risk": "high",
+        "reason": "路径越界可能访问项目外文件；不会自动改写配置。",
+    },
+    "RECORD_PATH_INVALID": {
+        "title": "修正任务/交接路径配置类型",
+        "options": [{"id": "manual-review", "label": "检查 records.tasks / records.handoff 并改为相对路径字符串", "mode": "guided", "requires_approval": True}],
+        "risk": "medium",
+        "reason": "配置结构存在歧义，必须由项目维护者确认。",
+    },
+    "ENV_KEY_DUPLICATE": {
+        "title": "消除 .env.example 重复变量定义",
+        "options": [{"id": "manual-review", "label": "比较重复定义的值，确认后人工合并为唯一赋值", "mode": "guided", "requires_approval": True}],
+        "risk": "medium",
+        "reason": "重复变量可能具有不同默认值；不能自动删除任意一行。",
+    },
+    "PROPOSAL_PENDING": {
+        "title": "审核待处理的候选修复文件",
+        "options": [{"id": "manual-review", "label": "比较候选文件与原文件，批准后再显式应用", "mode": "guided", "requires_approval": True}],
+        "risk": "medium",
+        "reason": "候选文件不是已批准的修复；不会自动应用或删除。",
+    },
+    "GIT_UNTRACKED_FILE": {
+        "title": "决定未跟踪文件的版本管理策略",
+        "options": [{"id": "manual-review", "label": "确认文件适合共享后手动纳管，或确认属于本地产物后加入忽略规则", "mode": "guided", "requires_approval": True}],
+        "risk": "medium",
+        "reason": "无法仅凭文件名判断是否包含秘密或生成物；不会执行 git add 或改写 .gitignore。",
+    },
+    "BROKEN_LINK": {
+        "title": "修复失效的 Markdown 本地链接",
+        "options": [{"id": "manual-review", "label": "核对目标是否移动或链接拼写是否错误，再修正链接", "mode": "guided", "requires_approval": True}],
+        "risk": "low",
+        "reason": "链接目标可能已移动或有意删除；不会猜测替代目标。",
+    },
+    "LINK_PATH_ESCAPE": {
+        "title": "修正指向项目外部的 Markdown 链接",
+        "options": [{"id": "manual-review", "label": "将链接改为项目内目标或明确的外部 URL", "mode": "guided", "requires_approval": True}],
+        "risk": "high",
+        "reason": "本地链接逃逸项目边界；需人工确认目标与文档意图。",
+    },
+    "CORE_REFERENCE_MISSING": {
+        "title": "补全薄规则入口的治理核心引用",
+        "options": [{"id": "manual-review", "label": "按薄入口规范补充核心文档引用，并保留项目专属规则", "mode": "guided", "requires_approval": True}],
+        "risk": "medium",
+        "reason": "入口文件可能包含用户自定义指令；不会自动覆盖或重写整份文件。",
+    },
+    "ENTRY_TOO_LONG": {
+        "title": "精简过长的工具规则入口",
+        "options": [{"id": "manual-review", "label": "审阅重复内容，将通用规则移入治理核心并保留项目特有约束", "mode": "guided", "requires_approval": True}],
+        "risk": "medium",
+        "reason": "自动删减可能丢失项目约束，必须比较差异并人工批准。",
+    },
 }
 
 
 def build_repair_plan(root: Path) -> dict[str, Any]:
+    """Combine AIMES configuration checks with read-only project/document diagnostics."""
     root = root.resolve()
     validation = validate_project(root)
-    findings = validation.get("findings", [])
-    actions = []
-    for index, finding in enumerate(findings, start=1):
-        code = finding.get("code", "UNKNOWN")
-        remediation = _REMEDIATION.get(code, {
-            "title": "人工分析未分类问题",
-            "options": [{"id": "manual-review", "label": "查看证据后制定修复方案", "mode": "manual", "requires_approval": True}],
-            "risk": "unknown",
-            "reason": "该诊断类型没有经过验证的自动修复器。",
-        })
-        actions.append({
-            "issue_id": f"ISSUE-{index:03d}",
-            "code": code,
-            "level": finding.get("level", "warning"),
-            "message": finding.get("message", ""),
-            "title": remediation["title"],
-            "risk": remediation["risk"],
-            "reason": remediation["reason"],
-            "options": remediation["options"],
-            "auto_repair_available": any(option["mode"] == "safe-auto" for option in remediation["options"]),
-        })
+    documentation = check_docs(root)
+    sources = [("project-validation", validation.get("findings", [])), ("docs-check", documentation.get("findings", []))]
+    actions: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for source, source_findings in sources:
+        for finding in source_findings:
+            code = finding.get("code", "UNKNOWN")
+            path = finding.get("path", "")
+            message = finding.get("message", "")
+            identity = (code, path, message)
+            if identity in seen:
+                continue
+            seen.add(identity)
+            remediation = _REMEDIATION.get(code, {"title": "人工分析未分类问题", "options": [{"id": "manual-review", "label": "查看证据后制定修复方案", "mode": "manual", "requires_approval": True}], "risk": "unknown", "reason": "该诊断类型没有经过验证的自动修复器。"})
+            action = {
+                "issue_id": f"ISSUE-{len(actions) + 1:03d}", "source": source, "code": code,
+                "level": finding.get("level", "warning"), "message": message, "title": remediation["title"],
+                "risk": remediation["risk"], "reason": remediation["reason"], "options": remediation["options"],
+                "auto_repair_available": any(option["mode"] == "safe-auto" for option in remediation["options"]),
+            }
+            if path:
+                action["path"] = path
+            if finding.get("line") is not None:
+                action["line"] = finding["line"]
+            actions.append(action)
     return {
-        "ok": validation.get("ok", False),
-        "root": str(root),
-        "diagnosis": validation,
-        "issue_count": len(actions),
-        "repair_actions": actions,
+        "ok": validation.get("ok", False) and documentation.get("ok", False),
+        "root": str(root), "diagnosis": validation, "documentation_diagnosis": documentation,
+        "issue_count": len(actions), "repair_actions": actions,
         "recommended_mode": "preview-then-apply" if actions else "no-action-needed",
-        "safety_policy": {
-            "default_is_preview": True,
-            "user_modified_files_are_never_force_overwritten": True,
-            "destructive_or_remote_actions_are_not_performed": True,
-            "unknown_findings_require_manual_review": True,
-        },
+        "safety_policy": {"default_is_preview": True, "user_modified_files_are_never_force_overwritten": True,
+            "destructive_or_remote_actions_are_not_performed": True, "unknown_findings_require_manual_review": True,
+            "documentation_and_git_findings_are_advisory_unless_a_deterministic_repair_is_proven": True},
     }
-
 
 def apply_safe_repairs(root: Path, *, confirm: str | None, tools: str | None = None) -> dict[str, Any]:
     root = root.resolve()
