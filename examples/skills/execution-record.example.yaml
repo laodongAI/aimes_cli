@@ -1,0 +1,39 @@
+# DEMO TEMPLATE ONLY: this record does not prove that a Skill was executed.
+schema_version: 1
+run_id: RUN-DEMO-001
+skill_id: SKL-CORE-REQ-001
+skill_version: "填写实际 Skill 版本"
+registry_version: "1"
+task_id: TASK-DEMO-001
+project: "DEMO ONLY - replace with actual project/task context"
+baseline_commit: "0000000000000000000000000000000000000000"
+tool_id: codex-cli
+tool_version: "填写实际工具版本"
+execution_mode: cli
+model_id: "填写实际模型 ID；无法获取时可删除此字段"
+aimes_cli_version: "填写实际 AIMES CLI 版本"
+governance_version: "填写实际治理核心版本"
+started_at: "2026-10-22T00:00:00Z"
+status: UNKNOWN
+steps:
+  - step_id: STEP-001
+    name: "示例：需求分析"
+    status: NOT_RUN
+    evidence_refs: []
+    notes: "模板占位步骤；未在真实工具中执行"
+acceptance_checks:
+  - check_id: AC-001
+    criterion: "输出符合需求认知 Skill 的验收标准"
+    status: UNKNOWN
+    evidence_refs: []
+    notes: "需要独立评审或自动化检查后才能判定"
+outputs: []
+evidence_refs: []
+unresolved_items:
+  - "尚未在真实 AI 工具新会话中执行此 Skill"
+  - "尚未采集可复核的外部证据"
+usage:
+  source: unavailable
+  input_tokens: null
+  output_tokens: null
+  total_tokens: null
