@@ -257,7 +257,18 @@ def apply_safe_repairs(root: Path, *, confirm: str | None, tools: str | None = N
         raise ValueError("未找到可安全复用的工具适配器；请通过 --tools 明确指定，未执行任何写入")
 
     before = build_repair_plan(root)
-    result = init_project(root, selected_tools, scope=scope, dry_run=False)
+    if before["diagnosis"].get("findings"):
+        result = init_project(root, selected_tools, scope=scope, dry_run=False)
+        mode = "safe-auto-repair"
+    else:
+        # Documentation/Git findings alone must not trigger unrelated configuration writes.
+        result = {
+            "ok": True,
+            "skipped": True,
+            "conflicts": [],
+            "note": "未发现 AIMES 配置修复项；本次只复诊文档/工程问题，未触发初始化写入。",
+        }
+        mode = "diagnostic-only-no-config-findings"
     after = build_repair_plan(root)
     remaining = list(after["repair_actions"])
     # A conflict is still an unresolved remediation item even if safe merge removes the file from
@@ -280,7 +291,7 @@ def apply_safe_repairs(root: Path, *, confirm: str | None, tools: str | None = N
     return {
         "ok": not remaining and result.get("ok", False),
         "root": str(root),
-        "mode": "safe-auto-repair",
+        "mode": mode,
         "selected_tools": selected_tools,
         "before_issue_count": before["issue_count"],
         "resolved_issue_codes": resolved,

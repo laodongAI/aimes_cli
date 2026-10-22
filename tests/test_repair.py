@@ -80,6 +80,23 @@ class RepairPlanTests(unittest.TestCase):
         self.assertEqual(proposal_action["options"][0]["id"], "manual-review")
         self.assertTrue(proposal.is_file())
 
+    def test_docs_only_apply_does_not_trigger_configuration_writes(self):
+        init_project(self.root, ["codex-cli"])
+        env_path = self.root / ".env.example"
+        env_content = "API_URL=http://localhost\nAPI_URL=https://example.invalid\n"
+        env_path.write_text(env_content, encoding="utf-8")
+        config_path = self.root / ".aimes" / "config.yaml"
+        config_before = config_path.read_text(encoding="utf-8")
+        entry_path = self.root / "AGENTS.md"
+        entry_before = entry_path.read_text(encoding="utf-8")
+        result = apply_safe_repairs(self.root, confirm="REPAIR")
+        self.assertEqual(result["mode"], "diagnostic-only-no-config-findings")
+        self.assertTrue(result["write_result"]["skipped"])
+        self.assertEqual(config_path.read_text(encoding="utf-8"), config_before)
+        self.assertEqual(entry_path.read_text(encoding="utf-8"), entry_before)
+        self.assertEqual(env_path.read_text(encoding="utf-8"), env_content)
+        self.assertIn("ENV_KEY_DUPLICATE", {item["code"] for item in result["remaining_actions"]})
+
     def test_plan_explains_missing_records_path_without_guessing_format(self):
         init_project(self.root, ["codex-cli"])
         config_path = self.root / ".aimes" / "config.yaml"
