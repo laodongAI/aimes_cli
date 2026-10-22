@@ -8,12 +8,18 @@ from .adapters import ADAPTERS
 
 VALID_VERIFICATION = {"NOT_RUN", "PASS", "FAIL", "BLOCKED", "UNKNOWN"}
 VALID_METHODS = {"manual_prompt", "file_inspection", "runtime_observation", "automated_check", "user_confirmed"}
+VALID_EXECUTION_MODES = {"ide_extension", "cli", "desktop_app", "other"}
+VALID_SCHEMA_VERSIONS = {1, 2}
 
 def validate_adapter_evidence(path: Path, root: Path | None = None) -> dict:
     data = _load(path); fs=[]; root=(root or path.parent).resolve()
     if not isinstance(data, dict) or not isinstance(data.get("checks"), list):
         _add(fs,"ERROR","ROOT_SHAPE","Adapter evidence must be an object with a checks list")
         return _report("adapter-evidence",path,fs,checked_checks=0)
+    schema_version = data.get("schema_version", 1)
+    if schema_version not in VALID_SCHEMA_VERSIONS:
+        _add(fs, "ERROR", "SCHEMA_VERSION", f"schema_version must be one of {sorted(VALID_SCHEMA_VERSIONS)}")
+        schema_version = 1
     seen=set(); checked=0
     for i,item in enumerate(data["checks"]):
         loc=f"checks[{i}]"
@@ -28,8 +34,16 @@ def validate_adapter_evidence(path: Path, root: Path | None = None) -> dict:
         if item.get("method") not in VALID_METHODS: _add(fs,"ERROR","VERIFICATION_METHOD",f"{loc}.method must be one of {sorted(VALID_METHODS)}")
         if item.get("verification")=="PASS" and item.get("method") not in {"runtime_observation","automated_check","user_confirmed"}:
             _add(fs,"ERROR","INSUFFICIENT_PASS_METHOD",f"{loc}: PASS requires runtime_observation, automated_check, or user_confirmed")
-        for field in ("product_version","rule_entry","observed_at","observer"):
-            if not isinstance(item.get(field),str) or not item[field].strip(): _add(fs,"WARNING","FIELD_RECOMMENDED_MISSING",f"{loc}.{field} should be recorded")
+        context_fields = ("product_version", "execution_mode", "rule_entry", "observed_at", "observer")
+        for field in context_fields:
+            missing = not isinstance(item.get(field), str) or not item[field].strip()
+            if missing and item.get("verification") == "PASS" and schema_version >= 2:
+                _add(fs, "ERROR", "PASS_CONTEXT_FIELD_REQUIRED", f"{loc}.{field} is required for schema_version 2 PASS evidence")
+            elif missing:
+                _add(fs, "WARNING", "FIELD_RECOMMENDED_MISSING", f"{loc}.{field} should be recorded")
+        execution_mode = item.get("execution_mode")
+        if execution_mode is not None and execution_mode not in VALID_EXECUTION_MODES:
+            _add(fs, "ERROR", "EXECUTION_MODE", f"{loc}.execution_mode must be one of {sorted(VALID_EXECUTION_MODES)}")
         artifact=item.get("artifact_path")
         if artifact:
             candidate=(root/artifact).resolve()
