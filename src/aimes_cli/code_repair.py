@@ -29,8 +29,8 @@ def _safe_relative(value: str) -> str:
     value = value.replace("\\", "/")
     if not value or value.startswith("/") or re.match(r"^[A-Za-z]:", value):
         raise ValueError(f"补丁包含绝对路径或空路径：{value!r}")
-    parts = Path(value).parts
-    if any(part in ("", ".", "..") for part in parts):
+    raw_parts = value.split("/")
+    if any(part in ("", ".", "..") for part in raw_parts):
         raise ValueError(f"补丁路径包含不安全片段：{value!r}")
     if any(part.lower() in BLOCKED_PARTS for part in parts):
         raise ValueError(f"补丁不能修改治理元数据或依赖/运行目录：{value!r}")
@@ -79,7 +79,13 @@ def _parse_patch(raw: str) -> list[str]:
 
 
 def _within(root: Path, rel: str) -> Path:
-    candidate = (root / rel).resolve()
+    unresolved = root / rel
+    cursor = root
+    for part in Path(rel).parts:
+        cursor = cursor / part
+        if cursor.is_symlink():
+            raise ValueError(f"目标路径包含符号链接：{rel}")
+    candidate = unresolved.resolve()
     try:
         candidate.relative_to(root.resolve())
     except ValueError as exc:
@@ -284,6 +290,12 @@ def verify_patch(root: Path, repair_id: str, *, test_argv_json: str, timeout_sec
             "argv": argv, "returncode": result.returncode,
             "started_at": _now(), "stdout_tail": result.stdout[-12000:],
             "stderr_tail": result.stderr[-12000:], "timeout": False,
+        }
+    except OSError as exc:
+        record = {
+            "status": "FAIL", "argv": argv, "returncode": None,
+            "started_at": _now(), "stdout_tail": "",
+            "stderr_tail": str(exc)[-12000:], "timeout": False,
         }
     except subprocess.TimeoutExpired as exc:
         record = {
