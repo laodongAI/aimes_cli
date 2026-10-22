@@ -23,7 +23,7 @@ from .metrics import build_metrics_report
 from .release_check import validate_release
 from .upgrade import plan_upgrade, apply_upgrade
 from .repair import build_repair_plan, apply_safe_repairs
-from .code_repair import diagnose_command, propose_patch, apply_patch, verify_patch, rollback_patch
+from .code_repair import diagnose_command, inspect_patch, propose_patch, apply_patch, verify_patch, rollback_patch
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -71,6 +71,9 @@ def parser() -> argparse.ArgumentParser:
     code_repair_diagnose.add_argument('--id', required=True, dest='diagnostic_id')
     code_repair_diagnose.add_argument('--test-argv-json', required=True, help='JSON argv array; command runs without shell')
     code_repair_diagnose.add_argument('--timeout-seconds', type=int, default=300)
+    code_repair_inspect = code_repair_sub.add_parser('inspect', help='Show repair lifecycle, integrity checks, and next-step guidance without writes')
+    common(code_repair_inspect)
+    code_repair_inspect.add_argument('repair_id')
     code_repair_propose = code_repair_sub.add_parser('propose', help='Validate and save a unified diff proposal without modifying business files')
     common(code_repair_propose)
     code_repair_propose.add_argument('patch_file', type=Path)
@@ -601,6 +604,8 @@ def main(argv=None):
         if args.command == 'repair-code':
             if args.repair_code_command == 'diagnose':
                 result = diagnose_command(root, diagnostic_id=args.diagnostic_id, test_argv_json=args.test_argv_json, timeout_seconds=args.timeout_seconds)
+            elif args.repair_code_command == 'inspect':
+                result = inspect_patch(root, args.repair_id)
             elif args.repair_code_command == 'propose':
                 patch_file = (root / args.patch_file).resolve() if not args.patch_file.is_absolute() else args.patch_file.resolve()
                 result = propose_patch(root, patch_file, repair_id=args.repair_id, finding=args.finding, rationale=args.rationale)
