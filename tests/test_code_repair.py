@@ -165,8 +165,8 @@ class CodeRepairTests(unittest.TestCase):
             "status": "FAIL",
             "finding": {"code": "OUTSIDE_SECRET"},
         }), encoding="utf-8")
-        self.addCleanup(lambda: (external_dir / "diag-secret.json").unlink(missing_ok=True))
         self.addCleanup(lambda: external_dir.rmdir() if external_dir.exists() else None)
+        self.addCleanup(lambda: (external_dir / "diag-secret.json").unlink(missing_ok=True))
         self._symlink_or_skip(repairs / "diagnostics", external_dir, target_is_directory=True)
         result = inspect_patch(self.root, "fix-diag-dir-symlink")
         self.assertIn("DIAGNOSTIC_PATH_UNSAFE", {item["code"] for item in result["issues"]})
