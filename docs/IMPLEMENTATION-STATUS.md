@@ -1,4 +1,16 @@
-# AIMES CLI 实现状态（V0.3.0）
+# AIMES CLI 实现状态与验证历史
+
+
+> **当前状态入口（2026-10-22）**：本文后续表格保留各历史阶段的实现记录，不应单独作为当前版本快照。当前能力与验证状态以 [能力与验证状态矩阵](CAPABILITY-VERIFICATION-MATRIX.md) 为准，后续路线以 [工程能力增强路线图 V0.9](ROADMAP-ENGINEERING-EXCELLENCE-V0.9.md) 为准。
+>
+> 当前包版本声明为 `0.8.0`，治理核心版本为 `1.2`。代码/模板已进入主干、CI 自动化测试通过、特定 AI 工具运行时已验证、真实项目试点已验收是四种不同状态。不得将其中任何一种自动推断为其他状态。
+
+## 当前验证边界
+
+- `aimes release validate` 检查包版本、运行版本、README 版本、治理核心模板和打包配置；它不创建 GitHub Release，也不证明下载资产已发布。
+- `aimes evaluation validate/report/compare` 负责验证和比较已记录的评测数据，不自动调用真实模型或 IDE 执行开发任务。
+- `aimes adapter validate/report` 校验适配验证记录，不自动探测 IDE 内部状态；无证据时保持 `UNKNOWN` 或 `NOT_RUN`。
+- Windows EXE 构建/冒烟测试、用户本机安装验证和真实工具行为验收应分别记录，不相互替代。
 
 | 能力 | 状态 | 证据/说明 |
 |---|---|---|
