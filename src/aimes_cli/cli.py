@@ -12,6 +12,12 @@ from .mock_runner import run_mock
 from .audit import append_event, validate_audit
 from .publish import publish_project
 from .publish_profiles import load_profiles, save_profile
+from .docs_check import check_docs
+from .task_state import validate_task_state, claim_task_state, release_task_state
+from .cleanup_audit import audit_temp_registry
+from .metrics import build_metrics_report
+from .release_check import validate_release
+from .upgrade import plan_upgrade, apply_upgrade
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -21,6 +27,11 @@ def parser() -> argparse.ArgumentParser:
         sp.add_argument('--root', type=Path, help='Project root (defaults to current directory / upward detection)')
         sp.add_argument('--format', choices=['text','json'], default='text')
         sp.add_argument('--output', type=Path, help='Write report to a file')
+    upgrade = sub.add_parser('upgrade', help='Safely upgrade an existing AIMES project; preview and preserve user edits')
+    common(upgrade)
+    upgrade.add_argument('--apply', action='store_true', help='Apply safe changes after explicit confirmation')
+    upgrade.add_argument('--dry-run', action='store_true', help='Only print the plan; do not prompt or write files')
+    upgrade.add_argument('--confirm', help='Must be UPGRADE to apply non-interactively')
     publish=sub.add_parser('publish', help='Interactive configuration or preview/mirror a local project to GitHub')
     publish.add_argument('--source', type=Path, help='Local project directory to mirror')
     publish.add_argument('--repo', help='GitHub repository as owner/repo or GitHub URL')
@@ -42,6 +53,52 @@ def parser() -> argparse.ArgumentParser:
     for name, helptext in [('inspect','Inspect project and existing rule files'),('validate','Validate AIMES configuration and managed files'),('doctor','Check local tool executable availability'),('status','Show governance deployment status'),('diff','Show a deployment preview')]:
         sp=sub.add_parser(name,help=helptext); common(sp)
         if name=='diff': sp.add_argument('--tools', default='trae-code,vscode-codex,vscode-claude-code,vscode-copilot,zcode,qcode,claude-code,codex-cli')
+    task = sub.add_parser('task', help='Task ownership and change-scope governance')
+    task_sub = task.add_subparsers(dest='task_command', required=True)
+    task_validate = task_sub.add_parser('validate', help='Validate active-writer declaration, lease, branch and changed-file scope')
+    common(task_validate)
+    task_validate.add_argument('path', type=Path, nargs='?', default=Path('.aimes/project-control/active-writer.yaml'))
+    task_validate.add_argument('--require-active', action='store_true', help='Fail unless an unexpired ACTIVE writer declaration exists')
+    task_validate.add_argument('--no-check-scope', action='store_true', help='Skip changed-file scope check (not recommended)')
+    task_claim = task_sub.add_parser('claim', help='Atomically claim the local active-writer declaration')
+    common(task_claim)
+    task_claim.add_argument('--task-id', required=True)
+    task_claim.add_argument('--tool-id', required=True, choices=list(ADAPTERS))
+    task_claim.add_argument('--branch', required=True)
+    task_claim.add_argument('--base-commit', required=True)
+    task_claim.add_argument('--allowed-path', action='append', dest='allowed_paths', required=True, help='Allowed relative file/directory; repeat as needed')
+    task_claim.add_argument('--lease-hours', type=int, default=8)
+    task_claim.add_argument('--confirm', required=True, help='Must be CLAIM (case-insensitive)')
+    task_claim.add_argument('--takeover', action='store_true', help='Explicitly replace only an expired/invalid active lease')
+    task_release = task_sub.add_parser('release', help='Release writer declaration after a handoff file exists')
+    common(task_release)
+    task_release.add_argument('--task-id', required=True)
+    task_release.add_argument('--tool-id', required=True, choices=list(ADAPTERS))
+    task_release.add_argument('--handoff-file', required=True, help='Project-relative handoff file that must already exist')
+    task_release.add_argument('--confirm', required=True, help='Must be RELEASE (case-insensitive)')
+    release = sub.add_parser('release', help='Release metadata and governance compatibility checks')
+    release_sub = release.add_subparsers(dest='release_command', required=True)
+    release_validate = release_sub.add_parser('validate', help='Validate package/runtime/README/core-template version compatibility')
+    common(release_validate)
+    metrics = sub.add_parser('metrics', help='Evidence-backed engineering metrics')
+    metrics_sub = metrics.add_subparsers(dest='metrics_command', required=True)
+    metrics_report = metrics_sub.add_parser('report', help='Calculate available metrics; missing sources remain UNKNOWN')
+    common(metrics_report)
+    metrics_report.add_argument('--trace-manifest', type=Path, help='Optional trace manifest for traceability/evidence metrics')
+    metrics_report.add_argument('--temp-registry', type=Path, help='Optional temporary artifact registry')
+    metrics_report.add_argument('--handoff-trials', type=Path, help='Optional handoff recoverability trial registry')
+    metrics_report.add_argument('--audit-log', type=Path, help='Optional audit JSONL for gate bypass count')
+    cleanup = sub.add_parser('cleanup', help='Temporary artifact audit (read-only)')
+    cleanup_sub = cleanup.add_subparsers(dest='cleanup_command', required=True)
+    cleanup_audit = cleanup_sub.add_parser('audit', help='Report registered/expired/unregistered temporary candidates; never deletes files')
+    common(cleanup_audit)
+    cleanup_audit.add_argument('path', type=Path, nargs='?', default=Path('.aimes/temp-registry.yaml'))
+    cleanup_audit.add_argument('--max-scan-entries', type=int, default=10000)
+    docs = sub.add_parser('docs', help='Documentation integrity and thin-entry checks')
+    docs_sub = docs.add_subparsers(dest='docs_command', required=True)
+    docs_check = docs_sub.add_parser('check', help='Check local Markdown links and configured thin tool entries; read-only')
+    common(docs_check)
+    docs_check.add_argument('--max-entry-lines', type=int, default=40, help='Maximum allowed lines in a thin entry (default: 40)')
     # V0.2 structured governance registries; all validators are read-only.
     req = sub.add_parser('requirement', help='Requirement cognition record operations')
     req_sub = req.add_subparsers(dest='requirement_command', required=True)
@@ -123,9 +180,25 @@ def emit(data, fmt='text', output: Path | None=None):
         lines = ['AIMES CLI report']
         if isinstance(data, dict):
             if data.get('root'): lines.append(f"Project: {data['root']}")
+            if data.get('installed_cli_version') is not None: lines.append(f"Installed AIMES CLI version: {data['installed_cli_version']}")
+            if data.get('project_cli_version') is not None: lines.append(f"Project manifest CLI version: {data['project_cli_version']}")
+            if data.get('project_cli_version_before') is not None: lines.append(f"Project manifest CLI version before upgrade: {data['project_cli_version_before']}")
+            if data.get('governance_target_version') is not None: lines.append(f"Target governance version: {data['governance_target_version']}")
             if 'ok' in data: lines.append(f"Result: {'PASS' if data['ok'] else 'NEEDS ATTENTION'}")
             if 'dry_run' in data: lines.append(f"Mode: {'dry-run (no files written)' if data['dry_run'] else 'apply'}")
             if data.get('tools') and all(isinstance(item, str) for item in data['tools']): lines.append('Tools: ' + ', '.join(data['tools']))
+            if data.get('written'):
+                lines.append('Files written:')
+                for item in data['written']: lines.append(f"  - {item.get('action', 'write')}: {item['path']}")
+            if data.get('preserved'):
+                lines.append('Preserved files / proposals:')
+                for item in data['preserved']:
+                    if isinstance(item, dict): lines.append(f"  - {item.get('path', '?')}: {item.get('reason', '')}" + (f" -> {item['proposal_path']}" if item.get('proposal_path') else ''))
+                    else: lines.append(f"  - {item}")
+            if data.get('errors'):
+                lines.append('Errors:')
+                for item in data['errors']: lines.append(f"  - {item.get('path', '?')}: {item.get('error', '')}")
+            if data.get('backup_dir'): lines.append(f"Backup directory: {data['backup_dir']}")
             if data.get('actions'):
                 lines.append('Actions:')
                 for action in data['actions']:
@@ -195,13 +268,14 @@ def interactive_wizard():
         ("查看部署状态", "status"),
         ("预览配置变更", "diff"),
         ("发布项目到 GitHub", "publish"),
+        ("升级现有项目 AIMES", "upgrade"),
     ]
     while True:
         print("\n请选择要执行的操作：")
         for i, (label, _) in enumerate(actions, 1):
             print(f"  {i}. {label}")
         print("  0. 退出")
-        choice = input("请输入序号 [0-8]：").strip()
+        choice = input("请输入序号 [0-9]：").strip()
         if choice in ("0", "q", "quit", "exit"):
             print("已退出 AIMES。")
             return 0
@@ -212,6 +286,12 @@ def interactive_wizard():
         if command == "publish":
             try: run_publish_wizard()
             except (ValueError, OSError) as exc: print(f"发布配置错误：{exc}")
+            continue
+        if command == "upgrade":
+            try:
+                run_upgrade_wizard(Path.cwd().resolve())
+            except (ValueError, OSError, EOFError, KeyboardInterrupt) as exc:
+                print(f"升级已取消或失败：{exc}")
             continue
         if command in ("init", "configure", "diff"):
             keys = list(ADAPTERS)
@@ -323,7 +403,7 @@ def run_publish_wizard(args=None) -> int:
         choice = _ask("选择配置序号", default_choice)
         if choice.isdigit() and 1 <= int(choice) <= len(names):
             selected = dict(profiles[names[int(choice)-1]])
-    interactive = sys.stdin.isatty() and not args.apply
+    interactive = sys.stdin.isatty() and not args.apply and not getattr(args, "dry_run", False)
     source_value = str(args.source or selected.get("source") or Path.cwd())
     repo_value = args.repo or selected.get("repository") or ""
     branch_value = args.branch if args.branch is not None else selected.get("branch", "")
@@ -369,6 +449,54 @@ def run_publish_wizard(args=None) -> int:
         emit(result, args.format, args.output)
     return 0
 
+def run_upgrade_wizard(root: Path, args=None) -> int:
+    """Preview and guide an existing project through a non-destructive AIMES upgrade."""
+    args = args or argparse.Namespace(apply=False, dry_run=False, confirm=None, format="text", output=None)
+    plan = plan_upgrade(root)
+    emit(plan, args.format, args.output)
+    if not plan.get("ok"):
+        return 2
+
+    actions = [item for item in plan.get("actions", []) if item.get("action") != "unchanged"]
+    if not actions:
+        print("当前项目文件与已安装 AIMES 模板一致，无需升级。")
+        return 0
+
+    interactive = sys.stdin.isatty() and not args.apply
+    if interactive:
+        selected = []
+        print("\n逐项确认升级操作：")
+        for item in actions:
+            kind = item["action"]
+            path = item["path"]
+            if kind in ("add", "update-managed"):
+                prompt = f"{kind}: {path}。该文件是新增文件或已证明未被修改的 AIMES 管理文件，是否应用？"
+            else:
+                prompt = f"{kind}: {path}。检测到可能的项目自定义内容，是否仅生成候选文件供人工合并（原文件绝不覆盖）？"
+            if _ask_yes_no(prompt, default=True):
+                selected.append(path)
+        if not selected:
+            print("没有选择任何升级项；未修改项目文件。")
+            return 0
+        if not _confirm_word("确认执行已选择的升级步骤？请输入 UPGRADE（输入 N 取消）：", "UPGRADE"):
+            print("已取消；未应用升级。")
+            return 0
+        result = apply_upgrade(root, selected)
+    elif args.apply:
+        if (args.confirm or "").strip().casefold() != "upgrade":
+            raise ValueError("非交互升级必须同时提供 --apply --confirm UPGRADE")
+        result = apply_upgrade(root)
+    else:
+        print("\n当前为只读预览。交互式终端可直接运行 aimes upgrade 并逐项确认；脚本执行请使用 --apply --confirm UPGRADE。")
+        return 0
+
+    emit(result, args.format, args.output)
+    if result.get("backup_dir"):
+        print("升级备份目录：" + result["backup_dir"])
+    print("建议升级后执行：aimes validate --root \"" + str(root) + "\"")
+    return 0 if result.get("ok") else 2
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
@@ -386,6 +514,8 @@ def main(argv=None):
     try:
         if args.command == 'publish':
             return run_publish_wizard(args)
+        if args.command == 'upgrade':
+            return run_upgrade_wizard(root, args)
         if args.command in ('init','configure'):
             tools=choose_tools(args.tools)
             result=init_project(root,tools,getattr(args,'scope','project'),args.dry_run)
@@ -409,6 +539,44 @@ def main(argv=None):
         if args.command == 'skill':
             target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
             result = validate_skill_registry(target, root, args.id)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'release' and args.release_command == 'validate':
+            result = validate_release(root)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'metrics' and args.metrics_command == 'report':
+            result = build_metrics_report(root, trace_manifest=args.trace_manifest,
+                temp_registry=args.temp_registry, handoff_trials=args.handoff_trials, audit_log=args.audit_log)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'cleanup' and args.cleanup_command == 'audit':
+            if args.max_scan_entries < 1:
+                raise ValueError('--max-scan-entries must be greater than zero')
+            registry = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
+            result = audit_temp_registry(root, registry, max_scan_entries=args.max_scan_entries)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'task' and args.task_command == 'claim':
+            result = claim_task_state(root, task_id=args.task_id, tool_id=args.tool_id, branch=args.branch,
+                base_commit=args.base_commit, allowed_paths=args.allowed_paths, lease_hours=args.lease_hours,
+                confirm=args.confirm, takeover=args.takeover)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'task' and args.task_command == 'release':
+            result = release_task_state(root, task_id=args.task_id, tool_id=args.tool_id,
+                handoff_file=args.handoff_file, confirm=args.confirm)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'task' and args.task_command == 'validate':
+            target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
+            result = validate_task_state(target, root, require_active=args.require_active, check_scope=not args.no_check_scope)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'docs' and args.docs_command == 'check':
+            if args.max_entry_lines < 1:
+                raise ValueError('--max-entry-lines must be greater than zero')
+            result = check_docs(root, max_entry_lines=args.max_entry_lines)
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'trace':

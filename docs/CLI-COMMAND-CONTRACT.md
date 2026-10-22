@@ -51,7 +51,7 @@ V0.2 JSON 报告固定包含 `schema_version`、`validator`、`source`、`ok`、
 
 | 命令 | 用途 | 写入行为 | 退出码 |
 |---|---|---|---|
-| `aimes trace validate <path>` | 检查实体链接、缺失目标、重复 ID，以及 VERIFIED 状态是否引用 PASS 证据 | 只读 | 0 通过；1 校验失败 |
+| `aimes trace validate <path>` | 检查实体链接、缺失目标、重复 ID、按实体类型区分的状态词表，以及 VERIFIED 状态是否引用 PASS 证据 | 只读 | 0 通过；1 校验失败 |
 | `aimes evidence validate <path>` | 检查证据结构、命令与退出码一致性、产物路径和可选哈希 | 只读 | 0 通过；1 校验失败 |
 | `aimes context pack <manifest> --output-dir <dir>` | 生成 `context-pack.json` 和 `HANDOFF.md` | 在项目根目录内生成文件 | 0 成功；2 输入/路径错误 |
 
@@ -116,3 +116,46 @@ V0.4 的 `evaluation` 命令不执行 AI 任务或命令。运行记录由实际
 
   
 交互式初始化（无参数运行 `aimes` 后选择“初始化项目”）会将当前工作目录明确显示为目标目录。选择预览后，先输出 dry-run 变更报告，再提示输入 `YES`；只有确认后才执行正式写入。取消不会写入文件。
+
+## V0.7.8 治理检查命令
+
+| 命令 | 用途 | 写入行为 | 退出码 |
+|---|---|---|---|
+| `aimes docs check [--root PATH]` | 检查 Markdown 本地链接、已配置工具入口是否存在，以及原生薄入口的核心引用/行数限制 | 只读；仅通过 `--output` 保存报告 | 0 通过；1 校验发现错误；2 参数或读取错误 |
+
+该命令当前实现于治理升级开发分支，尚未合并到主分支。手动适配说明文件只检查存在性，不按原生薄规则入口执行行数限制。文档检查不证明 IDE 已在运行时加载规则；运行时加载仍须通过 `adapter validate/report` 的独立证据流程验收。
+
+
+## V0.7.9 任务所有权与范围校验
+
+| 命令 | 用途 | 写入行为 | 退出码 |
+|---|---|---|---|
+| `aimes task validate [<active-writer.yaml>]` | 校验活动写入者声明、工具 ID、时间租约、分支、基线提交与变更文件范围 | 只读 | 0 通过（允许 WARNING）；1 校验错误；2 参数/读取错误 |
+| `aimes task validate --require-active` | 在需要开始受治理写入前，要求存在未过期的 ACTIVE 声明 | 只读 | 缺失/过期/非 ACTIVE 时返回 1 |
+| `aimes task claim --task-id ID --tool-id TOOL --branch BRANCH --base-commit SHA --allowed-path PATH --confirm CLAIM` | 使用独占本地锁创建活动写入者声明，并先核验分支、基线与变更范围 | 创建/更新 `.aimes/project-control/active-writer.yaml` | 0 成功；1 声明/范围冲突；2 参数/读取错误 |
+| `aimes task release --task-id ID --tool-id TOOL --handoff-file PATH --confirm RELEASE` | 在交接文件已存在且任务/工具身份匹配时释放写入声明 | 原子更新声明为 RELEASED | 0 成功；1 身份/交接/锁冲突；2 参数/读取错误 |
+
+声明 Schema：`schemas/active-writer.schema.json`；示例：`examples/project-control/active-writer.example.yaml`。任务交接模板：`docs/templates/TASK-HANDOFF-TEMPLATE.md`。释放写入权前必须存在交接文件，且包含七个必需章节、任务 ID、基线 commit、任务状态和证据状态；模板占位符未替换时拒绝释放。任务控制文件路径不计入业务变更范围；其它未在 `allowed_paths` 中登记的变更会报告为错误。无 Git 仓库时会明确提示无法执行分支、基线与范围核验。
+
+`task claim/release` 通过本地文件系统的独占创建锁协调 AIMES 命令之间的声明更新；它不阻止不遵守 AIMES 协议的 IDE/编辑器直接写文件，也不是跨机器分布式锁。过期租约不会自动接管，必须显式执行 `--takeover --confirm CLAIM`。若 AIMES 命令因进程异常退出留下 `active-writer.lock`，先确认没有任务操作仍在运行，再按项目操作流程人工恢复；CLI 不会自动删除锁文件。需要并行工作时应使用独立 worktree/分支。
+
+
+## V0.7.9 临时产物审计与工程指标
+
+| 命令 | 用途 | 写入行为 | 退出码 |
+|---|---|---|---|
+| `aimes cleanup audit [<temp-registry.yaml>]` | 校验临时登记项、到期状态、路径边界，并扫描常见未登记临时/缓存候选 | 只读 | 0 无 ERROR（可有 WARNING）；1 发现结构/路径错误；2 参数/读取错误 |
+| `aimes metrics report` | 输出 AIMES 核心规范定义的 9 项工程指标；可选传入追溯清单、临时登记、交接试点和审计日志 | 只读；可通过 `--output` 保存报告 | 0 报告生成成功；1 输入结构错误；2 参数/读取错误 |
+
+`cleanup audit` 不执行删除；A/B/C 分类只用于风险分级，不等同于删除授权。临时登记 Schema：`schemas/temp-registry.schema.json`，示例：`examples/project-control/temp-registry.example.yaml`。
+
+`metrics report` 对缺少数据源、零分母或无法验证的数据返回 `UNKNOWN`，不把缺失值替换为 0/100%。指标口径沿用 AIMES-CORE-V1.2 的 9 项定义；需求/功能/代码映射指标只有在追溯清单中有相应实体时才可计算。门禁绕过次数只统计明确记录为 `event_type: gate.bypassed` 的审计事件，未提供审计日志时显示 UNKNOWN。
+
+
+## V0.7.9 发布兼容性校验
+
+| 命令 | 用途 | 写入行为 | 退出码 |
+|---|---|---|---|
+| `aimes release validate` | 检查 pyproject/runtime/README 版本一致性、治理核心模板版本、包数据配置、Windows EXE 数据收集配置，以及当前项目的治理版本/核心路径（若配置存在） | 只读 | 0 无 ERROR；1 兼容性错误；2 参数/读取错误 |
+
+此命令已作为 GitHub Actions 的阻断步骤。它不执行打包或发布；实际 EXE 构建和外部目录冒烟测试仍由 Windows 工作流完成。

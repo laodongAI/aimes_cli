@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AIMES Engineering Metrics Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "validator",
+    "generated_at",
+    "root",
+    "git",
+    "ok",
+    "summary",
+    "metrics",
+    "source_quality",
+    "findings"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "validator": {
+      "const": "aimes-metrics-report"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "root": {
+      "type": "string"
+    },
+    "git": {
+      "type": "object"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "summary": {
+      "type": "object"
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "definition",
+          "value",
+          "unit",
+          "status",
+          "numerator",
+          "denominator",
+          "source",
+          "note"
+        ]
+      }
+    },
+    "source_quality": {
+      "type": "object"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  }
+}
