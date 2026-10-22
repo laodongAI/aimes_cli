@@ -453,8 +453,7 @@ def inspect_patch(root: Path, repair_id: str) -> dict[str, Any]:
         elif status in {"APPLIED", "VERIFIED", "VERIFICATION_FAILED"} and not matches:
             issues.append({"code": "POST_APPLY_CHANGED", "path": rel, "message": "补丁应用后目标文件再次变化；回滚会拒绝覆盖这些修改。"})
         elif status == "ROLLED_BACK" and not matches:
-            # The expected hash here is the post-apply hash; changed state is expected after rollback.
-            entry["matches_expected"] = None
+            issues.append({"code": "POST_ROLLBACK_CHANGED", "path": rel, "message": "回滚后目标文件与应用前基线不一致；请检查后续人工修改或恢复结果。"})
 
     diagnostic = None
     finding = manifest.get("finding", "")
