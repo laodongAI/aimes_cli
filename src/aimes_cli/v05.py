@@ -34,7 +34,7 @@ def validate_adapter_evidence(path: Path, root: Path | None = None) -> dict:
         if item.get("method") not in VALID_METHODS: _add(fs,"ERROR","VERIFICATION_METHOD",f"{loc}.method must be one of {sorted(VALID_METHODS)}")
         if item.get("verification")=="PASS" and item.get("method") not in {"runtime_observation","automated_check","user_confirmed"}:
             _add(fs,"ERROR","INSUFFICIENT_PASS_METHOD",f"{loc}: PASS requires runtime_observation, automated_check, or user_confirmed")
-        context_fields = ("product_version", "execution_mode", "rule_entry", "observed_at", "observer")
+        context_fields = ("product_version", "execution_mode", "platform", "rule_entry", "observed_at", "observer", "case_id", "aimes_cli_version", "governance_version")
         for field in context_fields:
             missing = not isinstance(item.get(field), str) or not item[field].strip()
             if missing and item.get("verification") == "PASS" and schema_version >= 2:
