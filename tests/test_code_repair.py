@@ -122,5 +122,15 @@ class CodeRepairTests(unittest.TestCase):
         self.assertTrue(any(item["id"] == "acceptance" for item in result["next_actions"]))
         self.assertIn("不代表任务最终验收通过", result["note"])
 
+
+    def test_inspect_after_rollback_confirms_original_baseline(self):
+        propose_patch(self.root, self.patch_path, repair_id="fix-inspect-rollback", finding="TEST-ROLLBACK")
+        apply_patch(self.root, "fix-inspect-rollback", confirm="APPLY-FIX")
+        rollback_patch(self.root, "fix-inspect-rollback", confirm="ROLLBACK-FIX")
+        result = inspect_patch(self.root, "fix-inspect-rollback")
+        self.assertEqual(result["status"], "ROLLED_BACK")
+        self.assertTrue(result["ok"], result["issues"])
+        self.assertTrue(all(item["matches_expected"] for item in result["touched_paths"]))
+
 if __name__ == "__main__":
     unittest.main()
