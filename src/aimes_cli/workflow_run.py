@@ -109,7 +109,7 @@ def validate_workflow_run(definition_path: Path, record_path: Path, root: Path) 
     if isinstance(current, str) and current not in states:
         _add(findings, "ERROR", "CURRENT_STATE_UNKNOWN", f"current_state does not exist in definition: {current}")
     status = data.get("status")
-    if status not in {"IN_PROGRESS", "SUCCESS", "FAILURE", "BLOCKED", "CANCELLED"}:
+    if not isinstance(status, str) or status not in {"IN_PROGRESS", "SUCCESS", "FAILURE", "BLOCKED", "CANCELLED"}:
         _add(findings, "ERROR", "RUN_STATUS", "status must be IN_PROGRESS or a terminal workflow outcome")
     elif isinstance(current, str) and current in states:
         expected_status = states[current].get("terminal_outcome") or "IN_PROGRESS"
@@ -248,6 +248,9 @@ def transition_workflow_run(
     state_by_id = {state["state_id"]: state for state in definition["states"]}
     if not isinstance(event, str) or not event.strip():
         _add(findings, "ERROR", "EVENT_REQUIRED", "event must be a non-empty string")
+        return _result(safe_record, findings)
+    if not isinstance(actor, str) or not actor.strip():
+        _add(findings, "ERROR", "ACTOR_REQUIRED", "actor must be a non-empty string")
         return _result(safe_record, findings)
     matches = [item for item in definition["transitions"] if item.get("from") == current and item.get("on") == event]
     if not matches:
