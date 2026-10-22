@@ -15,6 +15,16 @@ aimes repair-code diagnose --id diag-2026-001 --test-argv-json '["python","-m","
 ```
 
 诊断记录保存在 `.aimes/repairs/diagnostics/diag-2026-001.json`。它会区分依赖/导入错误、语法错误、断言失败、类型/接口错误、测试发现失败、超时及未分类失败，并给出检查建议和下一步补丁提案流程。此分类是辅助提示，不保证根因已确认；命令返回 0 也只表示这条命令成功。
+## 1.1 随时检查提案状态与下一步
+
+可在任意阶段运行只读检查，查看当前状态、补丁哈希完整性、目标文件是否被后续修改、关联诊断摘要和推荐的下一步操作：
+
+```powershell
+aimes repair-code inspect fix-2026-001 --root . --format json
+```
+
+该命令不写入文件、不运行测试，也不自动应用/回滚。若发现 `PATCH_HASH_MISMATCH`、`PREIMAGE_CHANGED` 或 `POST_APPLY_CHANGED`，应先人工调查；不要绕过冲突保护。`VERIFIED` 只代表记录的那条测试命令通过，仍需复跑原始失败用例并执行必要的回归验收。
+
 ## 1. 准备补丁
 
 让编码工具先给出最小 unified diff，并保存为项目内或可访问的 UTF-8 文本文件，例如 `candidate.patch`。v1 接受普通文本文件修改和新增，不接受删除、重命名、二进制文件或修改 AIMES 元数据/虚拟环境/依赖目录。
