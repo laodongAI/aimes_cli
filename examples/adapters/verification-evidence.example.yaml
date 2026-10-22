@@ -25,4 +25,7 @@ checks:
     method: manual_prompt
     observed_at: ""
     observer: ""
+    case_id: "填写评测案例 ID"
+    aimes_cli_version: "填写 AIMES CLI 版本"
+    governance_version: "1.2"
     evidence_note: "待在新会话中执行可辨识的规则加载探针，并保存输出。"
