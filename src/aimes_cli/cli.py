@@ -10,6 +10,7 @@ from .evaluation import validate_suite, validate_run, build_run_report, compare_
 from .v05 import validate_adapter_evidence, adapter_report, validate_context_pack
 from .skill_execution import validate_skill_execution
 from .workflow import validate_workflow_definition
+from .workflow_run import start_workflow_run, transition_workflow_run, validate_workflow_run
 from .mock_runner import run_mock
 from .audit import append_event, validate_audit
 from .publish import publish_project
@@ -127,6 +128,20 @@ def parser() -> argparse.ArgumentParser:
     workflow_sub = workflow.add_subparsers(dest='workflow_command', required=True)
     workflow_validate = workflow_sub.add_parser('validate', help='Validate workflow states, transitions, failure paths, and retry policy; does not execute the workflow')
     common(workflow_validate); workflow_validate.add_argument('path', type=Path)
+    workflow_run = workflow_sub.add_parser('run', help='Persistent local workflow run state')
+    workflow_run_sub = workflow_run.add_subparsers(dest='workflow_run_command', required=True)
+    workflow_run_start = workflow_run_sub.add_parser('start', help='Create a new run record without overwriting existing files')
+    common(workflow_run_start); workflow_run_start.add_argument('definition', type=Path); workflow_run_start.add_argument('--record', type=Path, required=True)
+    workflow_run_start.add_argument('--run-id', required=True); workflow_run_start.add_argument('--task-id', required=True); workflow_run_start.add_argument('--baseline-commit', required=True)
+    workflow_run_start.add_argument('--actor', default='local-user'); workflow_run_start.add_argument('--approval-ref'); workflow_run_start.add_argument('--confirm', required=True, help='Must be START (case-insensitive)')
+    workflow_run_validate = workflow_run_sub.add_parser('validate', help='Validate a run record against its exact workflow definition')
+    common(workflow_run_validate); workflow_run_validate.add_argument('definition', type=Path); workflow_run_validate.add_argument('record', type=Path)
+    workflow_run_transition = workflow_run_sub.add_parser('transition', help='Record an allowed state transition with backup and explicit confirmation')
+    common(workflow_run_transition); workflow_run_transition.add_argument('definition', type=Path); workflow_run_transition.add_argument('record', type=Path)
+    workflow_run_transition.add_argument('--event', required=True); workflow_run_transition.add_argument('--actor', default='local-user')
+    workflow_run_transition.add_argument('--evidence-ref', action='append', dest='evidence_refs', default=[])
+    workflow_run_transition.add_argument('--approval-ref'); workflow_run_transition.add_argument('--guard-evidence')
+    workflow_run_transition.add_argument('--confirm', required=True, help='Must be TRANSITION (case-insensitive)')
     trace = sub.add_parser('trace', help='End-to-end engineering traceability operations')
     trace_sub = trace.add_subparsers(dest='trace_command', required=True)
     trace_validate = trace_sub.add_parser('validate', help='Validate trace links and VERIFIED evidence gates')
@@ -558,6 +573,21 @@ def main(argv=None):
         if args.command == 'workflow' and args.workflow_command == 'validate':
             target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
             result = validate_workflow_definition(target)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
+        if args.command == 'workflow' and args.workflow_command == 'run':
+            definition = (root / args.definition).resolve() if not args.definition.is_absolute() else args.definition.resolve()
+            if args.workflow_run_command == 'start':
+                record = (root / args.record).resolve() if not args.record.is_absolute() else args.record.resolve()
+                result = start_workflow_run(definition, record, root, run_id=args.run_id, task_id=args.task_id, baseline_commit=args.baseline_commit, actor=args.actor, approval_ref=args.approval_ref, confirm=args.confirm)
+            else:
+                record = (root / args.record).resolve() if not args.record.is_absolute() else args.record.resolve()
+                if args.workflow_run_command == 'validate':
+                    result = validate_workflow_run(definition, record, root)
+                elif args.workflow_run_command == 'transition':
+                    result = transition_workflow_run(definition, record, root, event=args.event, actor=args.actor, evidence_refs=args.evidence_refs, approval_ref=args.approval_ref, guard_evidence=args.guard_evidence, confirm=args.confirm)
+                else:
+                    raise ValueError(f"Unsupported workflow run command: {args.workflow_run_command}")
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'skill':
