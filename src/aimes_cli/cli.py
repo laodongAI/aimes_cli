@@ -8,6 +8,7 @@ from .validators import validate_requirement, validate_knowledge, validate_reuse
 from .v03 import validate_trace, validate_evidence, build_context_pack
 from .evaluation import validate_suite, validate_run, build_run_report, compare_runs
 from .v05 import validate_adapter_evidence, adapter_report, validate_context_pack
+from .skill_execution import validate_skill_execution
 from .mock_runner import run_mock
 from .audit import append_event, validate_audit
 from .publish import publish_project
@@ -117,6 +118,10 @@ def parser() -> argparse.ArgumentParser:
     skill_validate = skill_sub.add_parser('validate', help='Validate a Skill registry and its referenced files')
     common(skill_validate); skill_validate.add_argument('path', type=Path, nargs='?', default=Path('.aimes/skills/registry.yaml'))
     skill_validate.add_argument('--id', help='Validate a single Skill ID; default validates all entries')
+    skill_execution = skill_sub.add_parser('execution', help='Skill execution record operations')
+    skill_execution_sub = skill_execution.add_subparsers(dest='skill_execution_command', required=True)
+    skill_execution_validate = skill_execution_sub.add_parser('validate', help='Validate a structured Skill execution record; does not execute the Skill')
+    common(skill_execution_validate); skill_execution_validate.add_argument('path', type=Path)
     trace = sub.add_parser('trace', help='End-to-end engineering traceability operations')
     trace_sub = trace.add_subparsers(dest='trace_command', required=True)
     trace_validate = trace_sub.add_parser('validate', help='Validate trace links and VERIFIED evidence gates')
@@ -547,7 +552,12 @@ def main(argv=None):
             return 0 if result['ok'] else 1
         if args.command == 'skill':
             target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
-            result = validate_skill_registry(target, root, args.id)
+            if args.skill_command == 'validate':
+                result = validate_skill_registry(target, root, args.id)
+            elif args.skill_command == 'execution' and args.skill_execution_command == 'validate':
+                result = validate_skill_execution(target)
+            else:
+                raise ValueError(f"Unsupported Skill command: {args.skill_command}")
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'release' and args.release_command == 'validate':
