@@ -30,6 +30,7 @@ def validate_release(root: Path) -> dict[str, Any]:
     pyproject = root / "pyproject.toml"
     init_file = root / "src" / "aimes_cli" / "__init__.py"
     readme = root / "README.md"
+    changelog = root / "CHANGELOG.md"
     core_dir = root / "src" / "aimes_cli" / "templates" / "core"
     build_script = root / "build_windows_exe.ps1"
 
@@ -37,9 +38,16 @@ def validate_release(root: Path) -> dict[str, Any]:
     if pyproject.is_file():
         text = pyproject.read_text(encoding="utf-8-sig")
         project_match = re.search(r"(?ms)^\[project\]\s*(.*?)(?=^\[|\Z)", text)
-        version_match = re.search(r'''(?m)^\s*version\s*=\s*["']([^"']+)["']''', project_match.group(1)) if project_match else None
-        package_version = version_match.group(1) if version_match else None
-        check("package_version_present", package_version is not None, "pyproject.toml [project].version is present.", "pyproject.toml")
+        project_body = project_match.group(1) if project_match else ""
+        version_match = re.search(r'''(?m)^\s*version\s*=\s*["']([^"']+)["']''', project_body)
+        dynamic_version = bool(re.search(r'''(?m)^\s*dynamic\s*=\s*\[[^\]]*["']version["'][^\]]*\]''', project_body))
+        dynamic_match = re.search(r'''(?m)^\s*version\s*=\s*\{\s*attr\s*=\s*["']([^"']+)["']\s*\}''', text)
+        dynamic_attr = dynamic_match.group(1) if dynamic_match else None
+        package_version = version_match.group(1) if version_match else ("__DYNAMIC__" if dynamic_version and dynamic_attr == "aimes_cli.__version__" else None)
+        check("package_version_present", package_version is not None, "Package version is declared statically or sourced from aimes_cli.__version__.", "pyproject.toml")
+        canonical_version_source = bool(version_match) or (dynamic_version and dynamic_attr == "aimes_cli.__version__")
+        check("version_source_is_canonical", canonical_version_source,
+              "Use either a static package version or dynamic version sourced from aimes_cli.__version__.", "pyproject.toml")
     else:
         check("package_version_present", None, "pyproject.toml is absent; source package version cannot be checked.", "pyproject.toml")
 
@@ -51,6 +59,10 @@ def validate_release(root: Path) -> dict[str, Any]:
         governance_version = gov_match.group(1) if gov_match else None
         check("runtime_version_present", runtime_version is not None, "Runtime __version__ is present.", "src/aimes_cli/__init__.py")
         check("governance_version_present", governance_version is not None, "GOVERNANCE_VERSION is present.", "src/aimes_cli/__init__.py")
+        if package_version == "__DYNAMIC__":
+            package_version = runtime_version
+            check("dynamic_version_source_resolves", package_version is not None,
+                  "Dynamic package version resolves from aimes_cli.__version__.", "src/aimes_cli/__init__.py")
     else:
         check("runtime_version_present", None, "src/aimes_cli/__init__.py is absent; source package version cannot be checked.", "src/aimes_cli/__init__.py")
         check("governance_version_present", None, "GOVERNANCE_VERSION cannot be checked without source package.", "src/aimes_cli/__init__.py")
@@ -74,6 +86,58 @@ def validate_release(root: Path) -> dict[str, Any]:
               f"README version={readme_version!r}; package version={package_version!r}.", "README.md")
     else:
         check("readme_package_version_match", None, "README/package version comparison is unavailable.")
+
+    if changelog.is_file():
+        text = changelog.read_text(encoding="utf-8-sig")
+        match = re.search(r"(?mi)^##\s*[vV]?(\d+\.\d+\.\d+)\b", text)
+        changelog_version = match.group(1) if match else None
+        check("changelog_current_version_present", changelog_version is not None,
+              "CHANGELOG.md starts with a semantic-version release heading.", "CHANGELOG.md")
+        if package_version is not None and changelog_version is not None:
+            check("changelog_package_version_match", package_version == changelog_version,
+                  f"CHANGELOG version={changelog_version!r}; package version={package_version!r}.", "CHANGELOG.md")
+        else:
+            check("changelog_package_version_match", None, "CHANGELOG/package version comparison is unavailable.", "CHANGELOG.md")
+    else:
+        check("changelog_current_version_present", None, "CHANGELOG.md is absent; current release notes cannot be checked.", "CHANGELOG.md")
+        check("changelog_package_version_match", None, "CHANGELOG/package version comparison is unavailable.", "CHANGELOG.md")
+
+    if readme.is_file():
+        readme_text = readme.read_text(encoding="utf-8-sig")
+        install_start = readme_text.find("## 3. 安装")
+        install_end = readme_text.find("## 4. 第一次初始化", install_start) if install_start >= 0 else -1
+        if install_start >= 0 and install_end > install_start:
+            install_section = readme_text[install_start:install_end]
+            stale_wheel = re.search(r"aimes_governance_cli-\d+\.\d+\.\d+-py3-none-any\.whl", install_section)
+            check("readme_installation_not_pinned_to_historical_wheel", stale_wheel is None,
+                  "Installation instructions must not pin a historical wheel filename.", "README.md")
+        else:
+            check("readme_installation_not_pinned_to_historical_wheel", None,
+                  "Could not isolate the README installation section; manually verify install instructions.", "README.md")
+    else:
+        check("readme_installation_not_pinned_to_historical_wheel", None,
+              "README.md is absent; installation instructions cannot be checked.", "README.md")
+
+    historical_artifacts = [
+        root / "RELEASE-MANIFEST.json",
+        root / "BUILD-RESULTS.txt",
+        root / "TEST-RESULTS.md",
+        root / "TEST-RESULTS.txt",
+    ]
+    stale_artifacts = []
+    for artifact in historical_artifacts:
+        if artifact.is_file():
+            try:
+                artifact_text = artifact.read_text(encoding="utf-8-sig")
+            except OSError as exc:
+                stale_artifacts.append(f"{artifact.name}: unreadable ({exc})")
+                continue
+            if package_version and package_version != "0.5.3" and re.search(r"\bV0\.5\.3\b", artifact_text, re.IGNORECASE):
+                stale_artifacts.append(f"{artifact.name}: contains historical V0.5.3 release metadata")
+    check("historical_release_artifacts_archived", not stale_artifacts,
+          "Historical V0.5.3 root-level release artifacts must be archived. " + "; ".join(stale_artifacts)
+          if stale_artifacts else "No historical V0.5.3 release reports remain at repository root.",
+          "RELEASE-MANIFEST.json")
 
     core_files = sorted(core_dir.glob("AIMES-CORE-V*.md")) if core_dir.is_dir() else []
     if governance_version is not None:

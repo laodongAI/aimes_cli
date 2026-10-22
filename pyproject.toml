@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aimes-governance-cli"
-version = "0.8.0"
+dynamic = ["version"]
 description = "Local-first, cross-tool AI engineering governance bootstrap and validation CLI"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -14,6 +14,9 @@ dependencies = ["PyYAML>=6.0,<7.0"]
 
 [project.scripts]
 aimes = "aimes_cli.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "aimes_cli.__version__" }
 
 [tool.setuptools]
 package-dir = {"" = "src"}
