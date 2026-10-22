@@ -113,4 +113,21 @@ class V05Tests(unittest.TestCase):
         self.assertEqual(root_schema, package_schema)
         self.assertEqual(root_schema['properties']['schema_version']['enum'], [1, 2])
 
+    def test_malformed_evidence_types_return_findings_not_tracebacks(self):
+        p = self.write_yaml('adapter.yaml', {
+            'schema_version': [],
+            'checks': [{
+                'id': 'C1', 'tool': ['codex-cli'], 'verification': ['PASS'],
+                'method': ['runtime_observation'], 'artifact_path': ['../escape']
+            }]
+        })
+        result = validate_adapter_evidence(p, self.root)
+        self.assertFalse(result['ok'])
+        codes = {finding['code'] for finding in result['findings']}
+        self.assertIn('SCHEMA_VERSION', codes)
+        self.assertIn('UNKNOWN_TOOL', codes)
+        self.assertIn('VERIFICATION_STATUS', codes)
+        self.assertIn('VERIFICATION_METHOD', codes)
+        self.assertIn('ARTIFACT_PATH_TYPE', codes)
+
 if __name__=='__main__': unittest.main()
