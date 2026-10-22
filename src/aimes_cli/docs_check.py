@@ -90,6 +90,62 @@ def _load_project_config(root: Path, findings: list[dict[str, Any]]) -> tuple[st
     return core, entry_paths
 
 
+
+
+def _check_project_records_and_env(root: Path, findings: list[dict[str, Any]]) -> None:
+    """Check configured task/handoff paths and duplicate keys in the root env example."""
+    config_path = root / ".aimes" / "config.yaml"
+    if config_path.is_file():
+        try:
+            config = yaml.safe_load(config_path.read_text(encoding="utf-8-sig")) or {}
+        except (OSError, yaml.YAMLError):
+            config = {}
+        if isinstance(config, dict):
+            records = config.get("records", {})
+            if isinstance(records, dict):
+                for key in ("tasks", "handoff"):
+                    value = records.get(key)
+                    if value is None or (isinstance(value, str) and not value.strip()):
+                        continue
+                    if not isinstance(value, str):
+                        _finding(findings, "ERROR", "RECORD_PATH_INVALID", f"records.{key} must be a project-relative path", ".aimes/config.yaml")
+                        continue
+                    normalized = value.strip().replace("\\\\", "/")
+                    if normalized.startswith("/") or re.match(r"^[A-Za-z]:", normalized) or ".." in normalized.split("/"):
+                        _finding(findings, "ERROR", "RECORD_PATH_ESCAPE", f"records.{key} must stay inside the project root", ".aimes/config.yaml")
+                        continue
+                    candidate = (root / normalized).resolve()
+                    try:
+                        candidate.relative_to(root)
+                    except ValueError:
+                        _finding(findings, "ERROR", "RECORD_PATH_ESCAPE", f"records.{key} escapes the project root", ".aimes/config.yaml")
+                        continue
+                    if not candidate.is_file():
+                        _finding(findings, "ERROR", "RECORD_PATH_MISSING", f"Configured records.{key} file does not exist: {normalized}", normalized)
+
+    env_example = root / ".env.example"
+    if not env_example.is_file():
+        return
+    try:
+        lines = env_example.read_text(encoding="utf-8-sig").splitlines()
+    except (OSError, UnicodeError) as exc:
+        _finding(findings, "WARNING", "ENV_EXAMPLE_READ", f"Cannot read .env.example: {exc}", ".env.example")
+        return
+    seen: dict[str, int] = {}
+    for line_no, line in enumerate(lines, start=1):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        match = re.match(r"^(?:export\\s+)?([A-Za-z_][A-Za-z0-9_]*)\\s*=", stripped)
+        if not match:
+            continue
+        key = match.group(1)
+        if key in seen:
+            _finding(findings, "WARNING", "ENV_KEY_DUPLICATE", f"Environment variable {key} is assigned more than once (first at line {seen[key]})", ".env.example", line_no)
+        else:
+            seen[key] = line_no
+
+
 def check_docs(root: Path, *, max_entry_lines: int = 40) -> dict[str, Any]:
     """Read-only documentation and thin-entry check. It never modifies project files."""
     root = root.resolve()
@@ -99,6 +155,7 @@ def check_docs(root: Path, *, max_entry_lines: int = 40) -> dict[str, Any]:
         return _result(root, findings, 0, 0, 0)
 
     core_rel, entry_paths = _load_project_config(root, findings)
+    _check_project_records_and_env(root, findings)
     core_path = (root / core_rel).resolve()
     try:
         core_path.relative_to(root)

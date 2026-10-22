@@ -70,6 +70,33 @@ class DocsCheckTests(unittest.TestCase):
         result = check_docs(self.root)
         self.assertFalse(any(item["code"] == "BROKEN_LINK" for item in result["findings"]))
 
+    def test_configured_task_and_handoff_paths_are_checked(self):
+        (self.root / ".aimes").mkdir(exist_ok=True)
+        (self.root / ".aimes" / "config.yaml").write_text(
+            "governance:\\n  core: docs/_governance/AIMES-CORE-V1.2.md\\n"
+            "records:\\n  tasks: project-control/TASKS.md\\n  handoff: HANDOFF.md\\n"
+            "tools:\\n  - id: codex-cli\\n    entry_paths: [AGENTS.md]\\n", encoding="utf-8")
+        result = check_docs(self.root)
+        missing = [item for item in result["findings"] if item["code"] == "RECORD_PATH_MISSING"]
+        self.assertEqual({item["path"] for item in missing}, {"project-control/TASKS.md", "HANDOFF.md"})
+
+    def test_duplicate_env_example_assignments_are_reported(self):
+        (self.root / ".env.example").write_text(
+            "# first declaration\\nCOSYVOICE_MODEL_DIR=/models\\n# duplicate\\nCOSYVOICE_MODEL_DIR=/other\\n", encoding="utf-8")
+        result = check_docs(self.root)
+        duplicates = [item for item in result["findings"] if item["code"] == "ENV_KEY_DUPLICATE"]
+        self.assertEqual(len(duplicates), 1)
+        self.assertEqual(duplicates[0]["line"], 4)
+
+    def test_record_path_escape_is_rejected(self):
+        (self.root / ".aimes").mkdir(exist_ok=True)
+        (self.root / ".aimes" / "config.yaml").write_text(
+            "governance:\\n  core: docs/_governance/AIMES-CORE-V1.2.md\\n"
+            "records:\\n  tasks: ../outside/TASKS.md\\n"
+            "tools:\\n  - id: codex-cli\\n    entry_paths: [AGENTS.md]\\n", encoding="utf-8")
+        result = check_docs(self.root)
+        self.assertTrue(any(item["code"] == "RECORD_PATH_ESCAPE" for item in result["findings"]))
+
     def test_external_links_are_ignored(self):
         (self.root / "README.md").write_text(
             "[External](https://example.com/not-local)\n[Email](mailto:test@example.com)\n",
