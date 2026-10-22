@@ -24,6 +24,7 @@ from .release_check import validate_release
 from .upgrade import plan_upgrade, apply_upgrade
 from .repair import build_repair_plan, apply_safe_repairs
 from .code_repair import diagnose_command, propose_patch, apply_patch, verify_patch, rollback_patch
+from .branch_lifecycle import inspect_branches, cleanup_merged_local_branches
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -227,6 +228,16 @@ def parser() -> argparse.ArgumentParser:
     context_pack.add_argument('--output-dir', type=Path, default=Path('.aimes/context-pack'))
     context_validate = context_sub.add_parser('validate', help='Verify Context Pack source-file hashes and optional HANDOFF file')
     common(context_validate); context_validate.add_argument('path', type=Path); context_validate.add_argument('--handoff', type=Path)
+    branches = sub.add_parser('branches', help='Inspect Git branches and safely clean up merged local branches')
+    branches_sub = branches.add_subparsers(dest='branches_command', required=True)
+    branches_inspect = branches_sub.add_parser('inspect', help='Read-only local and remote-tracking branch inventory')
+    common(branches_inspect)
+    branches_plan = branches_sub.add_parser('cleanup-plan', help='Preview merged local branches eligible for cleanup')
+    common(branches_plan)
+    branches_cleanup = branches_sub.add_parser('cleanup', help='Delete only merged local branches after explicit confirmation; never deletes remote branches')
+    common(branches_cleanup)
+    branches_cleanup.add_argument('--apply', action='store_true', help='Execute the displayed local cleanup plan')
+    branches_cleanup.add_argument('--confirm', help='Must be DELETE-BRANCHES (case-insensitive) with --apply')
     return p
 
 def choose_tools(raw: str | None) -> list[str]:
@@ -590,6 +601,15 @@ def main(argv=None):
     args=parser().parse_args(argv)
     root=(getattr(args, 'root', None) or find_root()).resolve()
     try:
+        if args.command == 'branches':
+            if args.branches_command == 'inspect':
+                result = inspect_branches(root)
+            elif args.branches_command == 'cleanup-plan':
+                result = cleanup_merged_local_branches(root, apply=False)
+            else:
+                result = cleanup_merged_local_branches(root, apply=args.apply, confirm=args.confirm)
+            emit(result, args.format, args.output)
+            return 0 if result.get('ok', False) else 2
         if args.command == 'repair':
             if args.apply:
                 result = apply_safe_repairs(root, confirm=args.confirm, tools=args.tools)
