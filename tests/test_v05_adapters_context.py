@@ -106,4 +106,11 @@ class V05Tests(unittest.TestCase):
         self.assertEqual(result['execution_modes']['cli']['unknown'], 1)
         self.assertEqual(result['execution_modes']['ide_extension']['not_run'], 1)
 
+    def test_adapter_schema_copies_match_and_declare_v2(self):
+        repo_root = Path(__file__).resolve().parents[1]
+        root_schema = json.loads((repo_root / 'schemas' / 'adapter-verification-evidence.schema.json').read_text(encoding='utf-8'))
+        package_schema = json.loads((repo_root / 'src' / 'aimes_cli' / 'schemas' / 'adapter-verification-evidence.schema.json').read_text(encoding='utf-8'))
+        self.assertEqual(root_schema, package_schema)
+        self.assertEqual(root_schema['properties']['schema_version']['enum'], [1, 2])
+
 if __name__=='__main__': unittest.main()
