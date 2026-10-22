@@ -1,9 +1,0 @@
-AIMES CLI V0.5.1 Test Results
-Environment: Linux container, Python 3.13
-Unit tests: 39 passed, 0 failed
-Skill registry validation: 7 skills, 0 errors, 0 warnings
-Prompt evaluation suite validation: 14 cases, 0 errors, 0 warnings
-CLI version smoke test: aimes 0.5.1
-Wheel: aimes_governance_cli-0.5.1-py3-none-any.whl
-Wheel SHA-256: e5e56c0dfe4f32c325dfb0ed8e1274b354716eaf427b973d587984e4f40317b3
-Not performed: Windows 11 validation; actual IDE/Agent rule-loading tests; automated model execution of prompt evaluation cases.
