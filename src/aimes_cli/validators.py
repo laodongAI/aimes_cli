@@ -233,13 +233,18 @@ def validate_skill_registry(path: Path, root: Path, skill_id: str | None = None)
         _finding(findings, "ERROR", "ROOT_TYPE", "Skill registry must be a YAML/JSON object")
         return _result("skill", path, findings)
     _unknown_keys(data, {"schema_version", "skills"}, findings, "skill registry")
-    if type(data.get("schema_version")) is not int or data.get("schema_version") != 1:
-        _finding(findings, "ERROR", "SCHEMA_VERSION", "schema_version must be integer 1")
+    schema_version = data.get("schema_version")
+    if type(schema_version) is not int or schema_version not in {1, 2}:
+        _finding(findings, "ERROR", "SCHEMA_VERSION", "schema_version must be integer 1 or 2")
+        schema_version = 1
     entries = data.get("skills")
     if not _list(entries):
         _finding(findings, "ERROR", "SKILLS_TYPE", "skills must be a list")
         return _result("skill", path, findings)
-    required = {"id", "name", "version", "file", "purpose", "triggers", "inputs", "outputs", "applies_to", "risk_level", "required_capabilities", "forbidden_actions", "prerequisites", "dependencies", "validation_status", "evaluation_suite", "evidence"}
+    required_v1 = {"id", "name", "version", "file", "purpose", "triggers", "inputs", "outputs", "applies_to", "risk_level", "required_capabilities", "forbidden_actions", "prerequisites", "dependencies", "validation_status", "evaluation_suite", "evidence"}
+    required_v2 = required_v1 | {"lifecycle_stage", "stop_conditions", "failure_recovery", "completion_criteria", "approval_required", "side_effects", "idempotency"}
+    allowed_fields = required_v2
+    required = required_v2 if schema_version == 2 else required_v1
     seen: set[str] = set()
     checked = 0
     for i, item in enumerate(entries):
@@ -252,7 +257,7 @@ def validate_skill_registry(path: Path, root: Path, skill_id: str | None = None)
         checked += 1
         for key in sorted(required - set(item)):
             _finding(findings, "ERROR", "REQUIRED_FIELD", f"skills[{i}] missing field: {key}")
-        _unknown_keys(item, required, findings, f"skill {sid or i}")
+        _unknown_keys(item, allowed_fields, findings, f"skill {sid or i}")
         if not _nonempty(sid):
             _finding(findings, "ERROR", "SKILL_ID", f"skills[{i}].id must be a non-empty string")
         elif sid in seen:
@@ -266,6 +271,21 @@ def validate_skill_registry(path: Path, root: Path, skill_id: str | None = None)
             _finding(findings, "ERROR", "RISK_LEVEL", f"skill {sid}: risk_level must be one of {', '.join(sorted(RISK_LEVELS))}")
         if not isinstance(item.get("validation_status"), str) or item.get("validation_status") not in GLOBAL_STATUSES:
             _finding(findings, "ERROR", "INVALID_STATUS", f"skill {sid}: validation_status must use AIMES global status vocabulary")
+        if schema_version == 2:
+            lifecycle_stages = {"proposed", "review", "pilot", "verified", "released", "monitoring", "deprecated"}
+            if not isinstance(item.get("lifecycle_stage"), str) or item.get("lifecycle_stage") not in lifecycle_stages:
+                _finding(findings, "ERROR", "LIFECYCLE_STAGE", f"skill {sid}: lifecycle_stage must be one of {', '.join(sorted(lifecycle_stages))}")
+            if type(item.get("approval_required")) is not bool:
+                _finding(findings, "ERROR", "APPROVAL_REQUIRED_TYPE", f"skill {sid}: approval_required must be a boolean")
+            idempotency_modes = {"idempotent", "guarded", "non_idempotent"}
+            if not isinstance(item.get("idempotency"), str) or item.get("idempotency") not in idempotency_modes:
+                _finding(findings, "ERROR", "IDEMPOTENCY_MODE", f"skill {sid}: idempotency must be one of {', '.join(sorted(idempotency_modes))}")
+            for key in ("stop_conditions", "failure_recovery", "completion_criteria", "side_effects"):
+                if not _list(item.get(key)) or not item.get(key):
+                    _finding(findings, "ERROR", "CONTRACT_LIST_REQUIRED", f"skill {sid}: {key} must be a non-empty list")
+            if item.get("validation_status") == "VERIFIED":
+                if not _nonempty(item.get("evaluation_suite")) or not _list(item.get("evidence")) or not item.get("evidence"):
+                    _finding(findings, "ERROR", "VERIFIED_EVIDENCE_REQUIRED", f"skill {sid}: VERIFIED requires evaluation_suite and non-empty evidence")
         for key in ("triggers", "inputs", "outputs", "applies_to", "required_capabilities", "forbidden_actions", "prerequisites", "dependencies", "evidence"):
             if not _list(item.get(key)):
                 _finding(findings, "ERROR", "FIELD_TYPE", f"skill {sid}: {key} must be a list")
