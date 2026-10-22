@@ -1,6 +1,8 @@
 import json, tempfile, unittest
 from pathlib import Path
-from aimes_cli.evaluation import validate_suite, validate_run, build_run_report, compare_runs
+from aimes_cli.evaluation import validate_suite, validate_run, validate_run_against_suite, build_run_report, compare_runs
+from aimes_cli.cli import main
+import contextlib, io
 
 class EvaluationTests(unittest.TestCase):
     def setUp(self):
@@ -36,5 +38,61 @@ class EvaluationTests(unittest.TestCase):
     def test_compare_reports_added_removed_cases(self):
         b=self.put('base.json',self.run_record()); c=self.put('candidate.json',self.run_record(case='C2'))
         result=compare_runs(b,c); self.assertEqual(result['added_cases'],['C2']); self.assertEqual(result['removed_cases'],['C1'])
+
+
+    def test_validate_run_against_suite_accepts_complete_evidence_backed_run(self):
+        suite_path = self.put("suite.yaml", self.yaml(self.suite()))
+        run_path = self.put("run.json", self.run_record())
+        result = validate_run_against_suite(suite_path, run_path)
+        self.assertTrue(result["ok"], result["findings"])
+        self.assertEqual(result["expected_case_count"], 1)
+        self.assertEqual(result["checked_cases"], 1)
+
+    def test_validate_run_against_suite_rejects_missing_case(self):
+        suite = self.suite()
+        suite["cases"].append({"case_id":"C2","objective":"second","input":{},"expected":{},"scoring":{"hard_gates":["G2"]}})
+        suite_path = self.put("suite.yaml", self.yaml(suite))
+        run_path = self.put("run.json", self.run_record())
+        result = validate_run_against_suite(suite_path, run_path)
+        self.assertFalse(result["ok"])
+        self.assertIn("SUITE_CASES_MISSING", {x["code"] for x in result["findings"]})
+
+    def test_validate_run_against_suite_rejects_unexpected_case(self):
+        suite_path = self.put("suite.yaml", self.yaml(self.suite()))
+        run_path = self.put("run.json", self.run_record(case="OUTSIDE-SUITE"))
+        result = validate_run_against_suite(suite_path, run_path)
+        self.assertIn("UNEXPECTED_RUN_CASES", {x["code"] for x in result["findings"]})
+
+    def test_validate_run_against_suite_rejects_missing_hard_gate(self):
+        run = self.run_record()
+        run["case_results"][0]["hard_gates"] = {}
+        suite_path = self.put("suite.yaml", self.yaml(self.suite()))
+        run_path = self.put("run.json", run)
+        result = validate_run_against_suite(suite_path, run_path)
+        self.assertIn("HARD_GATES_MISSING", {x["code"] for x in result["findings"]})
+
+    def test_validate_run_against_suite_rejects_pass_without_evidence(self):
+        run = self.run_record()
+        run["case_results"][0]["evidence_refs"] = []
+        suite_path = self.put("suite.yaml", self.yaml(self.suite()))
+        run_path = self.put("run.json", run)
+        result = validate_run_against_suite(suite_path, run_path)
+        self.assertIn("PASS_EVIDENCE_REQUIRED", {x["code"] for x in result["findings"]})
+
+    def test_validate_run_against_suite_checks_suite_version(self):
+        run = self.run_record()
+        run["metadata"]["suite_version"] = "0.9.0"
+        suite_path = self.put("suite.yaml", self.yaml(self.suite()))
+        run_path = self.put("run.json", run)
+        result = validate_run_against_suite(suite_path, run_path)
+        self.assertIn("SUITE_VERSION_MISMATCH", {x["code"] for x in result["findings"]})
+
+    def test_validate_run_cli(self):
+        suite_path = self.put("suite.yaml", self.yaml(self.suite()))
+        run_path = self.put("run.json", self.run_record())
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            code = main(["evaluation", "validate-run", str(run_path), "--suite", str(suite_path), "--root", str(self.root), "--format", "json"])
+        self.assertEqual(code, 0, output.getvalue())
 
 if __name__=='__main__': unittest.main()
