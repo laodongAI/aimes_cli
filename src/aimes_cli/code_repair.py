@@ -107,6 +107,14 @@ def _load_manifest(root: Path, repair_id: str) -> tuple[dict[str, Any], Path]:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(f"修复提案清单无法读取：{exc}") from exc
+    if not isinstance(manifest, dict):
+        raise ValueError("修复提案清单格式错误：根节点必须是 JSON 对象")
+    if manifest.get("repair_id") != repair_id:
+        raise ValueError("修复提案清单中的 repair_id 与目录不一致")
+    if not isinstance(manifest.get("touched_paths"), list):
+        raise ValueError("修复提案清单损坏：touched_paths 必须是数组")
+    if not isinstance(manifest.get("preimage_sha256"), dict) or not isinstance(manifest.get("applied_sha256", {}), dict):
+        raise ValueError("修复提案清单损坏：文件哈希字段格式错误")
     return manifest, manifest_path.parent
 
 
@@ -430,7 +438,7 @@ def inspect_patch(root: Path, repair_id: str) -> dict[str, Any]:
         rel = _safe_relative(raw_rel)
         target = _within(root, rel)
         current_hash = _sha(target.read_bytes()) if target.is_file() else None
-        expected = applied.get(rel) if status in {"APPLIED", "VERIFIED", "VERIFICATION_FAILED", "ROLLED_BACK"} else preimages.get(rel)
+        expected = preimages.get(rel) if status in {"PROPOSED", "ROLLED_BACK"} else applied.get(rel) if status in {"APPLIED", "VERIFIED", "VERIFICATION_FAILED"} else preimages.get(rel)
         matches = current_hash == expected
         entry = {
             "path": rel,
