@@ -272,7 +272,7 @@ def transition_workflow_run(
             _add(findings, "ERROR", "RETRY_GUARD_EVIDENCE_REQUIRED", "Guarded retries require --guard-evidence")
     if transition.get("guard") and not (isinstance(guard_evidence, str) and guard_evidence.strip()):
         _add(findings, "ERROR", "TRANSITION_GUARD_EVIDENCE_REQUIRED", "This transition has a guard; provide --guard-evidence")
-    if target_state.get("approval_required") and not (isinstance(approval_ref, str) and approval_ref.strip()):
+    if target_state.get("approval_required") and target != current and not (isinstance(approval_ref, str) and approval_ref.strip()):
         _add(findings, "ERROR", "APPROVAL_REQUIRED", f"Target state {target} requires --approval-ref")
     if event == "approval_denied" and target_state.get("terminal_outcome") not in {"BLOCKED", "CANCELLED"}:
         _add(findings, "ERROR", "APPROVAL_DENIAL_TARGET", "approval_denied must transition to a BLOCKED or CANCELLED terminal state")
