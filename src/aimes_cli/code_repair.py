@@ -203,7 +203,7 @@ def diagnose_command(root: Path, *, diagnostic_id: str, test_argv_json: str, tim
         ],
         "stdout_tail": stdout[-16000:],
         "stderr_tail": stderr[-16000:],
-        "note": "这是基于命令退出码与常见错误特征的辅助诊断，不等同于根因已确认；没有自动修改业务代码。",
+        "note": "这是基于命令退出码与常见错误特征的辅助诊断，不等同于根因已确认；命令通过不代表原始问题已解决或整个项目通过验收；没有自动修改业务代码。",
     }
     directory.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
