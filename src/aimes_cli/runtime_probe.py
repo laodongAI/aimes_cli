@@ -115,6 +115,7 @@ def create_runtime_probe(
         _write_new(target / "PROMPT.txt", prompt_text + "\n")
         _write_new(target / "README.md", readme)
         manifest["rule_sha256"] = _sha256(entry)
+        manifest["prompt_sha256"] = _sha256(target / "PROMPT.txt")
         _write_new(target / "probe-manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     except OSError:
         # Keep partial files for inspection rather than deleting user-visible output.
@@ -153,6 +154,14 @@ def validate_runtime_probe(root: Path, probe_dir: Path, *, observer: str = "") -
     tool = manifest.get("tool")
     if tool not in PROBE_TOOLS:
         raise ValueError("Unsupported tool ID in probe manifest")
+    required_fields = ("probe_id", "product_version", "execution_mode", "platform", "rule_entry", "case_id", "aimes_cli_version", "governance_version", "rule_sha256", "prompt_sha256")
+    if any(not isinstance(manifest.get(key), str) or not manifest[key].strip() for key in required_fields):
+        raise ValueError("Probe manifest is missing required non-empty fields")
+    if manifest["rule_entry"] != PROBE_TOOLS[tool]["entry"]:
+        raise ValueError("Probe manifest rule_entry does not match the selected tool")
+    prompt_path = target / "PROMPT.txt"
+    if not prompt_path.is_file() or _sha256(prompt_path) != manifest["prompt_sha256"]:
+        raise ValueError("Probe prompt is missing or changed since probe creation")
     rule_path = target / PROBE_TOOLS[tool]["entry"]
     if not rule_path.is_file() or _sha256(rule_path) != manifest.get("rule_sha256"):
         raise ValueError("Native rule entry is missing or changed since probe creation; do not trust this probe")
