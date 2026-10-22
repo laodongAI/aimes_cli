@@ -118,6 +118,27 @@ def validate_release(root: Path) -> dict[str, Any]:
         check("readme_installation_not_pinned_to_historical_wheel", None,
               "README.md is absent; installation instructions cannot be checked.", "README.md")
 
+    historical_artifacts = [
+        root / "RELEASE-MANIFEST.json",
+        root / "BUILD-RESULTS.txt",
+        root / "TEST-RESULTS.md",
+        root / "TEST-RESULTS.txt",
+    ]
+    stale_artifacts = []
+    for artifact in historical_artifacts:
+        if artifact.is_file():
+            try:
+                artifact_text = artifact.read_text(encoding="utf-8-sig")
+            except OSError as exc:
+                stale_artifacts.append(f"{artifact.name}: unreadable ({exc})")
+                continue
+            if package_version and package_version != "0.5.3" and re.search(r"\bV0\.5\.3\b", artifact_text, re.IGNORECASE):
+                stale_artifacts.append(f"{artifact.name}: contains historical V0.5.3 release metadata")
+    check("historical_release_artifacts_archived", not stale_artifacts,
+          "Historical V0.5.3 root-level release artifacts must be archived. " + "; ".join(stale_artifacts)
+          if stale_artifacts else "No historical V0.5.3 release reports remain at repository root.",
+          "RELEASE-MANIFEST.json")
+
     core_files = sorted(core_dir.glob("AIMES-CORE-V*.md")) if core_dir.is_dir() else []
     if governance_version is not None:
         expected_name = f"AIMES-CORE-V{governance_version}.md"
