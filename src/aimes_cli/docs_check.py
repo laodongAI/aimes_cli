@@ -184,9 +184,9 @@ def _check_git_untracked(root: Path, findings: list[dict[str, Any]]) -> None:
         _finding(findings, "WARNING", "GIT_STATUS_UNAVAILABLE", "Git status returned an error; untracked-file audit was skipped.")
         return
     for entry in status.stdout.split("\\0"):
-        if len(entry) < 4 or entry[:2] != "?? ":
+        if len(entry) < 4 or entry[:2] != "??":
             continue
-        rel = entry[3:].replace("\\\\", "/")
+        rel = entry[3:].replace("\\", "/")
         _finding(findings, "WARNING", "GIT_UNTRACKED_FILE", "Untracked file: decide whether it belongs in version control or should be ignored; AIMES will not stage it automatically.", rel)
 
 
