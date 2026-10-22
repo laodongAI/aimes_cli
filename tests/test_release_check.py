@@ -44,9 +44,9 @@ class ReleaseCheckTests(unittest.TestCase):
 
     def test_dynamic_package_version_uses_runtime_version(self):
         (self.root / "pyproject.toml").write_text(
-            '[project]\\nname = "aimes-governance-cli"\\ndynamic = ["version"]\\n'
-            '[tool.setuptools.dynamic]\\nversion = { attr = "aimes_cli.__version__" }\\n'
-            '[tool.setuptools.package-data]\\naimes_cli = ["templates/**/*.md", "schemas/*.json"]\\n',
+            '[project]\nname = "aimes-governance-cli"\ndynamic = ["version"]\n'
+            '[tool.setuptools.dynamic]\nversion = { attr = "aimes_cli.__version__" }\n'
+            '[tool.setuptools.package-data]\naimes_cli = ["templates/**/*.md", "schemas/*.json"]\n',
             encoding="utf-8",
         )
         result = validate_release(self.root)
@@ -56,9 +56,9 @@ class ReleaseCheckTests(unittest.TestCase):
 
     def test_dynamic_package_version_rejects_noncanonical_source(self):
         (self.root / "pyproject.toml").write_text(
-            '[project]\\nname = "aimes-governance-cli"\\ndynamic = ["version"]\\n'
-            '[tool.setuptools.dynamic]\\nversion = { attr = "other_package.__version__" }\\n'
-            '[tool.setuptools.package-data]\\naimes_cli = ["templates/**/*.md", "schemas/*.json"]\\n',
+            '[project]\nname = "aimes-governance-cli"\ndynamic = ["version"]\n'
+            '[tool.setuptools.dynamic]\nversion = { attr = "other_package.__version__" }\n'
+            '[tool.setuptools.package-data]\naimes_cli = ["templates/**/*.md", "schemas/*.json"]\n',
             encoding="utf-8",
         )
         result = validate_release(self.root)
