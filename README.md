@@ -27,6 +27,7 @@ AIMES 支持对 AI 编码工具生成的业务代码补丁进行受控处理：�
 
 ```powershell
 aimes repair-code diagnose --id diag-001 --test-argv-json '["python","-m","unittest","discover","-s","tests"]' --root . --format json
+aimes repair-code inspect fix-001 --root . --format json
 aimes repair-code propose candidate.patch --id fix-001 --finding "TEST-42" --root . --format json
 aimes repair-code apply fix-001 --confirm APPLY-FIX --root . --format json
 aimes repair-code verify fix-001 --test-argv-json '["python","-m","unittest","discover","-s","tests"]' --root . --format json
@@ -39,7 +40,7 @@ aimes repair-code rollback fix-001 --confirm ROLLBACK-FIX --root . --format json
 
 在交互式终端中只输入 `aimes` 即可进入菜单，逐步选择初始化、配置、检查或验证任务。初始化向导支持多选工具，默认先预览；确认实际写入时需要输入 `YES`。原有参数命令仍然保留，适合脚本和 CI。
 
-Windows 独立 EXE 构建和 PATH 配置请见 [`docs/WINDOWS-EXE-DEPLOYMENT.md`](docs/WINDOWS-EXE-DEPLOYMENT.md)。独立 EXE 携带 Python 运行时，不需要激活项目 `.venv`；但必须将整个发布目录放入固定位置并配置用户 PATH。当前开发环境未在 Windows 上实际构建或验证 EXE。
+Windows 独立 EXE 构建和 PATH 配置请见 [`docs/WINDOWS-EXE-DEPLOYMENT.md`](docs/WINDOWS-EXE-DEPLOYMENT.md)。独立 EXE 携带 Python 运行时，不需要激活项目 `.venv`；但必须将整个发布目录放入固定位置并配置用户 PATH。Windows 独立 EXE 的构建与仓库外冒烟测试由 GitHub Actions 工作流验证；具体结果以对应提交的工作流记录为准。
 
 ## 1. GitHub 根目录镜像发布（V0.7.4）
 
