@@ -164,6 +164,14 @@ def apply_safe_repairs(root: Path, *, confirm: str | None, tools: str | None = N
         raise ValueError("执行修复必须显式确认：--apply --confirm REPAIR（不区分大小写）")
 
     config_path = root / CONFIG_REL
+    preflight = validate_project(root)
+    blocking_codes = {"CONFIG_INVALID", "SCHEMA_UNSUPPORTED", "TOOLS_INVALID", "MANIFEST_INVALID"}
+    blocked = sorted({item.get("code") for item in preflight.get("findings", []) if item.get("code") in blocking_codes})
+    if blocked:
+        raise ValueError(
+            "检测到不能安全自动修复的配置/清单问题：" + ", ".join(blocked)
+            + "。请先备份并人工处理；本次未执行任何写入。"
+        )
     selected_tools: list[str] = []
     scope = "project"
     if config_path.is_file():
@@ -178,7 +186,8 @@ def apply_safe_repairs(root: Path, *, confirm: str | None, tools: str | None = N
         if tools:
             ids.extend(normalize_tools(tools))
         selected_tools = list(dict.fromkeys(normalize_tools(ids))) if ids else []
-        scope = config.get("project", {}).get("scope", "project")
+        project_config = config.get("project", {})
+        scope = project_config.get("scope", "project") if isinstance(project_config, dict) else "project"
     elif tools:
         selected_tools = normalize_tools(tools)
     else:
