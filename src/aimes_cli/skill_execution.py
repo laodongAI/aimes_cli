@@ -101,6 +101,9 @@ def validate_skill_execution(path: Path) -> dict:
         if not isinstance(step, dict):
             _add(findings, "ERROR", "STEP_TYPE", f"{loc} must be an object")
             continue
+        allowed_step_fields = {"step_id", "name", "status", "skip_reason", "evidence_refs", "notes"}
+        for key in sorted(set(step) - allowed_step_fields):
+            _add(findings, "WARNING", "UNKNOWN_STEP_FIELD", f"{loc}: unrecognized field '{key}'")
         sid = step.get("step_id")
         if not _nonempty(sid):
             _add(findings, "ERROR", "STEP_ID", f"{loc}.step_id is required")
@@ -131,6 +134,9 @@ def validate_skill_execution(path: Path) -> dict:
         if not isinstance(check, dict):
             _add(findings, "ERROR", "ACCEPTANCE_CHECK_TYPE", f"{loc} must be an object")
             continue
+        allowed_check_fields = {"check_id", "criterion", "status", "evidence_refs", "notes"}
+        for key in sorted(set(check) - allowed_check_fields):
+            _add(findings, "WARNING", "UNKNOWN_ACCEPTANCE_FIELD", f"{loc}: unrecognized field '{key}'")
         cid = check.get("check_id")
         if not _nonempty(cid):
             _add(findings, "ERROR", "ACCEPTANCE_CHECK_ID", f"{loc}.check_id is required")
@@ -151,11 +157,15 @@ def validate_skill_execution(path: Path) -> dict:
     for key in ("outputs", "evidence_refs", "unresolved_items", "approval_refs"):
         if key in data and not isinstance(data.get(key), list):
             _add(findings, "ERROR", "FIELD_TYPE", f"{key} must be a list")
-    for key in ("outputs", "evidence_refs"):
+    for key in ("outputs", "evidence_refs", "approval_refs"):
         if isinstance(data.get(key), list):
             for i, value in enumerate(data[key]):
                 if not _nonempty(value):
                     _add(findings, "ERROR", "REFERENCE_VALUE", f"{key}[{i}] must be a non-empty string")
+    if isinstance(data.get("unresolved_items"), list):
+        for i, value in enumerate(data["unresolved_items"]):
+            if not isinstance(value, str):
+                _add(findings, "ERROR", "UNRESOLVED_ITEM_TYPE", f"unresolved_items[{i}] must be a string")
 
     if data.get("status") == "PASS":
         if not steps:
