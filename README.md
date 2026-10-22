@@ -256,6 +256,7 @@ aimes workflow validate examples/workflows/engineering-workflow.example.yaml --r
 Skill V2 规范见 [`docs/SKILL-CONTRACT-V2.md`](docs/SKILL-CONTRACT-V2.md)。CI 会校验 `examples/skills/registry.example.yaml`，防止示例与验证器发生漂移。
 执行记录命令 `aimes skill execution validate <path>` 校验单次 Skill 运行的工具/Skill 版本、基线、步骤、跳过原因、验收检查、输出与证据引用；Token usage 不可获取时必须记录 unavailable/null，不允许估算。记录校验不等于真实执行或结果正确。规范见 [`docs/SKILL-EXECUTION-RECORD-V1.md`](docs/SKILL-EXECUTION-RECORD-V1.md)。
 声明式工作流命令 `aimes workflow validate <path>` 检查状态入口、转换引用、成功/失败路径、可达性、非重试循环与重试策略。它只验证定义，不会执行或恢复工作流。规范见 [`docs/WORKFLOW-STATE-MACHINE-V1.md`](docs/WORKFLOW-STATE-MACHINE-V1.md)。
+工作流运行命令 `aimes workflow run start|validate|transition` 记录本地状态、显式审批/守卫引用、转换历史和备份；开始与转换必须确认，不覆盖既有运行记录，工作流定义哈希变化会阻止继续转换。它不会运行 AI 工具或生成外部证据。
 **已实现：** V0.5 的 `adapter validate`、`adapter report`、`context validate`；V0.1 的 `init`、`configure`、`inspect`、`diff`、`validate`、`doctor`、`status`；V0.2 的 `requirement validate`、`knowledge validate`、`reuse validate`、`skill validate`；示例数据、JSON Schema、只读校验报告和自动化测试。
 
 **尚未实现：** 自动调用模型/Agent 执行评测案例、直接读取 IDE 内部规则加载状态、自动生成可信执行证据、签名验证、全局安装、三方合并、自动卸载、回滚、自动升级策略、任务/追溯全量治理、清理命令、执行项目构建命令、AI 路由、ZCode/QCode 原生插件集成、工具运行时自动验证。
