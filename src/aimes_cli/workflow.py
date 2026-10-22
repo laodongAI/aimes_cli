@@ -77,6 +77,8 @@ def validate_workflow_definition(path: Path) -> dict:
                 _add(findings, "ERROR", "STATE_CONTRACT_LIST", f"{loc}.{key} must be a non-empty list of strings")
         if not isinstance(state.get("required_artifacts"), list):
             _add(findings, "ERROR", "REQUIRED_ARTIFACTS_TYPE", f"{loc}.required_artifacts must be a list")
+        elif any(not _nonempty(value) for value in state["required_artifacts"]):
+            _add(findings, "ERROR", "REQUIRED_ARTIFACT_VALUE", f"{loc}.required_artifacts entries must be non-empty strings")
         if type(state.get("approval_required")) is not bool:
             _add(findings, "ERROR", "APPROVAL_REQUIRED_TYPE", f"{loc}.approval_required must be a boolean")
         retry_mode = state.get("retry_mode")
@@ -91,7 +93,7 @@ def validate_workflow_definition(path: Path) -> dict:
         if retry_mode == "guarded" and attempts > 1 and not _nonempty(state.get("retry_guard")):
             _add(findings, "ERROR", "RETRY_GUARD_REQUIRED", f"{loc}: guarded retries require retry_guard")
         outcome = state.get("terminal_outcome")
-        if outcome is not None and outcome not in VALID_TERMINAL_OUTCOMES:
+        if outcome is not None and (not isinstance(outcome, str) or outcome not in VALID_TERMINAL_OUTCOMES):
             _add(findings, "ERROR", "TERMINAL_OUTCOME", f"{loc}.terminal_outcome must be null or one of {sorted(VALID_TERMINAL_OUTCOMES)}")
         if outcome is not None and (retry_mode != "never" or attempts != 1):
             _add(findings, "ERROR", "TERMINAL_RETRY_FORBIDDEN", f"{loc}: terminal states must use retry_mode=never and max_attempts=1")
@@ -119,10 +121,10 @@ def validate_workflow_definition(path: Path) -> dict:
         for key in sorted(set(transition) - allowed_transition):
             _add(findings, "WARNING", "UNKNOWN_TRANSITION_FIELD", f"{loc}: unrecognized field '{key}'")
         source, target, event = transition.get("from"), transition.get("to"), transition.get("on")
-        if not _nonempty(source) or source not in state_by_id:
+        if not isinstance(source, str) or source not in state_by_id:
             _add(findings, "ERROR", "TRANSITION_SOURCE", f"{loc}.from references an unknown state")
             continue
-        if not _nonempty(target) or target not in state_by_id:
+        if not isinstance(target, str) or target not in state_by_id:
             _add(findings, "ERROR", "TRANSITION_TARGET", f"{loc}.to references an unknown state")
             continue
         if not isinstance(event, str) or event not in VALID_TRANSITION_EVENTS:
