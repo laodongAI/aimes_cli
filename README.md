@@ -39,6 +39,8 @@ aimes repair-code rollback fix-001 --confirm ROLLBACK-FIX --root . --format json
 
 在交互式终端中只输入 `aimes` 即可进入菜单，逐步选择初始化、配置、检查或验证任务。初始化向导支持多选工具，默认先预览；确认实际写入时需要输入 `YES`。原有参数命令仍然保留，适合脚本和 CI。
 
+当你输入了子命令但遗漏必填参数时（例如 `aimes configure`），AIMES 会在交互式终端中逐项询问缺失参数，并对 choices/type 做输入校验；输入错误可以重试，输入 `q` 可取消且不会执行命令。已提供的参数不会被覆盖。自动化脚本请使用 `--non-interactive`，保持纯参数模式并在缺少必填参数时直接报错，例如 `aimes --non-interactive configure --tools codex-cli --root .`。
+
 Windows 独立 EXE 构建和 PATH 配置请见 [`docs/WINDOWS-EXE-DEPLOYMENT.md`](docs/WINDOWS-EXE-DEPLOYMENT.md)。独立 EXE 携带 Python 运行时，不需要激活项目 `.venv`；但必须将整个发布目录放入固定位置并配置用户 PATH。当前开发环境未在 Windows 上实际构建或验证 EXE。
 
 ## 1. GitHub 根目录镜像发布（V0.7.4）

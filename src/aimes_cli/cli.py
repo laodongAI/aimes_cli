@@ -24,10 +24,12 @@ from .release_check import validate_release
 from .upgrade import plan_upgrade, apply_upgrade
 from .repair import build_repair_plan, apply_safe_repairs
 from .code_repair import diagnose_command, propose_patch, apply_patch, verify_patch, rollback_patch
+from .interactive import complete_required_arguments
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
     p.add_argument('--version', action='version', version=f'aimes {__version__}')
+    p.add_argument('--non-interactive', action='store_true', help='Disable prompts; missing required arguments are reported as errors')
     sub=p.add_subparsers(dest='command', required=True)
     def common(sp):
         sp.add_argument('--root', type=Path, help='Project root (defaults to current directory / upward detection)')
@@ -578,16 +580,27 @@ def run_upgrade_wizard(root: Path, args=None) -> int:
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
+    argv = list(argv)
+    non_interactive = "--non-interactive" in argv
+    if non_interactive:
+        argv = [item for item in argv if item != "--non-interactive"]
     if not argv:
-        if sys.stdin.isatty():
+        if sys.stdin.isatty() and not non_interactive:
             try:
                 return interactive_wizard()
             except (EOFError, KeyboardInterrupt):
-                print("\n已取消。")
+                print("\\n已取消。")
                 return 130
         parser().print_help()
         return 0
-    args=parser().parse_args(argv)
+    cli_parser = parser()
+    if sys.stdin.isatty() and not non_interactive:
+        try:
+            argv = complete_required_arguments(cli_parser, argv)
+        except (EOFError, KeyboardInterrupt):
+            print("\\n已取消参数收集，未执行命令。")
+            return 130
+    args=cli_parser.parse_args(argv)
     root=(getattr(args, 'root', None) or find_root()).resolve()
     try:
         if args.command == 'repair':
