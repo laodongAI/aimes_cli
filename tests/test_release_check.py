@@ -20,7 +20,7 @@ class ReleaseCheckTests(unittest.TestCase):
             encoding="utf-8",
         )
         (self.root / "README.md").write_text("# AIMES local CLI（V0.7.9）\n", encoding="utf-8")
-        (self.root / "CHANGELOG.md").write_text("## 0.7.9 - Test release\\n\\n- Test.\\n", encoding="utf-8")
+        (self.root / "CHANGELOG.md").write_text("## 0.7.9 - Test release\n\n- Test.\n", encoding="utf-8")
         (self.root / "build_windows_exe.ps1").write_text("pyinstaller --collect-data aimes_cli\n", encoding="utf-8")
 
     def tearDown(self):
