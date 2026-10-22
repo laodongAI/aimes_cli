@@ -50,17 +50,18 @@ class V05Tests(unittest.TestCase):
         result = validate_adapter_evidence(p, self.root)
         self.assertFalse(result['ok'])
         missing = [f for f in result['findings'] if f['code'] == 'PASS_CONTEXT_FIELD_REQUIRED']
-        self.assertEqual(len(missing), 5)
+        self.assertEqual(len(missing), 9)
 
     def test_v2_pass_with_complete_context_is_valid(self):
         p = self.write_yaml('adapter.yaml', {
             'schema_version': 2,
             'checks': [{
                 'id': 'C1', 'tool': 'codex-cli', 'product_version': '1.2.3',
-                'execution_mode': 'cli', 'rule_entry': 'AGENTS.md',
+                'execution_mode': 'cli', 'platform': 'windows-11', 'rule_entry': 'AGENTS.md',
                 'verification': 'PASS', 'method': 'runtime_observation',
                 'observed_at': '2026-10-22T00:00:00Z', 'observer': 'test-runner',
-                'evidence_note': 'Unique rule probe observed in a new session.'
+                'case_id': 'ADAPTER-PROBE-001', 'aimes_cli_version': '0.8.0',
+                'governance_version': '1.2', 'evidence_note': 'Unique rule probe observed in a new session.'
             }]
         })
         result = validate_adapter_evidence(p, self.root)
