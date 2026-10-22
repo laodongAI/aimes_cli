@@ -63,13 +63,25 @@ def validate_adapter_evidence(path: Path, root: Path | None = None) -> dict:
 def adapter_report(path: Path, root: Path | None = None) -> dict:
     validation=validate_adapter_evidence(path,root); data=_load(path)
     summary={key:{"checks":0,"pass":0,"fail":0,"blocked":0,"not_run":0,"unknown":0} for key in ADAPTERS}
+    execution_modes: dict[str, dict[str, int]] = {}
     for item in data.get("checks",[]) if isinstance(data,dict) and isinstance(data.get("checks"),list) else []:
         if not isinstance(item,dict) or item.get("tool") not in summary: continue
         bucket=summary[item["tool"]]; bucket["checks"]+=1
         status=item.get("verification","UNKNOWN")
         key={"PASS":"pass","FAIL":"fail","BLOCKED":"blocked","NOT_RUN":"not_run","UNKNOWN":"unknown"}.get(status,"unknown")
         bucket[key]+=1
-    return {"ok":validation["ok"],"validation":validation,"tools":summary,"interpretation":"PASS 仅表示记录的验证已通过结构校验；是否真实加载仍取决于所记录的运行证据。未记录不等于失败，也不等于通过。"}
+        mode=item.get("execution_mode") or "UNKNOWN"
+        mode_bucket=execution_modes.setdefault(mode,{"checks":0,"pass":0,"fail":0,"blocked":0,"not_run":0,"unknown":0})
+        mode_bucket["checks"]+=1
+        mode_bucket[key]+=1
+    return {
+        "ok":validation["ok"],
+        "schema_version":data.get("schema_version",1) if isinstance(data,dict) else None,
+        "validation":validation,
+        "tools":summary,
+        "execution_modes":execution_modes,
+        "interpretation":"PASS 仅表示记录的验证已通过结构校验；是否真实加载仍取决于所记录的运行证据。工具与执行模式分别统计，未记录不等于失败，也不等于通过。"
+    }
 
 def validate_context_pack(path: Path, root: Path | None = None, handoff: Path | None = None) -> dict:
     fs=[]; root=(root or path.parent).resolve()
