@@ -3,10 +3,205 @@
   "$id": "https://aimes.local/schemas/skill-registry.schema.json",
   "title": "AIMES Skill Registry",
   "type": "object",
-  "required": ["schema_version", "skills"],
+  "required": [
+    "schema_version",
+    "skills"
+  ],
   "properties": {
-    "schema_version": {"const": 1},
-    "skills": {"type": "array", "items": {"type": "object", "required": ["id", "name", "version", "file", "purpose", "triggers", "inputs", "outputs", "applies_to", "risk_level", "required_capabilities", "forbidden_actions", "prerequisites", "dependencies", "validation_status", "evaluation_suite", "evidence"], "properties": {"id": {"type": "string"}, "name": {"type": "string"}, "version": {"type": "string"}, "file": {"type": "string"}, "purpose": {"type": "string"}, "triggers": {"type": "array"}, "inputs": {"type": "array"}, "outputs": {"type": "array"}, "applies_to": {"type": "array"}, "risk_level": {"enum": ["low", "medium", "high", "critical"]}, "required_capabilities": {"type": "array"}, "forbidden_actions": {"type": "array"}, "prerequisites": {"type": "array"}, "dependencies": {"type": "array"}, "validation_status": {"enum": ["DRAFT", "APPROVED", "PLANNED", "IN_PROGRESS", "IMPLEMENTED_UNVERIFIED", "VERIFIED", "FAILED", "BLOCKED", "REJECTED", "DEPRECATED", "REMOVED", "UNKNOWN", "NOT_APPLICABLE"]}, "evaluation_suite": {"type": ["string", "null"]}, "evidence": {"type": "array"}}, "additionalProperties": false}}
+    "schema_version": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "version",
+          "file",
+          "purpose",
+          "triggers",
+          "inputs",
+          "outputs",
+          "applies_to",
+          "risk_level",
+          "required_capabilities",
+          "forbidden_actions",
+          "prerequisites",
+          "dependencies",
+          "validation_status",
+          "evaluation_suite",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "triggers": {
+            "type": "array"
+          },
+          "inputs": {
+            "type": "array"
+          },
+          "outputs": {
+            "type": "array"
+          },
+          "applies_to": {
+            "type": "array"
+          },
+          "risk_level": {
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "required_capabilities": {
+            "type": "array"
+          },
+          "forbidden_actions": {
+            "type": "array"
+          },
+          "prerequisites": {
+            "type": "array"
+          },
+          "dependencies": {
+            "type": "array"
+          },
+          "validation_status": {
+            "enum": [
+              "DRAFT",
+              "APPROVED",
+              "PLANNED",
+              "IN_PROGRESS",
+              "IMPLEMENTED_UNVERIFIED",
+              "VERIFIED",
+              "FAILED",
+              "BLOCKED",
+              "REJECTED",
+              "DEPRECATED",
+              "REMOVED",
+              "UNKNOWN",
+              "NOT_APPLICABLE"
+            ]
+          },
+          "evaluation_suite": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "evidence": {
+            "type": "array"
+          },
+          "lifecycle_stage": {
+            "type": "string",
+            "enum": [
+              "proposed",
+              "review",
+              "pilot",
+              "verified",
+              "released",
+              "monitoring",
+              "deprecated"
+            ]
+          },
+          "stop_conditions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "failure_recovery": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "completion_criteria": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "approval_required": {
+            "type": "boolean"
+          },
+          "side_effects": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "idempotency": {
+            "type": "string",
+            "enum": [
+              "idempotent",
+              "guarded",
+              "non_idempotent"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": 2
+          }
+        },
+        "required": [
+          "schema_version"
+        ]
+      },
+      "then": {
+        "properties": {
+          "skills": {
+            "items": {
+              "required": [
+                "lifecycle_stage",
+                "stop_conditions",
+                "failure_recovery",
+                "completion_criteria",
+                "approval_required",
+                "side_effects",
+                "idempotency"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
 }
