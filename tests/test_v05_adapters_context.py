@@ -91,4 +91,19 @@ class V05Tests(unittest.TestCase):
         self.assertTrue(result['ok'], result['findings'])
         self.assertTrue(any(f['code'] == 'FIELD_RECOMMENDED_MISSING' for f in result['findings']))
 
+    def test_adapter_report_counts_execution_modes(self):
+        p = self.write_yaml('adapter.yaml', {
+            'schema_version': 2,
+            'checks': [{
+                'id': 'C1', 'tool': 'codex-cli', 'verification': 'UNKNOWN',
+                'method': 'file_inspection', 'execution_mode': 'cli'
+            }, {
+                'id': 'C2', 'tool': 'vscode-codex', 'verification': 'NOT_RUN',
+                'method': 'manual_prompt', 'execution_mode': 'ide_extension'
+            }]
+        })
+        result = adapter_report(p, self.root)
+        self.assertEqual(result['execution_modes']['cli']['unknown'], 1)
+        self.assertEqual(result['execution_modes']['ide_extension']['not_run'], 1)
+
 if __name__=='__main__': unittest.main()
