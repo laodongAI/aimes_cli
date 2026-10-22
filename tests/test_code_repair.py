@@ -101,13 +101,13 @@ class CodeRepairTests(unittest.TestCase):
         self.assertTrue(result["patch_integrity_ok"])
         self.assertEqual(result["issues"], [])
         self.assertEqual(result["next_actions"][0]["id"], "review")
-        self.assertEqual(self.source.read_text(encoding="utf-8"), "VALUE = 1\\n")
+        self.assertEqual(self.source.read_text(encoding="utf-8"), "VALUE = 1\n")
 
     def test_inspect_detects_preimage_and_patch_tampering(self):
         propose_patch(self.root, self.patch_path, repair_id="fix-inspect-2", finding="TEST-INSPECT")
-        self.source.write_text("VALUE = 9\\n", encoding="utf-8")
+        self.source.write_text("VALUE = 9\n", encoding="utf-8")
         patch = self.root / ".aimes/repairs/fix-inspect-2/change.patch"
-        patch.write_text(patch.read_text(encoding="utf-8") + "# tampered\\n", encoding="utf-8")
+        patch.write_text(patch.read_text(encoding="utf-8") + "# tampered\n", encoding="utf-8")
         result = inspect_patch(self.root, "fix-inspect-2")
         self.assertFalse(result["patch_integrity_ok"])
         self.assertIn("PATCH_HASH_MISMATCH", {issue["code"] for issue in result["issues"]})
