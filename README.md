@@ -42,6 +42,10 @@ aimes publish --profile my-project --apply --confirm PUBLISH
 
 VS Code 插件和独立 CLI 是不同执行上下文，必须分别验证。若它们共享 `AGENTS.md` 或 `CLAUDE.md`，治理入口可以共用，但不能假设加载行为相同。
 
+### 工程能力与验证状态
+
+AIMES 的能力状态分为配置已生成、自动化测试通过、工具运行时已验证和真实项目试点已验收。请查看 [能力与验证状态矩阵](docs/CAPABILITY-VERIFICATION-MATRIX.md)；后续实施顺序见 [工程能力增强路线图 V0.9](docs/ROADMAP-ENGINEERING-EXCELLENCE-V0.9.md)。旧版 V0.5.3 发布报告和哈希清单已归档至 [历史发布制品](docs/archive/release-artifacts/V0.5.3/README.md)，不代表当前发布状态。
+
 ## 3. 安装（Windows PowerShell）
 
 需要 Python 3.10+。推荐从仓库源码安装，避免复制历史版本的 wheel 文件名：
