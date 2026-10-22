@@ -157,7 +157,7 @@ def validate_runtime_probe(root: Path, probe_dir: Path, *, observer: str = "") -
     if not rule_path.is_file() or _sha256(rule_path) != manifest.get("rule_sha256"):
         raise ValueError("Native rule entry is missing or changed since probe creation; do not trust this probe")
     rule_text = rule_path.read_text(encoding="utf-8-sig")
-    marker = "reply with exactly the following token and no other text:\\n\\n"
+    marker = "reply with exactly the following token and no other text:\n\n"
     if marker not in rule_text:
         raise ValueError("Probe token instruction is missing from the native rule entry")
     token = rule_text.split(marker, 1)[1].splitlines()[0].strip()
