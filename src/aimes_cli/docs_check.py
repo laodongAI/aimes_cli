@@ -183,7 +183,7 @@ def _check_git_untracked(root: Path, findings: list[dict[str, Any]]) -> None:
     if status.returncode != 0:
         _finding(findings, "WARNING", "GIT_STATUS_UNAVAILABLE", "Git status returned an error; untracked-file audit was skipped.")
         return
-    for entry in status.stdout.split("\\0"):
+    for entry in status.stdout.split("\0"):
         if len(entry) < 4 or entry[:2] != "??":
             continue
         rel = entry[3:].replace("\\", "/")
