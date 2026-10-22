@@ -490,7 +490,7 @@ def inspect_patch(root: Path, repair_id: str) -> dict[str, Any]:
     if status not in actions:
         issues.append({"code": "UNKNOWN_STATUS", "path": str(folder / "proposal.json"), "message": f"未知提案状态：{status}"})
     return {
-        "ok": not any(issue["code"] in {"PATCH_HASH_MISMATCH", "PATCH_MISSING", "UNKNOWN_STATUS"} for issue in issues),
+        "ok": not issues,
         "repair_id": repair_id,
         "status": status,
         "created_at": manifest.get("created_at"),
