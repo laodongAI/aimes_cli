@@ -38,6 +38,15 @@ jobs:
         run: aimes skill execution validate examples/skills/execution-record.example.yaml --root . --format json
       - name: Validate workflow state machine example
         run: aimes workflow validate examples/workflows/engineering-workflow.example.yaml --root . --format json
+      - name: Exercise persistent workflow run transitions
+        run: |
+          aimes workflow run start examples/workflows/engineering-workflow.example.yaml --record .aimes/workflows/runs/ci-run.json --run-id CI-RUN-001 --task-id CI-TASK-001 --baseline-commit "$(git rev-parse HEAD)" --confirm START --root . --format json
+          aimes workflow run validate examples/workflows/engineering-workflow.example.yaml .aimes/workflows/runs/ci-run.json --root . --format json
+          aimes workflow run transition examples/workflows/engineering-workflow.example.yaml .aimes/workflows/runs/ci-run.json --event success --approval-ref CI-APPROVAL-001 --evidence-ref CI-REQ-REVIEW-001 --confirm TRANSITION --root . --format json
+          aimes workflow run transition examples/workflows/engineering-workflow.example.yaml .aimes/workflows/runs/ci-run.json --event retry --guard-evidence "CI verified retry guard and existing state is safe to retry." --confirm TRANSITION --root . --format json
+          aimes workflow run transition examples/workflows/engineering-workflow.example.yaml .aimes/workflows/runs/ci-run.json --event success --evidence-ref CI-IMPLEMENTATION-001 --confirm TRANSITION --root . --format json
+          aimes workflow run transition examples/workflows/engineering-workflow.example.yaml .aimes/workflows/runs/ci-run.json --event success --evidence-ref CI-VERIFICATION-001 --confirm TRANSITION --root . --format json
+          aimes workflow run validate examples/workflows/engineering-workflow.example.yaml .aimes/workflows/runs/ci-run.json --root . --format json
       - name: Baseline documentation audit (advisory)
         continue-on-error: true
         run: |
