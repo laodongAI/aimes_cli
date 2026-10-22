@@ -29,6 +29,7 @@ from .interactive import complete_required_arguments
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
     p.add_argument('--version', action='version', version=f'aimes {__version__}')
+    p.add_argument('--non-interactive', action='store_true', help='Disable prompts; missing required arguments are reported as errors')
     sub=p.add_subparsers(dest='command', required=True)
     def common(sp):
         sp.add_argument('--root', type=Path, help='Project root (defaults to current directory / upward detection)')
