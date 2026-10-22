@@ -249,8 +249,9 @@ aimes reuse validate examples/reuse/reuse-decision.example.yaml --format json
 aimes skill validate examples/skills/registry.example.yaml --id SKL-CORE-REQ-001 --format json
 ```
 
-命令检查必填字段、AIMES 状态、重复 ID、验收条件、知识来源/成熟度证据、复用验证计划、Skill 文件存在性与项目根目录路径逃逸。未知字段目前报告为 WARNING，结构性和契约错误报告为 ERROR。JSON 报告使用 `schema_version: 1`。
+命令检查必填字段、AIMES 状态、重复 ID、验收条件、知识来源/成熟度证据、复用验证计划、Skill 文件存在性与项目根目录路径逃逸。Skill 注册表支持 V1/V2：V2 增加生命周期阶段、停止条件、失败恢复、完成判据、审批要求、副作用和幂等性契约；V1 继续兼容。V2 的 `VERIFIED` Skill 必须提供评测集与证据。未知字段报告为 WARNING，结构性和契约错误报告为 ERROR。
 
+Skill V2 规范见 [`docs/SKILL-CONTRACT-V2.md`](docs/SKILL-CONTRACT-V2.md)。CI 会校验 `examples/skills/registry.example.yaml`，防止示例与验证器发生漂移。
 **已实现：** V0.5 的 `adapter validate`、`adapter report`、`context validate`；V0.1 的 `init`、`configure`、`inspect`、`diff`、`validate`、`doctor`、`status`；V0.2 的 `requirement validate`、`knowledge validate`、`reuse validate`、`skill validate`；示例数据、JSON Schema、只读校验报告和自动化测试。
 
 **尚未实现：** 自动调用模型/Agent 执行评测案例、直接读取 IDE 内部规则加载状态、自动生成可信执行证据、签名验证、全局安装、三方合并、自动卸载、回滚、自动升级策略、任务/追溯全量治理、清理命令、执行项目构建命令、AI 路由、ZCode/QCode 原生插件集成、工具运行时自动验证。
