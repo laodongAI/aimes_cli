@@ -241,3 +241,46 @@ skills:
   validation_status: UNKNOWN
   evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
   evidence: []
+- id: SKL-CORE-UI-001
+  name: ui-quality-review
+  version: 1.0.0
+  file: skills/ui-quality-review/SKILL.md
+  purpose: 检查 UI/UX 是否符合项目已批准设计系统与适用规范，提供证据化发现、受控修复建议和复验计划。
+  triggers:
+  - ui_design
+  - frontend_implementation
+  - ui_review
+  - visual_regression
+  - responsive_layout
+  - accessibility_review
+  - component_style_change
+  - ui_bug_fix
+  - form_interaction_change
+  inputs:
+  - task_id
+  - task_scope
+  - project_context
+  - relevant_ui_paths_or_runtime_target
+  outputs:
+  - ui_baseline
+  - ui_scope
+  - ui_findings
+  - change_plan
+  - verification_matrix
+  - ui_review_report
+  applies_to:
+  - all
+  risk_level: medium
+  required_capabilities:
+  - read_project_files
+  forbidden_actions:
+  - overwrite_user_changes
+  - fabricate_verification
+  - bypass_quality_gate
+  prerequisites:
+  - project_rules_loaded
+  - git_state_checked
+  dependencies: []
+  validation_status: UNKNOWN
+  evaluation_suite: AIMES-UI-QUALITY-GOVERNANCE
+  evidence: []
