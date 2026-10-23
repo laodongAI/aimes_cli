@@ -224,6 +224,7 @@ class PublishTests(unittest.TestCase):
         self.assertFalse(is_excluded('.trae', is_dir=True, extra_patterns=['.trae/']))
         self.assertFalse(is_excluded('.trae/rules/00-aimes-governance.md', extra_patterns=['.trae/']))
         self.assertFalse(is_excluded('.aimes/skills/registry.yaml', extra_patterns=['.aimes/**']))
+        self.assertFalse(is_excluded('docs', is_dir=True, extra_patterns=['docs/**']))
         self.assertFalse(is_excluded('docs/_governance/AIMES-CORE-V1.2.md', extra_patterns=['docs/**']))
         self.assertTrue(is_excluded('.trae/settings.json'))
         self.assertTrue(is_excluded('.aimes/credentials.json'))
