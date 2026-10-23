@@ -556,3 +556,21 @@ skills:
   validation_status: UNKNOWN
   evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
   evidence: []
+
+- id: SKL-CORE-PROMPT-001
+  name: prompt-optimization
+  version: 1.0.0
+  file: skills/prompt-optimization/SKILL.md
+  purpose: 优化提示词、项目指令、Agent/Skill 提示词和上下文工程，同时保留必要约束与硬门禁。
+  triggers: [prompt_optimization, prompt_review, prompt_refactoring, instruction_design, system_prompt, agent_prompt, skill_prompt, context_engineering, token_optimization, prompt_quality_audit]
+  inputs: [original_prompt, target_tool_and_mode, task_goal, acceptance_criteria, protected_constraints]
+  outputs: [diagnostic_findings, preservation_matrix, optimized_prompt, change_log, evaluation_plan, risk_and_unknowns]
+  applies_to: [all]
+  risk_level: medium
+  required_capabilities: [read_project_files]
+  forbidden_actions: [delete_required_constraints, fabricate_token_usage, fabricate_verification, bypass_quality_gate]
+  prerequisites: [project_rules_loaded, git_state_checked]
+  dependencies: []
+  validation_status: UNKNOWN
+  evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
+  evidence: []
