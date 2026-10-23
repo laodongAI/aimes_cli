@@ -1,3 +1,3 @@
-__version__ = "0.8.6"
+__version__ = "0.8.7"
 SCHEMA_VERSION = 1
 GOVERNANCE_VERSION = "1.2"

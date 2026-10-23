@@ -303,3 +303,39 @@ skills:
     validation_status: UNKNOWN
     evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
     evidence: []
+
+  - id: SKL-CORE-PM-001
+    name: product-manager
+    version: 1.0.0
+    file: .aimes/skills/product-manager/SKILL.md
+    purpose: 基于当前项目知识进行产品问题分析、用户价值与范围取舍，并生成包含项目事实、Skill 路由、执行步骤、门禁和验收标准的深度引导词。
+    triggers:
+    - generate_guidance_prompt
+    - deep_guidance
+    - product_discovery
+    - new_product_idea
+    - feature_ideation
+    - product_requirement
+    - project_knowledge_guidance
+    - premature_spec_detection
+    inputs:
+    - user_intent
+    - project_context
+    - relevant_project_knowledge
+    - target_tool_and_mode
+    outputs:
+    - product_problem_analysis
+    - project_knowledge_map
+    - options_and_tradeoffs
+    - open_questions
+    - skill_routing_plan
+    - deep_guidance_prompt
+    applies_to: [all]
+    risk_level: medium
+    required_capabilities: [read_project_files]
+    forbidden_actions: [assumption_as_fact, fabricate_project_evidence, premature_implementation, bypass_quality_gate]
+    prerequisites: [project_rules_loaded, git_state_checked]
+    dependencies: [project-onboarding, project-knowledge-reuse, requirement-cognition]
+    validation_status: UNKNOWN
+    evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
+    evidence: []

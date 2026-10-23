@@ -1,3 +1,10 @@
+## 0.8.7 - 产品经理优先路由与深度引导词
+
+- 新增 product-manager Skill，要求先分析当前项目知识、用户问题/价值、现有能力、复用机会、缺口与方案取舍，再生成可复制的深度引导词。
+- 同步根目录与可部署模板 Skill 注册表和 Skill 文件。
+- 更新 Skill 编排协议：引导词生成/产品探索先路由 product-manager；纯提示词改写才可直接进入 prompt-optimization。
+- 新增 EVAL-PROMPT-PM-001 回归案例，防止工具跳过产品分析直接输出 Spec，并区分静态定义与真实工具验证状态。
+
 ## 0.8.6 - 项目 AIMES 版本与逐文件一致性审计
 
 - 新增只读 `aimes version-audit` 命令，比较当前 CLI 版本、项目 Manifest 版本、当前模板和逐文件哈希。

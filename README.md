@@ -1,4 +1,4 @@
-# AIMES 本地治理 CLI（V0.8.6）
+# AIMES 本地治理 CLI（V0.8.7）
 
 AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具。它负责把 AIMES V1.2 治理核心部署到项目仓库，生成工具专属规则入口，检查配置与冲突，并输出部署状态。它不替代 Codex、Claude Code、Trae、ZCode 或 Copilot 执行开发任务。
 
@@ -330,7 +330,7 @@ Skill V2 规范见 [`docs/SKILL-CONTRACT-V2.md`](docs/SKILL-CONTRACT-V2.md)。CI
 工作流运行命令 `aimes workflow run start|validate|transition` 记录本地状态、显式审批/守卫引用、转换历史和备份；开始与转换必须确认，不覆盖既有运行记录，工作流定义哈希变化会阻止继续转换。它不会运行 AI 工具或生成外部证据。
 **已实现：** V0.5 的 `adapter validate`、`adapter report`、`context validate`；V0.1 的 `init`、`configure`、`inspect`、`diff`、`validate`、`doctor`、`status`；V0.2 的 `requirement validate`、`knowledge validate`、`reuse validate`、`skill validate`；示例数据、JSON Schema、只读校验报告和自动化测试。
 
-**尚未实现：** 自动调用模型/Agent 执行评测案例、直接读取 IDE 内部规则加载状态、自动生成可信执行证据、签名验证、全局安装、三方合并、自动卸载、回滚、自动升级策略、任务/追溯全量治理、清理命令、执行项目构建命令、AI 路由、ZCode/QCode 原生插件集成、工具运行时自动验证。
+**尚未实现：** 自动调用模型/Agent 执行评测案例、直接读取 IDE 内部规则加载状态、自动生成可信执行证据、签名验证、全局安装、三方合并、自动卸载、回滚、自动升级策略、任务/追溯全量治理、清理命令、执行项目构建命令、动态模型/Agent 自动路由、ZCode/QCode 原生插件集成、工具运行时自动验证。静态 Skill 注册表与产品经理优先路由规则已提供，但是否被 Trae Code 等工具在运行时实际读取和执行仍需真实试点验证。
 
 ## 8. 退出码
 
