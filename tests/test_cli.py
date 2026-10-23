@@ -39,7 +39,13 @@ class AimesCliTests(unittest.TestCase):
         self.assertTrue((self.root/'CLAUDE.md').exists())
         validation = validate_project(self.root)
         self.assertTrue(validation['ok'], validation)
-        self.assertEqual(len(json.loads((self.root/'.aimes/manifest.json').read_text())['managed_files']), 12)
+        managed = {item['path'] for item in json.loads((self.root/'.aimes/manifest.json').read_text())['managed_files']}
+        self.assertIn('.aimes/skills/registry.yaml', managed)
+        import yaml
+        registry = yaml.safe_load((self.root/'.aimes/skills/registry.yaml').read_text(encoding='utf-8'))
+        for route in registry['skills']:
+            self.assertIn(route['file'], managed)
+            self.assertTrue((self.root/route['file']).is_file(), route['file'])
 
     def test_existing_file_is_never_overwritten(self):
         (self.root/'AGENTS.md').write_text('user content\n', encoding='utf-8')
