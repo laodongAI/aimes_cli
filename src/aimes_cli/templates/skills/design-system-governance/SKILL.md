@@ -39,6 +39,7 @@ design_system_inventory, approved_rules, inferred_patterns, proposed_tokens, com
 规范来源与批准状态明确；Token/组件约定可定位；跨页面差异有证据；高风险变更具备影响和回滚方案；没有虚构批准或验证。
 
 ## 通用执行协议（必须遵守）
+6. 无法确认的能力或证据使用 `UNKNOWN`；未执行的检查使用 `NOT_RUN`，受环境阻塞使用 `BLOCKED`，不得把它们写成 `PASS`。
 1. 先检索现有实现，不创建与已有资产重复的第二套规范。
 2. Token 和策略阈值应在项目参数/Token 中注册，不散落硬编码。
 3. 规范必须落到项目规则可引用的权威文件，而不是只留在聊天中。
