@@ -1,3 +1,9 @@
+## 0.8.5 - ChatGPT Work 适配、提示词优化与 AIMES 发布文件保护
+
+- 新增 ChatGPT Work 适配器、治理入口和可复制项目指令模板；运行时自动加载、Skill 路由及写入/执行能力仍需在目标工作模式中验证。
+- 新增 prompt-optimization 专业 Skill，并同步到源 Skill 注册表和 CLI 可部署模板，明确约束保留、差异审查与同条件评测要求。
+- 修复 GitHub 镜像发布过滤器：AIMES 规则入口、.aimes 配置、治理文档与 Skill 资产不会被通用 IDE 状态、缓存或 .gitignore 模式误过滤；密钥与敏感后缀仍然受保护。
+- 新增适配部署与文件过滤回归测试，更新适配矩阵、能力验证矩阵及版本元数据。
 ## Unreleased - UI 设计能力可调用化
 
 - 新增 frontend-design、design-system-governance、ui-implementation-validation 三个 UI 专项 Skill，并保留增强既有 ui-quality-review；统一注册触发条件、输入输出、依赖与评测套件。
