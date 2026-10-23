@@ -1,413 +1,715 @@
-# AIMES 本地治理 CLI（V0.8.7）
+# AIMES CLI：AI 工程治理、验证与交付工具
 
-AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具。它负责把 AIMES V1.2 治理核心部署到项目仓库，生成工具专属规则入口，检查配置与冲突，并输出部署状态。它不替代 Codex、Claude Code、Trae、ZCode 或 Copilot 执行开发任务。
+**当前源码版本：0.8.7** · **治理核心：AIMES Core V1.2** · **Python：3.10+**
 
-> 当前版本是本地优先的工程治理 CLI。包版本与运行时版本由同一版本源驱动；真实 AI 工具运行时是否加载规则、行为是否改善，必须以独立验证记录为准。CI 中的 Windows EXE 构建/冒烟测试不等于 GitHub Release 或下载资产已经发布。
+AIMES（AI Engineering Management & Intelligent Support）是一个**本地优先、跨 AI 编码工具的工程治理 CLI**。它把项目规则、Skills、工作流、质量门禁和验证证据组织成可部署、可检查、可追溯的工程机制，帮助 AI 工具更稳定地完成需求分析、产品设计、架构、编码、测试、文档、交接、版本管理和发布工作。
 
-## 0.1 诊断后生成修复选项，并安全自动修复
+AIMES **不是大模型，也不替代 IDE、Agent 或 AI 编码工具**。它负责准备和验证治理环境、维护本地流程、检查证据和保护写入边界；具体的需求分析、代码生成和 UI 操作仍由用户选择的 AI 工具及其运行时完成。
 
-`aimes repair` 默认只生成诊断和修复计划；检查选项后，显式确认才会应用可安全自动修复的配置问题：
+> **重要边界：**规则/Skill 已部署、CLI 自动化测试通过、AI 工具运行时确实加载规则、真实项目试点达到预期，是四种不同状态。AIMES 不会仅凭文件存在就宣称模型已执行规则，也不会把示例数据或未运行的测试报告为 PASS。
 
-```powershell
-# 诊断并查看每项问题的根因、风险、修复选项
+## 目录
+
+- [1. AIMES 解决什么问题](#1-aimes-解决什么问题)
+- [2. 全部能力总览](#2-全部能力总览)
+- [3. 支持的工具与部署范围](#3-支持的工具与部署范围)
+- [4. 安装方式](#4-安装方式)
+- [5. 第一次部署到项目](#5-第一次部署到项目)
+- [6. 日常使用流程](#6-日常使用流程)
+- [7. 命令能力索引](#7-命令能力索引)
+- [8. Skills 与任务编排](#8-skills-与任务编排)
+- [9. 安全模型与操作边界](#9-安全模型与操作边界)
+- [10. 测试、评测与运行时验证](#10-测试评测与运行时验证)
+- [11. 构建、打包与发布](#11-构建打包与发布)
+- [12. 开发者指南与仓库结构](#12-开发者指南与仓库结构)
+- [13. 常见问题](#13-常见问题)
+- [14. 文档导航](#14-文档导航)
+- [15. 当前限制与路线图](#15-当前限制与路线图)
+
+---
+
+## 1. AIMES 解决什么问题
+
+多种 AI 编码工具可以提高开发速度，但项目知识、规则入口、验证方式和交接记录经常散落在不同文件和会话中，容易产生以下问题：
+
+- AI 未先理解项目和业务目标，就直接给出 Spec 或修改代码。
+- 项目规则已经写入，却不知道具体工具是否加载、是否按规则行动。
+- 多个工具连续开发时，缺少统一基线、允许修改范围和交接记录。
+- 测试、构建和评测结果缺少可核验的证据，容易把“计划执行”误报为“已经通过”。
+- 升级治理文件时覆盖项目自定义内容。
+- Token 优化只关注提示词变短，没有验证工程质量是否退化。
+- 发布代码时遗漏文件，或误上传密钥、缓存、虚拟环境和大文件。
+- 临时 AI 产物持续累积，却缺少登记、审计和清理决策。
+
+AIMES 以本地项目为中心，为这些活动提供可复用的治理入口和证据协议。目标不是让每个项目都堆积大量说明，而是让 AI 工具在适当任务中找到正确的规则、Skill、知识、门禁和交接约定。
+
+## 2. 全部能力总览
+
+### 2.1 项目治理配置与工具适配
+
+- 初始化项目级 AIMES 治理配置，支持预览、显式确认和多工具选择。
+- 为不同 AI 工具生成相应的薄规则入口，并引用统一的 AIMES Core。
+- 为已部署项目增加工具适配器，尽可能保留已有文件和用户自定义内容。
+- 检查配置、规则入口、文件冲突、工具可用性和部署状态。
+- 安全升级既有项目治理文件，对版本差异、缺失文件、定制文件和冲突给出报告。
+- 审计项目 AIMES 版本与托管文件一致性。
+- 检查 Markdown 本地链接、工具入口和治理核心引用。
+- 输出文本或 JSON 报告，供人工检查或 CI 集成。
+
+### 2.2 产品分析、需求、知识复用与 Skill 路由
+
+AIMES Core 和 Skill 资产定义了面向任务的治理路线，包括：
+
+- 项目接管、基线确认和项目知识分析。
+- 产品经理分析：用户问题、业务目标、用户价值、现有能力、复用机会、缺口、范围和方案取舍。
+- 需求认知与验收标准。
+- 项目知识资产与复用决策记录。
+- 变更影响分析、架构与契约审查。
+- 受控实施、需求驱动测试和交接。
+- UI 设计、设计系统治理、UI 质量审查与实现验证。
+- 提示词和开发引导词生成：涉及产品判断时先分析项目知识；只要求改写已有提示词且不涉及产品判断时，才可直接优化表达。
+
+Skill 注册表和工作流定义可进行结构校验。**注册、部署或静态路由不等于目标 AI 工具已在运行时调用 Skill**；运行时行为仍需要对应工具、版本和执行模式的实际证据。
+
+### 2.3 诊断与安全修复闭环
+
+- 治理问题诊断：生成问题、根因、风险、修复选项和修复后复诊结果。
+- 业务代码修复提案：对 AI 编码工具生成的补丁进行检查、提案、应用、测试验证和受保护回滚。
+- 补丁应用前检查修改范围和基线，保存备份；发现冲突时阻止盲目覆盖。
+- 测试命令以参数数组运行，不通过 Shell 拼接执行。
+- 修复计划不等于已经修改代码；业务代码补丁需要先由开发者或 AI 工具生成。
+
+### 2.4 任务写入权、工作流和交接
+
+- 声明当前任务的写入工具、分支、基线提交、允许修改路径和租约。
+- 检查活动写入者声明、租约状态和变更范围。
+- 为多工具交接建立独立 HANDOFF 记录。
+- 校验声明式工作流状态、转换、终态、失败路径和重试策略。
+- 记录本地工作流运行状态；状态转换需要显式确认，并记录审批、守卫和证据引用。
+- 生成 Context Pack 与 HANDOFF，记录源文件清单和 SHA-256；验证源文件是否发生变化。
+- 本地写入锁只能协调遵守 AIMES 协议的命令，不能阻止 IDE 或其他程序直接写文件，也不是跨机器分布式锁。
+
+### 2.5 追溯、证据、审计和工程指标
+
+- 校验需求、功能、实现、测试、缺陷和发布等实体之间的追溯关系。
+- 校验证据注册表，包括记录的命令、测试、构建结果、产物路径和哈希。
+- 校验 Skill 执行记录，包括输入基线、执行步骤、跳过原因、验收检查、输出和证据。
+- 校验多工具规则加载验证证据，并生成覆盖率报告。
+- 追加和校验本地 JSONL 审计事件。
+- 审计临时产物登记、过期项和未登记候选；只报告，不自动删除。
+- 生成工程指标报告：只有数据源可验证且分母有效时才计算；缺失数据保持 UNKNOWN，不把未知当作 0 或 100%。
+
+### 2.6 AI 开发行为评测与 Token 效率
+
+- 版本化评测集结构校验。
+- 运行记录完整性、案例覆盖和硬门禁覆盖校验。
+- 基线与候选运行对比，检查案例增删、状态退化和硬门禁退化。
+- 固定 fixture 的确定性模拟检查，不调用真实模型。
+- Token 效率基准设计：在同任务、同环境、同验收标准下比较优化前后，并要求能力不退化。
+- 当平台未提供真实 Token usage 时，用量必须标记为 UNKNOWN；不得以字符数冒充 Token。
+
+### 2.7 GitHub 镜像发布与发布前检查
+
+- 交互式发布向导和可复用的发布配置档案。
+- 发布前生成完整镜像计划和删除清单；默认预览，执行时要求显式确认。
+- 支持向已有仓库发布，也支持首次发布到空仓库。
+- 根据项目技术栈和 .gitignore 叠加过滤规则。
+- 默认排除常见凭据、私钥、虚拟环境、依赖目录、AI 工具本地状态、缓存、日志、编译产物和大文件。
+- 执行前扫描常见密钥模式，并使用普通非强制推送。
+- 发布前校验包版本、运行时版本、README、治理核心模板和 EXE 资源收集配置。
+
+**警告：**完整镜像发布可能删除远端存在、但本地不存在的文件。务必审阅预览和删除清单；不要在未理解差异的情况下执行发布。
+
+### 2.8 Windows 独立 EXE
+
+- 提供 Windows 原生构建脚本与部署指南。
+- EXE 包含 Python 运行时，可在没有激活项目虚拟环境的情况下调用。
+- 发布时需要整体复制 EXE 及其依赖文件所在目录，不能只复制单个 aimes.exe。
+- Windows EXE 的真实构建和冒烟状态应以对应 GitHub Actions 运行记录为准；CI 成功不自动意味着 GitHub Release 已创建或下载资产已上传。
+
+## 3. 支持的工具与部署范围
+
+### 3.1 工具适配器
+
+| 适配器 ID | 目标工具/执行上下文 |
+|---|---|
+| trae-code | Trae Code |
+| vscode-codex | VS Code + Codex 扩展 |
+| vscode-claude-code | VS Code + Claude Code 扩展 |
+| vscode-copilot | VS Code + GitHub Copilot |
+| zcode | ZCode |
+| qcode | QCode |
+| claude-code | Claude Code CLI |
+| codex-cli | Codex CLI |
+| chatgpt-work | ChatGPT Work |
+
+不同 IDE 扩展与独立 CLI 属于不同执行上下文。即使共用 AGENTS.md 或 CLAUDE.md，也必须分别验证规则加载与行为。ZCode/QCode 等工具若缺乏可靠的原生规则路径信息，AIMES 会保留人工确认边界，不会猜测并宣称已集成。
+
+### 3.2 部署范围
+
+当前支持**项目级配置**。--scope 只接受 project。全局部署、自动卸载、通用三方合并和自动控制 IDE/Agent 尚不属于当前保证能力。
+
+---
+
+## 4. 安装方式
+
+### 4.1 环境要求
+
+- Python 3.10 或更新版本。
+- Git。
+- Windows 用户建议使用 PowerShell；macOS/Linux 可使用对应 Shell。
+- 使用 AI 工具适配器时，需要自行安装并登录对应工具。
+- 构建 Windows EXE 必须在 Windows 环境执行构建脚本。
+
+### 4.2 方式 A：从源码安装（推荐用于开发和验证）
+
+Windows PowerShell：
+
+~~~powershell
+git clone https://github.com/laodongAI/aimes_cli.git
+cd aimes_cli
+
+py -3 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+python -m pip install --upgrade pip
+python -m pip install -e .
+
+aimes --version
+aimes --help
+aimes release validate --root .
+~~~
+
+如果 PowerShell 的执行策略阻止激活脚本，可以仅为当前终端临时放宽策略，或直接使用虚拟环境中的 Python/命令路径；不要为此修改系统级策略。
+
+macOS/Linux：
+
+~~~bash
+git clone https://github.com/laodongAI/aimes_cli.git
+cd aimes_cli
+
+python3 -m venv .venv
+source .venv/bin/activate
+
+python -m pip install --upgrade pip
+python -m pip install -e .
+
+aimes --version
+aimes --help
+aimes release validate --root .
+~~~
+
+可编辑安装适合开发；源码变化会反映到当前环境，但它不是独立可分发制品。
+
+### 4.3 方式 B：安装构建好的 Python 包
+
+先打开 [GitHub Releases](https://github.com/laodongAI/aimes_cli/releases)，确认确实存在对应版本的 Release 和资产，再按该 Release 提供的文件名安装。例如，只有在已下载对应 wheel 文件后才执行：
+
+~~~powershell
+python -m pip install .\aimes_governance_cli-<实际版本>-py3-none-any.whl
+aimes --version
+~~~
+
+不要猜测 wheel 文件名或复用旧版本资产。若 Releases 页面没有对应资产，请使用源码安装或按第 11 节自行构建。
+
+### 4.4 方式 C：Windows 独立 EXE
+
+独立 EXE 不要求在业务项目中激活 .venv，但需要取得完整目录并配置 PATH。详细步骤见 [Windows EXE 构建与部署指南](docs/WINDOWS-EXE-DEPLOYMENT.md)。
+
+- 只在 Windows 上构建 Windows EXE。
+- 将整个 dist-exe\aimes\ 目录复制到稳定路径，例如 %LOCALAPPDATA%\Programs\AIMES\。
+- 将该目录加入当前用户的 PATH。
+- 重新打开 PowerShell，运行 Get-Command aimes.exe 与 aimes.exe --version。
+- 若要直接输入 aimes，确认 Windows 命令解析能找到 aimes.exe。
+
+---
+
+## 5. 第一次部署到项目
+
+以下假设目标项目是 E:\work\my-project。先进入**目标项目**目录，而不是 AIMES CLI 源码仓库目录：
+
+~~~powershell
+cd E:\work\my-project
+~~~
+
+### 第一步：检查现状
+
+~~~powershell
+aimes inspect --root .
+aimes status --root .
+aimes doctor --root .
+aimes version-audit --root .
+~~~
+
+尚未部署 AIMES 的项目可能提示缺少配置；这是诊断结果，不代表 CLI 安装失败。
+
+### 第二步：预览部署计划
+
+~~~powershell
+aimes init --tools trae-code,codex-cli,claude-code --scope project --dry-run --root .
+~~~
+
+将工具 ID 替换成你实际使用的适配器。一次初始化可以配置多个适配器。
+
+### 第三步：执行初始化
+
+~~~powershell
+aimes init --tools trae-code,codex-cli,claude-code --scope project
+~~~
+
+交互式初始化会给出计划并要求确认。也可以直接运行 aimes，通过菜单选择工具。对已有项目，AIMES 会尽量保留现有文件；存在冲突时应审阅候选文件，不要直接覆盖用户内容。
+
+### 第四步：检查结果
+
+~~~powershell
+aimes validate --root .
+aimes status --root .
+aimes docs check --root . --format json --output .aimes/reports/docs-check.json
+aimes skill validate .aimes/skills/registry.yaml --root . --format json
+~~~
+
+### 第五步：在目标 AI 工具中做真实试点
+
+开启一个新会话，执行一个范围明确、可验证的代表性任务，并记录：
+
+1. 实际读取了哪些治理入口、项目知识文件和 Skill 文件。
+2. 是否先完成项目理解、需求/产品分析和复用分析。
+3. 是否遵循修改范围、审批、测试和文档要求。
+4. 哪些检查实际执行，哪些未执行或被阻塞。
+5. 原始输出、工具版本、执行模式和时间等证据。
+
+不要仅因为 .aimes/skills/ 中存在文件、规则文件引用了 Core，或模型在回复中提到了某条规则，就判定运行时加载验证通过。
+
+---
+
+## 6. 日常使用流程
+
+### 6.1 查看部署和诊断问题
+
+~~~powershell
+aimes
+aimes inspect
+aimes status
+aimes doctor
+aimes validate
+aimes diff --tools trae-code,vscode-copilot,zcode,qcode
+~~~
+
+在交互式终端直接输入 aimes 会打开菜单；无参数的非交互环境会显示帮助信息。doctor 主要检查本机工具可执行程序是否可用，不会证明 AI 工具已经读取项目规则。
+
+### 6.2 安全升级治理文件
+
+~~~powershell
+aimes version-audit --root .
+aimes upgrade --dry-run --root .
+~~~
+
+检查每项动作、冲突和自定义文件之后，再执行交互式升级：
+
+~~~powershell
+aimes upgrade --root .
+~~~
+
+脚本/非交互模式需要明确授权：
+
+~~~powershell
+aimes upgrade --apply --confirm UPGRADE --root .
+aimes validate --root .
+aimes version-audit --root .
+~~~
+
+aimes upgrade 更新的是**目标项目中的 AIMES 管理文件**，不会更新你安装的 CLI 程序。更新 CLI 和升级项目治理配置是两件事。
+
+### 6.3 诊断后安全修复
+
+~~~powershell
+# 只生成诊断和修复计划
 aimes repair --root . --format json
 
-# 已配置项目：预览后确认执行安全修复
+# 复核计划后，才执行支持的安全修复
 aimes repair --apply --confirm REPAIR --root . --format json
+~~~
 
-# 尚未配置 AIMES 的项目：必须明确指定适配器
-aimes repair --apply --confirm REPAIR --tools codex-cli --root . --format json
-```
+如果目标项目尚未配置 AIMES，需要显式指定工具，例如 --tools codex-cli。无法安全自动修复的问题会保留为待处理项，而不是强行覆盖文件。
 
-该流程会在修复后复诊，并列出已解决与剩余问题。用户修改过的规则文件不会被强制覆盖；配置无法解析、清单损坏或适配器未验证时，会提供人工/引导式选项，而不是假装已修复。完整安全边界见 [诊断与安全修复指南](docs/REPAIR-LOOP.md)。
+### 6.4 受控业务代码修复
 
-## 0.2 业务代码修复提案：先审阅，再应用与验证
-
-AIMES 支持对 AI 编码工具生成的业务代码补丁进行受控处理：创建提案不会修改业务文件；显式确认后才应用，保存备份，并可运行指定测试、记录结果和安全回滚。
-
-```powershell
+~~~powershell
+# 运行指定测试/诊断命令并记录结果（示例为 unittest）
 aimes repair-code diagnose --id diag-001 --test-argv-json '["python","-m","unittest","discover","-s","tests"]' --root . --format json
+
+# 对候选补丁做只读检查并保存提案，不直接修改业务文件
+aimes repair-code propose candidate.patch --id fix-001 --finding TEST-42 --root . --format json
 aimes repair-code inspect fix-001 --root . --format json
-aimes repair-code propose candidate.patch --id fix-001 --finding "TEST-42" --root . --format json
+
+# 人工审阅提案后，显式应用、验证；必要时回滚
 aimes repair-code apply fix-001 --confirm APPLY-FIX --root . --format json
 aimes repair-code verify fix-001 --test-argv-json '["python","-m","unittest","discover","-s","tests"]' --root . --format json
 aimes repair-code rollback fix-001 --confirm ROLLBACK-FIX --root . --format json
-```
+~~~
 
-该流程不会自动生成或执行模型补丁；它负责验证补丁边界、基线哈希、备份、测试记录和回滚保护。完整说明见 [业务代码修复提案指南](docs/CODE-REPAIR-PROPOSALS.md)。
+请将示例测试命令替换成项目实际命令。补丁文件必须由开发者或 AI 工具先生成；AIMES 不会自动调用模型生成业务代码补丁。
 
-## 0. 交互式启动与 Windows 独立 EXE
+### 6.5 GitHub 发布（完整镜像）
 
-在交互式终端中只输入 `aimes` 即可进入菜单，逐步选择初始化、配置、检查或验证任务。初始化向导支持多选工具，默认先预览；确认实际写入时需要输入 `YES`。原有参数命令仍然保留，适合脚本和 CI。
-
-Windows 独立 EXE 构建和 PATH 配置请见 [`docs/WINDOWS-EXE-DEPLOYMENT.md`](docs/WINDOWS-EXE-DEPLOYMENT.md)。独立 EXE 携带 Python 运行时，不需要激活项目 `.venv`；但必须将整个发布目录放入固定位置并配置用户 PATH。Windows 独立 EXE 的构建与仓库外冒烟测试由 GitHub Actions 工作流验证；具体结果以对应提交的工作流记录为准。
-
-## 1. GitHub 根目录镜像发布（V0.7.4）
-
-`aimes publish` 默认只预览；执行必须同时提供 `--apply --confirm PUBLISH`。完整镜像会删除远端根目录中本地不存在的文件，必须先检查删除清单。目标仓库可以是已有仓库，也可以是尚无提交的空仓库；空仓库首次发布将创建初始提交。命令排除常见凭据/私钥、虚拟环境、依赖和缓存路径，执行前扫描常见密钥样式，并使用普通非强制推送。详细边界见 [`docs/PUBLISH-GITHUB-MIRROR.md`](docs/PUBLISH-GITHUB-MIRROR.md)。
-
-```powershell
-# 推荐：交互式选择配置，先预览，再输入 PUBLISH 执行
+~~~powershell
+# 先打开向导，默认预览
 aimes publish
 
-# 列出或复用已保存配置
+# 查看保存的配置
 aimes publish --list-profiles
-aimes publish --profile my-project
 
-# 参数模式：可以追加排除规则并保存配置
-aimes publish --source "E:\work\my-project" --repo "owner/repository" --branch main --exclude "test-data/**" --save-profile my-project
-aimes publish --profile my-project --apply --confirm PUBLISH
-```
+# 参数方式：先预览
+aimes publish --source "E:\work\my-project" --repo "owner/repository" --branch main
 
-默认过滤 `.venv`、`.claude`、`.codex`、`.cursor` 等环境和 AI 工具辅助目录、日志与运行时文件、构建缓存、编译产物及凭据。发布时会自动识别项目根目录中的技术栈标志文件（如 `pyproject.toml`、`package.json`、`pom.xml`、`go.mod`、`Cargo.toml`、`.csproj`），叠加相应过滤规则，并读取 `.gitignore` 中的正向排除规则。交互式向导不再询问追加排除规则；确有需要时可使用 `--exclude` 或已保存的发布配置。配置保存和完整规则见 [发布向导文档](docs/PUBLISH-GITHUB-MIRROR.md)。
+# 确认检查删除清单和过滤结果后再应用
+aimes publish --source "E:\work\my-project" --repo "owner/repository" --branch main --apply --confirm PUBLISH
+~~~
 
-## 2. 锁定的工具入口
+完整镜像语义、排除规则、凭据扫描、空仓库和风险边界见 [GitHub 镜像发布指南](docs/PUBLISH-GITHUB-MIRROR.md)。
 
-1. Trae Code
-2. VS Code + Codex
-3. VS Code + Claude Code
-4. VS Code + GitHub Copilot
-5. ZCode
-6. QCode
-7. Claude Code CLI
-8. Codex CLI
+---
 
-VS Code 插件和独立 CLI 是不同执行上下文，必须分别验证。若它们共享 `AGENTS.md` 或 `CLAUDE.md`，治理入口可以共用，但不能假设加载行为相同。
+## 7. 命令能力索引
 
-### 工程能力与验证状态
+命令参数以当前安装版本的 aimes --help 和各子命令的 --help 为准。常见命令按用途分组如下。
 
-AIMES 的能力状态分为配置已生成、自动化测试通过、工具运行时已验证和真实项目试点已验收。请查看 [能力与验证状态矩阵](docs/CAPABILITY-VERIFICATION-MATRIX.md)；后续实施顺序见 [工程能力增强路线图 V0.9](docs/ROADMAP-ENGINEERING-EXCELLENCE-V0.9.md)。旧版 V0.5.3 发布报告和哈希清单已归档至 [历史发布制品](docs/archive/release-artifacts/V0.5.3/README.md)，不代表当前发布状态。
+| 命令 | 用途 | 是否会写入/执行 |
+|---|---|---|
+| init / configure | 初始化项目治理、添加工具适配器 | 可能写项目文件；支持预览 |
+| inspect / status / diff | 检查项目、状态和部署差异 | 只读/预览 |
+| validate / doctor | 配置校验、本机工具可用性检查 | 只读 |
+| version-audit | 检查 CLI/项目版本及托管文件一致性 | 只读 |
+| upgrade | 安全升级目标项目中的治理文件 | 预览后按确认写入 |
+| repair | 诊断治理问题并应用已支持的安全修复 | 默认只规划；应用需确认 |
+| repair-code | 业务补丁诊断、提案、应用、验证、回滚 | 按子命令和确认执行 |
+| publish | 将本地目录镜像发布到 GitHub | 默认预览；应用需确认 |
+| requirement validate | 校验结构化需求认知记录 | 只读 |
+| knowledge validate | 校验项目知识资产记录 | 只读 |
+| reuse validate | 校验知识/能力复用决策记录 | 只读 |
+| skill validate | 校验 Skill 注册表与引用文件 | 只读，不执行 Skill |
+| skill execution validate | 校验单次 Skill 执行记录 | 只读，不执行 Skill |
+| workflow validate | 校验声明式工作流定义 | 只读，不执行工作流 |
+| workflow run | 创建、校验和推进本地工作流运行记录 | 写记录时需确认 |
+| task validate/claim/release | 写入者声明、范围检查和任务交接 | claim/release 需确认 |
+| trace validate / evidence validate | 追溯与证据注册表校验 | 只读，不执行已记录命令 |
+| context pack/validate | 生成/校验 Context Pack 与 HANDOFF | pack 会生成文件 |
+| adapter validate/report/probe | 验证证据检查、覆盖报告、CLI 规则加载探针 | probe 创建文件；不会启动 IDE |
+| evaluation validate/validate-run/report/compare/run-mock | 评测集、运行记录、对比与 fixture 检查 | 不调用真实模型 |
+| audit append/validate | 本地 JSONL 审计事件 | append 会追加记录 |
+| docs check | 检查 Markdown 链接和规则入口 | 只读 |
+| cleanup audit | 临时产物审计 | 只读，不删除 |
+| metrics report | 基于可验证数据生成工程指标 | 只读 |
+| release validate | 发布前版本和资源兼容检查 | 只读 |
 
-## UI 设计能力（可路由、可验证）
+### 报告输出
 
-AIMES 初始化时会将 UI 专项 Skill 与注册表部署到项目内的 `.aimes/skills/`，并在生成的治理 Core 中配置任务路由。这样新页面设计、设计系统变更、UI 审查和前端验证任务能够按触发条件读取对应 Skill，而不只是把 Skill 留在 AIMES 源码仓库。
+许多命令支持 --format text（默认）、--format json 和 --output PATH。例如：
 
-| 任务 | 调用能力 |
+~~~powershell
+aimes validate --root . --format json --output .aimes/reports/validation.json
+aimes metrics report --root . --format json --output .aimes/reports/metrics.json
+aimes release validate --root . --format json
+~~~
+
+不是每个子命令都拥有相同参数；请先查阅具体子命令帮助。
+
+---
+
+## 8. Skills 与任务编排
+
+AIMES 不建议每个任务都加载所有 Skill。应根据任务类型选择必要流程，并记录跳过理由。
+
+| 任务类型 | 建议的治理路线 |
 |---|---|
-| 新页面、仪表盘、复杂布局、整体重设计 | `frontend-design` |
-| Token、主题、公共组件和设计系统 | `design-system-governance` |
-| UI 审查、局部样式/交互修改 | `ui-quality-review` |
-| 响应式、键盘/焦点、无障碍、浏览器/视觉验证 | `ui-implementation-validation` |
+| 新项目/新会话/跨工具交接 | 项目接管 → 基线和知识梳理 → 选择后续 Skill |
+| 新功能、模糊需求、产品构想 | 项目接管 → 产品经理分析 → 需求认知 → 知识复用 → 影响分析 → 按需架构审查 → 获批准后实施 → 测试 |
+| Bug 修复 | 需求/预期行为澄清（需要时）→ 知识复用 → 影响分析 → 受控修复 → 测试 |
+| 重构/依赖升级 | 项目接管 → 知识复用 → 影响分析 → 按需架构审查 → 批准后实施和验证 |
+| 生成开发引导词 | 项目知识分析 → 产品判断 → 缺口/范围/方案 → 完整可复制引导词 → 验收与验证建议 |
+| 纯提示词改写 | 若不涉及产品判断，可直接进入提示词优化 |
+| UI 设计/设计系统调整 | frontend-design、design-system-governance、ui-quality-review、ui-implementation-validation 按触发条件选择 |
+| 测试设计或发布验证 | 需求/验收来源确认 → 测试设计 → 执行证据 → 状态和缺口报告 |
 
-部署文件包括 `.aimes/skills/registry.yaml`、四个 Skill 文件和 `.aimes/skills/ui-quality-governance-suite.yaml`。实际运行时是否被某个 IDE/CLI 加载，仍需按工具版本独立验证；初始化成功不等于运行时验证通过。规范见 [UI 设计能力治理与调用规范](docs/UI-DESIGN-GOVERNANCE.md)。
+规范见 [Skill 编排协议](docs/SKILL-ORCHESTRATION-V1.0.md) 和 [UI 设计治理](docs/UI-DESIGN-GOVERNANCE.md)。
 
-## 3. 安装（Windows PowerShell）
+### 产品经理优先路由的关键要求
 
-需要 Python 3.10+。推荐从仓库源码安装，避免复制历史版本的 wheel 文件名：
+当用户要求“出引导词”“生成下一步 AI 任务指令”“基于当前项目知识提出下一步计划”时，不能因为请求提到代码或 Spec 就直接跳到技术勘察。应先：
 
-```powershell
+1. 列出实际读取的项目知识来源与路径。
+2. 区分已证实事实、推断、未知和冲突。
+3. 分析用户问题、业务目标、用户价值、当前能力、复用机会、缺口和不做的范围。
+4. 选择适当 Skill 并解释触发/跳过理由。
+5. 生成完整可复制的任务引导词，包含输入、边界、交付物、验收标准和验证步骤。
+
+若用户只要引导词，不应顺带修改项目代码。目标 AI 工具未提供真实读取证据时，不得声称某个 Skill 已在运行时成功加载。
+
+---
+
+## 9. 安全模型与操作边界
+
+AIMES 的安全设计以“先观察、先预览、显式确认、保护用户内容、记录证据”为原则：
+
+- **项目级优先：**当前只支持 project scope，不会自动部署全局规则。
+- **保留用户修改：**已有文件与模板冲突时保留原文件，并在适当情况下生成候选文件；升级时通过托管清单和文件状态决定是否能更新。
+- **预览优先：**初始化、升级、发布和修复均有预览/计划路径。
+- **显式确认：**发布、升级、补丁应用、回滚、任务声明和工作流状态转换等写操作需要相应确认词或交互确认。
+- **路径边界：**检查路径越界和相关符号链接逃逸风险。
+- **不执行证据中的命令：**证据注册表只是校验记录，不会因为存在命令字符串就执行命令。
+- **补丁边界：**受控代码修复会检查补丁目标和基线，应用前备份，并在允许条件下验证/回滚。
+- **发布防护：**常见凭据路径过滤、密钥样式扫描、技术栈过滤和删除清单预览。
+- **诚实状态：**NOT_RUN、UNKNOWN、BLOCKED 和 FAIL 不会被自动解释成 PASS。
+
+AIMES 不能保证发现所有秘密、阻止不遵守协议的 IDE 直接写入、替代 Git 权限管理，或为本地 JSONL 日志提供不可篡改保证。重要操作仍需审阅 diff、Git 状态和实际证据。
+
+---
+
+## 10. 测试、评测与运行时验证
+
+### 10.1 运行本项目自动化测试
+
+在源码仓库根目录执行：
+
+~~~powershell
+python -m pip install -e .
+python -m pip install pytest
+python -m pytest
+~~~
+
+检查包元数据和当前治理资源：
+
+~~~powershell
+aimes release validate --root .
+aimes docs check --root . --format json
+~~~
+
+### 10.2 评测套件与回归
+
+~~~powershell
+# 校验固定评测集结构
+aimes evaluation validate examples/evaluation/rule-following-suite.yaml --root .
+aimes evaluation validate examples/evaluation/token-efficiency-suite.yaml --root .
+
+# 校验某次真实运行记录是否覆盖固定套件
+aimes evaluation validate-run .aimes/evaluation/rule-following-run.json --suite examples/evaluation/rule-following-suite.yaml --root . --format json
+
+# 对比基线与候选运行记录
+aimes evaluation compare .aimes/evaluation/baseline.json .aimes/evaluation/candidate.json --root . --format json
+~~~
+
+结构校验通过只说明评测数据符合格式；run-mock 只使用固定 fixture，不代表真实 AI 工具的表现。
+
+### 10.3 Codex CLI / Claude Code CLI 规则加载探针
+
+AIMES 提供隔离探针来验证特定 CLI 版本的原生规则加载行为。创建探针不会启动 AI 工具；需要用户在全新会话中手动启动工具、提交提示词并保存原始回复，再运行验证命令。
+
+~~~powershell
+$probeRoot = Join-Path $env:TEMP "aimes-runtime-probe"
+New-Item -ItemType Directory -Force -Path $probeRoot | Out-Null
+
+aimes adapter probe create --tool codex-cli --product-version "$(codex --version)" --output-dir codex-cli --root $probeRoot
+# 在全新 Codex 会话中，从探针目录启动工具；按探针提示提交 PROMPT.txt，并保存完整原始回复。
+aimes adapter probe validate codex-cli --root $probeRoot
+aimes adapter validate codex-cli/verification-evidence.yaml --root $probeRoot
+~~~
+
+Claude Code CLI 将工具参数改为 claude-code，版本填写实际 claude --version 输出。请按命令帮助确认输出目录参数的相对路径语义。探针只证明该工具版本和 CLI 执行模式下的隔离规则加载行为，不代表其他 IDE 插件或整个项目的全部治理能力。
+
+### 10.4 验证状态定义
+
+| 状态层级 | 能证明什么 | 不能证明什么 |
+|---|---|---|
+| 配置已生成 | 规则、Skill 或配置文件已写入目标项目 | 工具一定会读取 |
+| 自动化测试通过 | 对应测试覆盖的 CLI 逻辑通过 | 所有工具运行时行为正确 |
+| 运行时已验证 | 特定工具版本/执行模式有可复核的加载证据 | 其他版本、模式和项目都有效 |
+| 真实项目试点验收 | 指定项目和任务的验收标准通过 | 所有未来任务都必然成功 |
+
+详见 [能力与验证状态矩阵](docs/CAPABILITY-VERIFICATION-MATRIX.md)。评测套件是测试定义，不是自动产生的成功结论。
+
+---
+
+## 11. 构建、打包与发布
+
+### 11.1 从源码运行与测试
+
+~~~powershell
 git clone https://github.com/laodongAI/aimes_cli.git
 cd aimes_cli
 py -3 -m venv .venv
-.\\.venv\\Scripts\\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -e .
-aimes --version
+python -m pip install pytest
+python -m pytest
+~~~
+
+### 11.2 构建 Python wheel 和源码包
+
+在源码环境中执行：
+
+~~~powershell
+python -m pip install --upgrade build
+python -m build
+~~~
+
+构建结果位于 dist/，通常包含 wheel 和 source distribution。构建成功不代表已上传到 PyPI 或 GitHub Release。请检查文件名、版本和内容，再按项目发布流程分发。
+
+### 11.3 构建 Windows EXE
+
+必须在 Windows 主机或 Windows CI runner 上执行：
+
+~~~powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\build_windows_exe.ps1
+~~~
+
+输出目录通常为 dist-exe\aimes\。请整体分发该目录，不要只复制 aimes.exe。完整 PATH、启动目录语义和故障排查见 [Windows EXE 部署指南](docs/WINDOWS-EXE-DEPLOYMENT.md)。
+
+### 11.4 发布前校验
+
+~~~powershell
 aimes release validate --root .
-```
+python -m pytest
+git status --short
+git diff --check
+~~~
 
-如果使用 GitHub Release 提供的 wheel，请安装该 Release 附带的确切版本文件，不要复用旧文档中的 `0.5.3` 文件名。正式发布状态和下载资产以 [GitHub Releases](https://github.com/laodongAI/aimes_cli/releases) 页面为准。
+发布前确认：
 
-Windows 独立 EXE 的构建和部署说明见 [Windows EXE 部署指南](docs/WINDOWS-EXE-DEPLOYMENT.md)。EXE 需要按发布流程验证版本、资源打包和冒烟行为；不要仅凭源码测试通过就宣称用户环境已验证。
+- src/aimes_cli/__init__.py 中的版本与项目元数据、模板和文档一致。
+- README 中的安装命令、命令示例和文档链接仍有效。
+- 测试在目标平台实际运行并有结果。
+- 若本次发布包含 EXE，必须在 Windows 环境实际构建，并通过仓库外冒烟测试。
+- Git 标签、GitHub Release 和下载资产只有在实际创建/上传后才可宣称已发布。
 
-## 4. 第一次初始化
+### 11.5 GitHub Actions
 
-先预览，不写入：
+仓库包含自动化检查工作流。每次改动应查看对应提交的 Actions 运行结果；Linux 单元测试与 Windows EXE 构建/冒烟测试是不同工作项。CI 通过不能替代真实 IDE/CLI 的规则加载试点，也不意味着已创建 Release。
 
-```powershell
-aimes init --tools codex-cli,claude-code --scope project --dry-run
-```
+---
 
-确认动作后再执行：
+## 12. 开发者指南与仓库结构
 
-```powershell
-aimes init --tools codex-cli,claude-code --scope project
-```
+### 12.1 主要目录
 
-交互式选择工具：
+| 路径 | 内容 |
+|---|---|
+| src/aimes_cli/ | CLI 入口、治理逻辑、校验器、修复/发布/评测模块 |
+| src/aimes_cli/templates/ | 初始化时部署到目标项目的治理 Core、规则入口和 Skill 模板 |
+| src/aimes_cli/schemas/ | 结构化数据的 JSON Schema |
+| skills/ | AIMES 源码仓库内的 Skill 资产 |
+| docs/ | 部署、治理协议、运行时验证、安全边界与路线图 |
+| examples/ | 评测套件、证据、追溯、工作流和配置示例 |
+| tests/ | CLI、治理规则、文件安全、评测和回归测试 |
+| build_windows_exe.ps1 | Windows 独立 EXE 构建脚本 |
+| pyproject.toml | Python 包元数据、入口点、依赖与测试配置 |
+| CHANGELOG.md | 版本变化记录 |
 
-```powershell
-aimes init
-```
+### 12.2 本地开发约定
 
-## 5. 常用命令
+- 以 main 为集成主干；具体分支和 PR 以仓库当前协作约定为准。
+- 规则、Skill、Schema、模板和测试应同步更新，避免只改文档或只改运行代码。
+- 新增命令时同步更新帮助信息、测试、README 和必要的专项文档。
+- 涉及真实 AI 工具行为时，区分静态测试和运行时验证，保存可复核证据。
+- 不在文档中将计划中的功能描述为已实现；不将未执行的检查写成 PASS。
+- 对有破坏性的写入操作，默认预览并要求明确确认。
 
-```powershell
-aimes inspect
-aimes diff --tools trae-code,vscode-copilot,zcode,qcode
-aimes configure --tools vscode-copilot
- aimes validate
-aimes doctor
-aimes status
-aimes validate --format json --output .aimes/reports/validation.json
-aimes docs check --root . --format json --output .aimes/reports/docs-check.json
-```
+### 12.3 建议的开发验证顺序
 
-`--scope` 当前仅支持 `project`。全局配置和卸载尚未实现，不应使用本版本执行全局部署。现有项目的安全升级请使用 `aimes upgrade`；它先列出文件差异，逐项确认后才写入，并保留冲突文件。
+~~~powershell
+python -m pytest
+aimes docs check --root . --format json
+aimes release validate --root .
+git diff --check
+~~~
 
-### V0.3：追溯、证据与交接
+如涉及 Windows EXE，再执行 Windows 构建与仓库外冒烟测试；如涉及工具适配器或 Skill 路由，再执行目标工具的真实运行时试点。
 
-```powershell
-aimes trace validate examples/traceability/trace-manifest.example.yaml
-aimes evidence validate examples/evidence/evidence-registry.example.yaml
-aimes context pack examples/traceability/trace-manifest.example.yaml --output-dir .aimes/context-pack
-```
+---
 
-- `trace validate` 检查实体 ID 唯一性、追溯链接、按实体类型区分的状态词表、证据文件/引用，以及 VERIFIED 状态对应的 PASS 证据；路径字段类型错误会以结构化错误报告，不应导致 CLI 崩溃。
-- `evidence validate` 校验已记录的命令/测试/构建证据，不会执行其中的命令；可校验产物存在性和 SHA-256。
-- `context pack` 生成 `context-pack.json` 与 `HANDOFF.md`，记录上下文文件清单和哈希；不复制源文件、不执行项目命令。
-- 示例数据中的证据是格式演示，不代表真实项目已经执行过相关命令。
+## 13. 常见问题
 
+### Q1：安装 AIMES 后，AI 工具就会自动遵守所有规则吗？
 
-### 核心规则遵循固定回归集
+不会。安装 CLI、把配置部署到项目、目标工具加载规则、模型按规则行动，是不同环节。请先初始化和验证配置，再通过目标工具的真实会话进行试点，并记录工具版本、执行模式、读取路径和原始证据。
 
-新增 [核心规则遵循回归集](examples/evaluation/rule-following-suite.yaml)，覆盖需求歧义、证据真实性、用户改动保护、不可信内容、修改范围、边界测试、审批门禁和代码/文档追溯。
+### Q2：升级项目时会覆盖我的 CLAUDE.md 或 AGENTS.md 吗？
 
-```powershell
-# 校验固定案例集结构，不调用模型
-aimes evaluation validate examples/evaluation/rule-following-suite.yaml --root .
+AIMES 设计为保留用户内容；冲突时通常保留原文件并生成候选文件供审阅。仍应先运行 aimes upgrade --dry-run，检查每个文件的计划，再决定是否执行。
 
-# 校验实际运行记录是否覆盖全部案例和硬门禁
-aimes evaluation validate-run .aimes/evaluation/rule-following-run.json --suite examples/evaluation/rule-following-suite.yaml --root . --format json
-```
+### Q3：aimes upgrade 会升级 CLI 程序吗？
 
-`validate-run` 会拒绝缺失案例、额外案例、套件版本不匹配、缺少硬门禁或无证据的 PASS。执行步骤和验收协议见 [核心规则遵循回归测试指南](docs/RULE-FOLLOWING-REGRESSION.md)。案例集目前是测试定义，不代表已在真实 AI 工具中执行或通过。
+不会。它升级的是当前目标项目里的 AIMES 管理文件。CLI 本身需要通过重新安装对应包或替换为经验证的独立 EXE 来更新。
 
-### Token 效率与能力非退化基准
+### Q4：可以全局安装规则吗？
 
-Token 优化必须先证明工程能力不退化，不能把大幅压缩提示词作为默认手段。基准方案见 [Token 效率与能力非退化基准测试方案](docs/governance-upgrade/TOKEN-EFFICIENCY-BENCHMARK-PLAN-2026-10-18.md)，固定案例集见 [token-efficiency-suite.yaml](examples/evaluation/token-efficiency-suite.yaml)。
+当前版本的初始化范围仅支持项目级 --scope project。不要将它当作已经支持全局部署或自动卸载的工具。
 
-```powershell
-# 仅校验固定案例集的结构；不会调用模型或 IDE
-aimes evaluation validate examples/evaluation/token-efficiency-suite.yaml
-```
+### Q5：为什么某些指标显示 UNKNOWN？
 
-案例集定义了 8 类代表性任务和硬门禁，当前真实工具运行状态为 NOT_RUN。开始对照时，先记录现有规则下的 A 组基线，再一次只改变一个优化因素执行 B 组；同任务、同环境、同验收标准比较。没有平台真实 usage 时，Token 记为 UNKNOWN，不得用字符数冒充实际 Token。任何硬门禁失败或关键能力退化，都判定优化失败。
+因为缺少可验证数据源、有效分母或真实运行记录。UNKNOWN 表示当前无法判断，不等于失败，也绝不等于通过。
 
-### V0.4：AI 开发准确度评测与回归
+### Q6：evaluation validate 会调用大模型吗？
 
-```powershell
-aimes evaluation validate examples/evaluation/suite.example.yaml
-aimes evaluation report examples/evaluation/run-record.example.json --format json --output .aimes/reports/evaluation-run.json
-aimes evaluation compare .aimes/evaluation/baseline.json .aimes/evaluation/candidate.json --format json --output .aimes/reports/regression.json
-```
+不会。它校验评测集结构。evaluation report 和 compare 分析已有运行记录，run-mock 使用固定 fixture。真实模型评测必须由实际执行过程产生运行记录和证据。
 
-- `evaluation validate` 校验版本化评测集的案例 ID、必需字段、预期结果和评分契约。
-- `evaluation report` 校验已记录的运行结果，并汇总案例状态、硬门禁和诊断维度；不会运行模型、Skill 或测试命令。
-- `evaluation compare` 对比基线与候选运行，标出案例增删、状态退化、硬门禁退化和诊断分数变化。硬门禁失败不能被平均分抵消。
-- 每次评测应记录模型、工具、Skill 版本、案例集版本、环境和证据引用。示例运行记录仅用于演示格式，不是真实评测结论。
+### Q7：adapter probe 会自动启动 Codex 或 Claude Code 吗？
 
-### V0.5：多工具验证证据与交接完整性
+不会。它只创建或校验隔离探针文件；用户需要手动在新会话中运行目标 CLI 并保存原始回复。
 
-```powershell
-aimes adapter validate examples/adapters/verification-evidence.example.yaml --format json
-aimes adapter report examples/adapters/verification-evidence.example.yaml --format json
-aimes context pack examples/traceability/trace-manifest.example.yaml --output-dir .aimes/context-pack
-aimes context validate .aimes/context-pack/context-pack.json --handoff .aimes/context-pack/HANDOFF.md --format json
-```
-
-- `adapter validate` 校验工具规则入口验证记录。新记录使用 `schema_version: 2`；PASS 必须记录产品版本、执行模式、操作系统、规则入口、观察时间、观察者、案例 ID、AIMES CLI 版本与治理核心版本。V1 旧记录仍可读取，但缺失上下文会产生警告。
-- `adapter report` 按工具和执行模式分别汇总 PASS/FAIL/BLOCKED/NOT_RUN/UNKNOWN 覆盖情况。缺少记录不等于通过或失败；静态检查文件不等于运行时已加载。
-- `context validate` 对照 Context Pack 中记录的 SHA-256 检查源文件是否变化，并可检查 HANDOFF 文件是否存在。变化会提示重新审阅，不自动判断修改是否正确。
-- PASS 记录必须采用运行时观察、自动化检查或用户确认的方法，并附证据文件或说明。CLI 不会自动操纵 IDE，也不会伪造运行时证据。
+### Q8：为什么 Windows EXE 在一台电脑能运行，另一台不行？
 
+PATH、依赖目录是否完整、Windows 版本、执行策略、杀毒软件和企业应用控制都可能影响启动。先确认分发的是完整目录，使用 Get-Command aimes.exe 检查 PATH，再按 Windows EXE 部署指南排查。
 
-#### Codex CLI / Claude Code CLI 真实规则加载探针
+### Q9：GitHub Actions 通过是否代表正式版本已经发布？
 
-    $probeRoot = Join-Path $env:TEMP "aimes-runtime-probe"
-    New-Item -ItemType Directory -Force -Path $probeRoot | Out-Null
-    aimes adapter probe create --tool codex-cli --product-version "$(codex --version)" --output-dir codex-cli --root $probeRoot
-    # 在新会话中从 $probeRoot\codex-cli 启动 Codex，并把原始回复保存为 response.txt
-    aimes adapter probe validate codex-cli --root $probeRoot
-    aimes adapter validate codex-cli/verification-evidence.yaml --root $probeRoot
+不代表。CI 通过只证明该工作流中的检查成功。Git 标签、GitHub Release 和下载资产需要分别确认。
 
-Claude Code CLI 将工具参数改为 --tool claude-code，版本填写实际 claude --version 输出，并使用 $probeRoot 下独立的 claude-code 目录。建议将探针放在业务项目之外，避免父目录规则污染结果。创建后必须在全新 CLI 会话中从探针目录启动对应工具，将 PROMPT.txt 作为用户消息，并把未修改的完整回复保存为 response.txt。AIMES 不会启动 AI 工具。探针结果只证明该工具版本/CLI 模式下的隔离规则加载行为，不代表真实项目全部治理规则有效。完整流程、安全边界和证据解释见 [运行时规则加载探针指南](docs/RUNTIME-RULE-LOADING-PROBE.md)。
+### Q10：GitHub 镜像发布为什么会列出删除文件？
 
-### 文档完整性与薄入口检查
+因为镜像目标是让远端根目录与本地纳入发布的文件保持一致。远端有而本地没有的文件可能被删除。必须审阅删除清单；如不接受该语义，不要执行发布。
 
-```powershell
-# 只读检查 Markdown 本地链接、配置中的工具入口和治理核心引用
-aimes docs check --root . --format json --output .aimes/reports/docs-check.json
-```
-
-- 检查本地 Markdown 链接目标是否存在，并跳过代码围栏中的示例链接与外部 URL。
-- 对配置中登记的工具入口检查文件是否存在；对原生薄规则入口检查权威核心引用和行数上限（默认 40 行）。
-- 手动适配说明文件只检查存在性，不会被误判为原生薄规则入口。
-- 命令只读，不自动修复或删除文件；发现错误返回退出码 1。首次接入时建议先审阅报告，再决定是否作为 CI 阻断门禁。
-
-### 活动写入者与任务交接校验
-
-```powershell
-# 检查当前项目的活动写入者声明、分支、租约和文件范围
-aimes task validate --root . --format json
-# 要求当前必须存在有效的活动写入者声明
-aimes task validate --root . --require-active --format json
-
-# 取得当前分支与基线提交，再声明本任务的写入范围
-$branch = git branch --show-current
-$base = git rev-parse HEAD
-aimes task claim --task-id TASK-123 --tool-id trae-code --branch $branch --base-commit $base --allowed-path src/ --allowed-path tests/ --lease-hours 8 --confirm CLAIM
-
-# 完成交接文件后释放写入声明
-aimes task release --task-id TASK-123 --tool-id trae-code --handoff-file project-control/handoffs/2026-10-18-TASK-123-trae-code.md --confirm RELEASE
-```
-
-活动写入者声明位于 `.aimes/project-control/active-writer.yaml`，格式示例见 `examples/project-control/active-writer.example.yaml`。检查器可核对任务 ID、工具 ID、分支、基线提交、租约时间、允许修改的路径，以及基线之后的已跟踪/未跟踪变更是否越界。默认没有声明时仅提示 WARNING；使用 `--require-active` 可将缺失/过期声明作为错误。
-
-任务交接使用独立文件，建议命名为 `project-control/handoffs/YYYY-MM-DD-TASK-<ID>-<tool>.md`，模板见 `docs/templates/TASK-HANDOFF-TEMPLATE.md`。全局 `HANDOFF.md` 仅作为索引，不应替代每个任务的实际交接记录。
-
-**边界：** 当前 `task claim/release` 使用本地文件系统的独占创建锁来协调 AIMES 命令之间的声明更新；`task validate` 本身只读。该锁不能阻止不遵守 AIMES 协议的 IDE/编辑器直接写文件，也不应被视为跨机器分布式锁。多人/多工具并行仍应使用独立分支或 worktree，并在交接前后核验 Git 状态。
-
-### 临时产物审计与工程指标
-
-```powershell
-# 只读审计临时产物，不删除文件
-aimes cleanup audit --root . --format json --output .aimes/reports/cleanup-audit.json
-
-# 仅使用当前可验证数据计算工程指标；缺少数据源时显示 UNKNOWN
-aimes metrics report --root . --format json --output .aimes/reports/metrics.json
-# 发布前检查包版本、运行时版本、README、治理核心模板和 EXE 资源收集配置
-aimes release validate --root . --format json
-
-# 提供追溯、临时产物、交接试点和审计日志数据源
-aimes metrics report --root . --trace-manifest .aimes/traceability/trace-manifest.yaml --temp-registry .aimes/temp-registry.yaml --handoff-trials .aimes/evaluations/handoff-trials.yaml --audit-log .aimes/audit/events.jsonl --format json
-```
-
-- 临时登记表示例：`examples/project-control/temp-registry.example.yaml`；Schema：`schemas/temp-registry.schema.json`。
-- `cleanup audit` 检查登记项是否存在、是否过期，并扫描常见未登记临时目录/文件；只输出候选和风险分类，不会删除。
-- `metrics report` 对应 AIMES 核心规范的 9 项工程指标。只有在数据源可验证且分母有效时才计算比率；缺少追溯、交接试点、临时登记或审计日志时，指标显示 `UNKNOWN`，不会把缺失数据当作 0 或 100%。
-- 关键功能实现/测试映射率只统计明确标记为 `critical: true` 或 `criticality: high|critical` 的功能，避免模型自行猜测关键程度。
-
-## 5. 安全机制
-
-- 不覆盖已有文件。
-- 如果目标文件已存在且与模板冲突，保留原文件，并把建议版本写入 `.aimes/proposed/`。
-- 仅在 manifest 证明文件未被用户修改时，才允许更新已有 AIMES 管理文件。
-- 不执行任意 Shell 命令，不删除文件。
-- ZCode、QCode 暂不猜测原生规则路径，只生成待人工确认的适配说明。
-- `doctor` 对可执行文件的检测只是提示，不代表 IDE 插件存在或规则已加载。
-- `validate` 通过仅代表静态配置检查通过，不代表工具运行时已遵循规则。
-
-## 6. 初始化后目录
-
-按选择的工具生成最小集合，例如：
-
-```text
-project/
-├── AGENTS.md
-├── CLAUDE.md
-├── .github/copilot-instructions.md
-├── .trae/rules/00-aimes-governance.md
-├── .aimes/
-│   ├── config.yaml
-│   ├── tool-capabilities.yaml
-│   ├── manifest.json
-│   ├── adapters/
-│   └── proposed/
-└── docs/_governance/AIMES-CORE-V1.2.md
-```
-
-不是每个项目都必须生成所有文件。CLI 根据所选工具生成对应入口。ZCode/QCode 仅生成适配审查说明，直到产品版本与规则加载机制得到确认。
-
-## 7. V0.2 新增：需求、知识、复用与 Skill 契约校验
-
-这些命令均为只读校验，不会改写被检查的输入文件：
-
-```powershell
-aimes requirement validate examples/requirements/requirement-cognition.example.yaml --format json
-aimes knowledge validate examples/knowledge/knowledge-asset.example.yaml --format json
-aimes reuse validate examples/reuse/reuse-decision.example.yaml --format json
-aimes skill validate examples/skills/registry.example.yaml --id SKL-CORE-REQ-001 --format json
-aimes skill execution validate examples/skills/execution-record.example.yaml --root . --format json
-aimes workflow validate examples/workflows/engineering-workflow.example.yaml --root . --format json
-```
-
-命令检查必填字段、AIMES 状态、重复 ID、验收条件、知识来源/成熟度证据、复用验证计划、Skill 文件存在性与项目根目录路径逃逸。Skill 注册表支持 V1/V2：V2 增加生命周期阶段、停止条件、失败恢复、完成判据、审批要求、副作用和幂等性契约；V1 继续兼容。V2 的 `VERIFIED` Skill 必须提供评测集与证据。未知字段报告为 WARNING，结构性和契约错误报告为 ERROR。
-
-Skill V2 规范见 [`docs/SKILL-CONTRACT-V2.md`](docs/SKILL-CONTRACT-V2.md)。CI 会校验 `examples/skills/registry.example.yaml`，防止示例与验证器发生漂移。
-执行记录命令 `aimes skill execution validate <path>` 校验单次 Skill 运行的工具/Skill 版本、基线、步骤、跳过原因、验收检查、输出与证据引用；Token usage 不可获取时必须记录 unavailable/null，不允许估算。记录校验不等于真实执行或结果正确。规范见 [`docs/SKILL-EXECUTION-RECORD-V1.md`](docs/SKILL-EXECUTION-RECORD-V1.md)。
-声明式工作流命令 `aimes workflow validate <path>` 检查状态入口、转换引用、成功/失败路径、可达性、非重试循环与重试策略。它只验证定义，不会执行或恢复工作流。规范见 [`docs/WORKFLOW-STATE-MACHINE-V1.md`](docs/WORKFLOW-STATE-MACHINE-V1.md)。
-工作流运行命令 `aimes workflow run start|validate|transition` 记录本地状态、显式审批/守卫引用、转换历史和备份；开始与转换必须确认，不覆盖既有运行记录，工作流定义哈希变化会阻止继续转换。它不会运行 AI 工具或生成外部证据。
-**已实现：** V0.5 的 `adapter validate`、`adapter report`、`context validate`；V0.1 的 `init`、`configure`、`inspect`、`diff`、`validate`、`doctor`、`status`；V0.2 的 `requirement validate`、`knowledge validate`、`reuse validate`、`skill validate`；示例数据、JSON Schema、只读校验报告和自动化测试。
-
-**尚未实现：** 自动调用模型/Agent 执行评测案例、直接读取 IDE 内部规则加载状态、自动生成可信执行证据、签名验证、全局安装、三方合并、自动卸载、回滚、自动升级策略、任务/追溯全量治理、清理命令、执行项目构建命令、动态模型/Agent 自动路由、ZCode/QCode 原生插件集成、工具运行时自动验证。静态 Skill 注册表与产品经理优先路由规则已提供，但是否被 Trae Code 等工具在运行时实际读取和执行仍需真实试点验证。
-
-## 8. 退出码
-
-- `0`：校验通过（允许存在 WARNING）。
-- `1`：结构/治理校验发现 ERROR（V0.2 新校验命令）。
-- `2`：CLI 参数、配置、文件读取或初始化操作错误；V0.1 既有命令的退出码保持兼容。
-
-## 9. 测试
-
-```powershell
-python -m unittest discover -s tests -v
-```
-
-目前测试覆盖工具别名、dry-run、初始化与校验、原文件保护、增量配置、ZCode 手动适配和非法工具名称。发布前仍需在 Windows 本机和目标工具版本中进行真实验证。
-
-## 10. 文档
-
-- `docs/CLI-PRODUCT-REQUIREMENTS.md`：产品需求基线
-- `docs/CLI-COMMAND-CONTRACT.md`：命令契约
-- `docs/TOOL-ADAPTER-MATRIX.md`：工具适配与验证状态
-- `docs/ACCEPTANCE-TEST-PLAN.md`：运行时验收计划
-- `docs/INSTALL-WINDOWS.md`：Windows 部署说明
-- `docs/TECHNICAL-DESIGN-BASELINE.md`：既有 CLI 技术设计基线
-- `schemas/config.schema.json`：V0.1 配置 Schema
-- `schemas/*-*.schema.json`：V0.2 需求认知、知识资产、复用决策与 Skill 注册表 Schema
-- `examples/`：可复制的示例记录
-- `skills/registry.yaml` 与 `skills/*/SKILL.md`：首批 7 个 P0 Skills 工作流模板；初始验证状态均为 `UNKNOWN`，需在真实工具/项目中评测后更新
-- `docs/v1.3-design/`：AIMES V1.3 设计基线文档
-- `docs/governance-upgrade/TOKEN-EFFICIENCY-DESIGN-2026-10-18.md`：Token 效率原则、上下文分层加载、指标与分阶段实施建议
-
-
-## V0.5.1：提示词与 Skill 全量优化
-
-- 七个 P0 Skills 升级为 0.2.0，增加任务专属决策分支、输入输出契约、证据状态、失败恢复和专属评测案例。
-- 新增 `docs/PROMPT-SYSTEM-CONTRACT-V1.0.md` 与 `docs/SKILL-ORCHESTRATION-V1.0.md`。
-- 新增 `docs/PROMPT-AUDIT-AND-OPTIMIZATION-REPORT.md` 与 14 个提示词基准案例。
-- 新增案例可通过 `aimes evaluation validate examples/evaluation/prompt-optimization-suite.yaml` 进行结构校验。该命令不运行模型或真实 IDE；七个 Skill 的真实工具验证状态仍为 `UNKNOWN`。
-
-
-### V0.5.2：提示词与工程运行时增强
-
-```powershell
-# 评测集结构检查
-aimes evaluation validate examples/evaluation/prompt-optimization-suite.yaml --format json
-
-# 使用预置文本夹具运行 6 个确定性词面检查（不调用模型）
-aimes evaluation run-mock examples/evaluation/prompt-optimization-suite.yaml --responses examples/evaluation/mock-responses.yaml --case-id EVAL-PROMPT-ONB-001 --case-id EVAL-PROMPT-REQ-001 --case-id EVAL-PROMPT-TEST-001 --case-id EVAL-PROMPT-SEC-001 --case-id EVAL-PROMPT-REQ-002 --case-id EVAL-PROMPT-ARCH-002 --format json --output .aimes/reports/mock-evaluation.json
-
-# 追加并检查本地审计事件
-aimes audit append .aimes/audit/events.jsonl --run-id demo-001 --event-type skill.selected --status RECORDED --details-json '{"skill":"project-onboarding","api_key":"example-secret"}'
-aimes audit validate .aimes/audit/events.jsonl --format json
-```
-
-Mock Runner 只验证预置响应文本的精确子串，不评估真实模型的语义质量。不要把 Mock PASS 写成真实模型评测通过。当前结构化审计需由调用方显式记录事件，尚不自动捕获所有 IDE/模型活动。
-
-
-## 现有项目安全升级（V0.8.0）
-
-AIMES 0.8.0 增加了面向已接入项目的安全升级向导。先在项目目录执行 `aimes upgrade --dry-run` 查看已安装 CLI 版本、项目清单版本和逐文件操作计划；执行 `aimes upgrade` 进入逐项确认向导。已证明未被修改的 AIMES 托管文件会在备份后更新；新文件需确认后添加；用户修改过或无法证明由 AIMES 管理的文件绝不覆盖，只可生成候选文件供人工合并。升级完成后执行 `aimes validate`。
-
-完整策略和边界见 [`docs/SAFE-PROJECT-UPGRADE.md`](docs/SAFE-PROJECT-UPGRADE.md)。
-
-
-## V0.8.6：项目 AIMES 版本与逐文件一致性审计
-
-交互式菜单启动时会显示当前项目的 Manifest 版本、CLI 版本和管理文件一致性摘要。详细只读审计：
-
-```powershell
-aimes version-audit --root .
-aimes version-audit --root . --format json --output .aimes/reports/version-audit.json
-```
-
-审计会区分当前模板一致、旧模板文件、用户自定义/已修改文件、缺失文件、不可读取文件和不再属于当前配置集合的旧管理文件。发现差异时建议先运行 `aimes upgrade --dry-run`。审计不会自动覆盖、删除或修复文件；Manifest 版本相同也不能证明所有文件都一致，更不能证明 AI 工具运行时已经加载规则。
-
-## V0.8.5：ChatGPT Work 适配、提示词优化 Skill 与 AIMES 文件发布保护
-
-- 新增 chatgpt-work 项目适配入口与可复制项目指令模板；规则自动加载与写入/执行能力仍需真实工作模式验证。
-- 新增 prompt-optimization Skill，并接入可部署 Skill 注册表；优化必须保留必要约束并通过同条件评测验证。
-- GitHub 镜像发布过滤器对 AIMES 治理入口、.aimes/、治理文档与 Skill 资产增加明确保护规则；密钥文件和危险后缀仍然过滤。
-- aimes publish 是镜像发布功能，不等同于本地 Git commit；本地 Git 是否忽略文件仍由项目 .gitignore 与 Git index 决定。
+---
+
+## 14. 文档导航
+
+| 文档 | 适用场景 |
+|---|---|
+| [变更记录](CHANGELOG.md) | 查看各版本新增、修改和已知限制 |
+| [能力与验证状态矩阵](docs/CAPABILITY-VERIFICATION-MATRIX.md) | 区分配置、自动化测试、运行时验证和项目试点 |
+| [工程能力增强路线图 V0.9](docs/ROADMAP-ENGINEERING-EXCELLENCE-V0.9.md) | 查看后续能力建设方向 |
+| [Skill 编排协议](docs/SKILL-ORCHESTRATION-V1.0.md) | 任务路由、Skill 顺序、跳过条件和交接要求 |
+| [UI 设计治理](docs/UI-DESIGN-GOVERNANCE.md) | UI 专项 Skill 和验证流程 |
+| [诊断与安全修复指南](docs/REPAIR-LOOP.md) | 治理问题诊断、修复计划与安全边界 |
+| [业务代码修复提案指南](docs/CODE-REPAIR-PROPOSALS.md) | 补丁提案、应用、验证和回滚 |
+| [GitHub 镜像发布指南](docs/PUBLISH-GITHUB-MIRROR.md) | 发布预览、过滤规则、凭据扫描和删除风险 |
+| [Windows EXE 构建与部署](docs/WINDOWS-EXE-DEPLOYMENT.md) | Windows 构建、PATH 配置和运行方式 |
+| [运行时规则加载探针指南](docs/RUNTIME-RULE-LOADING-PROBE.md) | Codex CLI/Claude Code CLI 隔离规则加载验证 |
+| [核心规则遵循回归测试指南](docs/RULE-FOLLOWING-REGRESSION.md) | 固定案例、硬门禁与运行记录验收 |
+| [Token 效率与能力非退化基准](docs/governance-upgrade/TOKEN-EFFICIENCY-BENCHMARK-PLAN-2026-10-18.md) | Token 优化的对照测试和非退化原则 |
+| [历史发布制品归档](docs/archive/release-artifacts/V0.5.3/README.md) | 历史版本材料，不代表当前发布状态 |
+
+---
+
+## 15. 当前限制与路线图
+
+当前明确的限制包括：
+
+- 不替代大模型、IDE、Agent，也不自动控制所有外部工具。
+- 不保证所有 AI 工具、所有版本、所有模式都自动加载同一组规则。
+- 全局部署、自动卸载和通用三方合并尚未实现。
+- 本地写入者声明不能约束不遵守协议的外部编辑器，也不是跨机器分布式锁。
+- 评测和指标只根据实际记录与可验证数据工作；缺失证据不会被推断为通过。
+- 常见密钥扫描和过滤规则有帮助但不保证发现所有敏感信息；发布前仍需人工检查差异。
+- Windows EXE 构建/冒烟测试、正式 Release 资产和真实工具运行时试点应分别确认。
+
+路线图和当前验证状态请以 [能力与验证状态矩阵](docs/CAPABILITY-VERIFICATION-MATRIX.md)、[工程能力增强路线图](docs/ROADMAP-ENGINEERING-EXCELLENCE-V0.9.md) 和 GitHub Actions / Releases 页面为准。
+
+## 许可证与使用说明
+
+请查看仓库当前的许可证文件和项目政策。pyproject.toml 中声明了项目治理制品的专有许可文本；在再分发、商业集成或二次开发前，请确认仓库中的正式许可条款和授权范围。
+
+**仓库：** https://github.com/laodongAI/aimes_cli  
+**问题与建议：** https://github.com/laodongAI/aimes_cli/issues  
+**版本与制品：** https://github.com/laodongAI/aimes_cli/releases
