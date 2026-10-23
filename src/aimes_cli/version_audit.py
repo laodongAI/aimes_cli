@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from . import __version__, GOVERNANCE_VERSION
 from .core import CONFIG_REL, MANIFEST_REL, load_config, proposed_files, sha256_text
 
@@ -42,7 +44,7 @@ def audit_project_version(root: Path) -> dict[str, Any]:
             raise ValueError("AIMES config missing")
         tools = [item.get("id") for item in config.get("tools", []) if isinstance(item, dict) and item.get("id")]
         scope = config.get("project", {}).get("scope", "project")
-    except (OSError, ValueError, TypeError, AttributeError) as exc:
+    except (OSError, ValueError, TypeError, AttributeError, yaml.YAMLError) as exc:
         finding("error", "AIMES_CONFIG_INVALID", f"无法解析 AIMES 配置：{exc}")
         return {
             "ok": False, "root": str(root), "status": "CONFIG_INVALID",
@@ -86,7 +88,7 @@ def audit_project_version(root: Path) -> dict[str, Any]:
 
     try:
         expected = {path: content for path, content in proposed_files(root, tools, scope).items() if path != MANIFEST_REL.as_posix()}
-    except (OSError, ValueError, TypeError, KeyError) as exc:
+    except (OSError, ValueError, TypeError, KeyError, yaml.YAMLError) as exc:
         finding("error", "AIMES_TEMPLATE_READ_FAILED", f"无法读取当前 CLI 模板：{exc}")
         return {
             "ok": False, "root": str(root), "status": "AUDIT_BLOCKED",
