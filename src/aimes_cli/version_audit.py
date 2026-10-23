@@ -64,8 +64,20 @@ def audit_project_version(root: Path) -> dict[str, Any]:
             if not isinstance(manifest, dict) or not isinstance(manifest.get("managed_files"), list):
                 raise ValueError("manifest must contain a managed_files list")
             project_version = str(manifest.get("aimes_cli_version", "unknown"))
-            old_hashes = {item["path"]: item["sha256"] for item in manifest["managed_files"]
-                          if isinstance(item, dict) and isinstance(item.get("path"), str) and isinstance(item.get("sha256"), str)}
+            old_hashes = {}
+            for item in manifest["managed_files"]:
+                if not isinstance(item, dict) or not isinstance(item.get("path"), str) or not isinstance(item.get("sha256"), str):
+                    continue
+                rel = item["path"].replace("\\\\", "/")
+                candidate = Path(rel)
+                try:
+                    if candidate.is_absolute() or ".." in candidate.parts:
+                        raise ValueError("managed file path escapes project root")
+                    (root / candidate).resolve().relative_to(root)
+                except (OSError, ValueError):
+                    finding("error", "AIMES_MANIFEST_PATH_UNSAFE", f"Manifest 包含越界管理路径，已跳过：{rel}")
+                    continue
+                old_hashes[rel] = item["sha256"]
         except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
             manifest = None
             old_hashes = {}
