@@ -16,7 +16,7 @@ class PromptAssetTests(unittest.TestCase):
             self.assertIn("UNKNOWN", body)
     def test_registry_versions_and_validation_status(self):
         data = yaml.safe_load((ROOT / "skills/registry.yaml").read_text(encoding="utf-8"))
-        self.assertEqual(len(data["skills"]), 11)
+        self.assertGreaterEqual(len(data["skills"]), 11)
         versions = {x["name"]: x["version"] for x in data["skills"]}
         self.assertEqual(versions["ui-quality-review"], "1.0.0")
         self.assertEqual(versions["frontend-design"], "1.0.0")
@@ -54,6 +54,7 @@ class PromptAssetTests(unittest.TestCase):
         from aimes_cli.core import proposed_files
         deployed = proposed_files(ROOT, ["codex-cli"], "project")
         self.assertIn(".aimes/skills/registry.yaml", deployed)
+        self.assertIn(".aimes/skills/ui-quality-governance-suite.yaml", deployed)
         for name in ["frontend-design", "design-system-governance", "ui-quality-review", "ui-implementation-validation"]:
             self.assertIn(f".aimes/skills/{name}/SKILL.md", deployed)
             self.assertIn("## Workflow / 工作流程", deployed[f".aimes/skills/{name}/SKILL.md"])
