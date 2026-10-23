@@ -289,6 +289,68 @@ skills:
   evidence: []
 
 # ==========================================
+# P0 UI Design Skills - 可路由的界面设计能力
+# ==========================================
+- id: SKL-CORE-UI-DESIGN-001
+  name: frontend-design
+  version: 1.0.0
+  file: skills/frontend-design/SKILL.md
+  purpose: 将产品目标转化为具有明确视觉方向、可实现且可验证的界面设计。
+  triggers:
+  - frontend_design
+  - new_page
+  - page_redesign
+  - dashboard_design
+  - complex_ui
+  - visual_direction
+  - design_prototype
+  inputs: [task_id, product_goal, target_users, primary_user_tasks, project_context]
+  outputs: [design_brief, visual_direction, page_structure, component_plan, state_matrix, verification_plan]
+  applies_to: [all]
+  risk_level: medium
+  required_capabilities: [read_project_files]
+  forbidden_actions: [overwrite_user_changes, fabricate_verification, bypass_quality_gate]
+  prerequisites: [project_rules_loaded, git_state_checked]
+  dependencies: [design-system-governance]
+  validation_status: UNKNOWN
+  evaluation_suite: AIMES-UI-QUALITY-GOVERNANCE
+  evidence: []
+- id: SKL-CORE-UI-SYSTEM-001
+  name: design-system-governance
+  version: 1.0.0
+  file: skills/design-system-governance/SKILL.md
+  purpose: 盘点并治理设计 Token、组件契约、主题与跨页面一致性。
+  triggers: [design_system, design_tokens, component_library, theme_change, shared_component_change, visual_consistency, design_standard_missing]
+  inputs: [task_id, project_context, ui_paths, existing_design_assets]
+  outputs: [design_system_inventory, approved_rules, proposed_tokens, component_contracts, consistency_findings, migration_plan]
+  applies_to: [all]
+  risk_level: medium
+  required_capabilities: [read_project_files]
+  forbidden_actions: [overwrite_user_changes, fabricate_verification, bypass_quality_gate]
+  prerequisites: [project_rules_loaded, git_state_checked]
+  dependencies: []
+  validation_status: UNKNOWN
+  evaluation_suite: AIMES-UI-QUALITY-GOVERNANCE
+  evidence: []
+- id: SKL-CORE-UI-VERIFY-001
+  name: ui-implementation-validation
+  version: 1.0.0
+  file: skills/ui-implementation-validation/SKILL.md
+  purpose: 验证前端实现的构建、交互、响应式、可访问性和视觉回归。
+  triggers: [ui_implementation, responsive_layout, accessibility_review, visual_regression, form_interaction_change, frontend_build, browser_verification]
+  inputs: [task_id, changed_ui_paths, acceptance_criteria, project_context]
+  outputs: [verification_matrix, commands_executed, browser_evidence, viewport_results, accessibility_findings, final_status]
+  applies_to: [all]
+  risk_level: medium
+  required_capabilities: [read_project_files]
+  forbidden_actions: [overwrite_user_changes, fabricate_verification, bypass_quality_gate]
+  prerequisites: [project_rules_loaded, git_state_checked]
+  dependencies: [ui-quality-review]
+  validation_status: UNKNOWN
+  evaluation_suite: AIMES-UI-QUALITY-GOVERNANCE
+  evidence: []
+
+# ==========================================
 # P1 Product Analysis Skills - 新增的产品分析类Skills
 # ==========================================
 
