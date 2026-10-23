@@ -1381,7 +1381,12 @@ UI 任务的交付报告必须列出：规范基线、检查范围、发现及�
 |---|---|---|
 | 新功能、需求变更、需求不清、验收标准审查 | .aimes/skills/requirement-cognition/SKILL.md | 新功能、需求变更、需求歧义、验收标准 |
 | 市场/竞品/行业结构/市场进入分析 | .aimes/skills/product-analysis/SKILL.md | 市场分析、竞品研究、市场进入、波特五力 |
-| 产品定位、机会发现、用户旅程或方案优先级 | .aimes/skills/product-analysis/SKILL.md | 战略定位、客户旅程、机会树 |
+| 产品定位、机会发现、用户旅程或方案优先级 | .aimes/skills/product-analysis/SKILL.md，并按任务调用下列专项 Skill | 战略定位、客户旅程、机会树 |
+| 市场/竞品/行业分析 | .aimes/skills/market-analysis/SKILL.md | 市场进入、竞品研究、波特五力、PESTEL、SWOT |
+| 财务可行性/ROI/成本收益 | .aimes/skills/financial-evaluation/SKILL.md | 投资回报、预算、商业案例 |
+| 产品定位与差异化 | .aimes/skills/strategic-positioning/SKILL.md | 目标客户、价值主张、战略定位 |
+| 机会发现与方案实验优先级 | .aimes/skills/opportunity-solution-tree/SKILL.md | 机会树、解决方案探索、RICE/WSJF |
+| 客户体验与旅程优化 | .aimes/skills/customer-journey-mapping/SKILL.md | 客户旅程、体验痛点、转化漏斗 |
 
 执行规则：
 1. 需求认知是新功能与需求变更的默认前置步骤；纯技术执行且无需求变化时，可说明不适用理由。
