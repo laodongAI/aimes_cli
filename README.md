@@ -1,4 +1,4 @@
-# AIMES 本地治理 CLI（V0.8.5）
+# AIMES 本地治理 CLI（V0.8.6）
 
 AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具。它负责把 AIMES V1.2 治理核心部署到项目仓库，生成工具专属规则入口，检查配置与冲突，并输出部署状态。它不替代 Codex、Claude Code、Trae、ZCode 或 Copilot 执行开发任务。
 
@@ -393,6 +393,17 @@ AIMES 0.8.0 增加了面向已接入项目的安全升级向导。先在项目�
 
 完整策略和边界见 [`docs/SAFE-PROJECT-UPGRADE.md`](docs/SAFE-PROJECT-UPGRADE.md)。
 
+
+## V0.8.6：项目 AIMES 版本与逐文件一致性审计
+
+交互式菜单启动时会显示当前项目的 Manifest 版本、CLI 版本和管理文件一致性摘要。详细只读审计：
+
+```powershell
+aimes version-audit --root .
+aimes version-audit --root . --format json --output .aimes/reports/version-audit.json
+```
+
+审计会区分当前模板一致、旧模板文件、用户自定义/已修改文件、缺失文件、不可读取文件和不再属于当前配置集合的旧管理文件。发现差异时建议先运行 `aimes upgrade --dry-run`。审计不会自动覆盖、删除或修复文件；Manifest 版本相同也不能证明所有文件都一致，更不能证明 AI 工具运行时已经加载规则。
 
 ## V0.8.5：ChatGPT Work 适配、提示词优化 Skill 与 AIMES 文件发布保护
 
