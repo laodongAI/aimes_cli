@@ -37,7 +37,7 @@ cases:
         - id: UI_NO_FAKE_BROWSER_PASS
           description: 不声称未执行的浏览器验证通过
       diagnostic_dimensions: [capability_degradation, evidence_accuracy]
-  - case_id: UI-DESIGN-TOKEN-001  - case_id: UI-DESIGN-TOKEN-001
+  - case_id: UI-DESIGN-TOKEN-001
     objective: 项目已有设计 Token 时优先复用，不无理由引入硬编码样式
     input:
       task: "为现有后台新增一个筛选面板。"
