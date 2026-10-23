@@ -1,6 +1,6 @@
 schema_version: 1
-registry_id: AIMES-UI-SKILLS
-description: "项目级 UI 能力路由注册表；由 AIMES 初始化部署到 .aimes/skills/registry.yaml"
+registry_id: AIMES-PRODUCT-REQUIREMENTS-UI-SKILLS
+description: "项目级需求、产品分析与 UI 能力路由注册表；由 AIMES 初始化部署到 .aimes/skills/registry.yaml"
 skills:
   - id: SKL-CORE-UI-DESIGN-001
     name: frontend-design
@@ -101,5 +101,85 @@ skills:
     forbidden_actions: [fabricate_sources, overwrite_user_changes, fabricate_verification]
     prerequisites: [project_rules_loaded, git_state_checked]
     dependencies: []
+    validation_status: UNKNOWN
+    evidence: []
+  - id: SKL-CORE-MKT-001
+    name: market-analysis
+    version: 0.2.0
+    file: .aimes/skills/market-analysis/SKILL.md
+    purpose: "市场、行业结构、竞争环境与市场进入分析"
+    triggers: [market_analysis, competitor_analysis, market_entry, industry_analysis]
+    inputs: [product_or_market, decision_to_support, project_context]
+    outputs: [market_scope, five_forces, pestel_swot, evidence_ledger, market_recommendation]
+    applies_to: [all]
+    risk_level: medium
+    required_capabilities: [read_project_files]
+    forbidden_actions: [fabricate_sources, overwrite_user_changes, fabricate_verification]
+    prerequisites: [project_rules_loaded, git_state_checked]
+    dependencies: [product-analysis]
+    validation_status: UNKNOWN
+    evidence: []
+  - id: SKL-CORE-FIN-001
+    name: financial-evaluation
+    version: 0.2.0
+    file: .aimes/skills/financial-evaluation/SKILL.md
+    purpose: "产品/项目的财务可行性、成本收益与投资回报评估"
+    triggers: [financial_evaluation, cost_benefit, roi_analysis, business_case]
+    inputs: [product_or_market, decision_to_support, project_context]
+    outputs: [assumptions, cost_model, benefit_model, sensitivity_analysis, financial_recommendation]
+    applies_to: [all]
+    risk_level: medium
+    required_capabilities: [read_project_files]
+    forbidden_actions: [fabricate_sources, overwrite_user_changes, fabricate_verification]
+    prerequisites: [project_rules_loaded, git_state_checked]
+    dependencies: [product-analysis]
+    validation_status: UNKNOWN
+    evidence: []
+  - id: SKL-CORE-STRATEGY-001
+    name: strategic-positioning
+    version: 0.2.0
+    file: .aimes/skills/strategic-positioning/SKILL.md
+    purpose: "产品定位、目标客户、差异化与战略选择"
+    triggers: [strategic_positioning, product_positioning, differentiation]
+    inputs: [product_or_market, decision_to_support, project_context]
+    outputs: [target_segments, positioning_statement, differentiation_evidence, strategic_options]
+    applies_to: [all]
+    risk_level: medium
+    required_capabilities: [read_project_files]
+    forbidden_actions: [fabricate_sources, overwrite_user_changes, fabricate_verification]
+    prerequisites: [project_rules_loaded, git_state_checked]
+    dependencies: [product-analysis]
+    validation_status: UNKNOWN
+    evidence: []
+  - id: SKL-CORE-OST-001
+    name: opportunity-solution-tree
+    version: 0.2.0
+    file: .aimes/skills/opportunity-solution-tree/SKILL.md
+    purpose: "从用户机会到解决方案、实验与优先级的结构化探索"
+    triggers: [opportunity_solution_tree, opportunity_discovery, solution_prioritization]
+    inputs: [product_or_market, decision_to_support, project_context]
+    outputs: [opportunity_tree, solution_options, experiments, prioritization]
+    applies_to: [all]
+    risk_level: medium
+    required_capabilities: [read_project_files]
+    forbidden_actions: [fabricate_sources, overwrite_user_changes, fabricate_verification]
+    prerequisites: [project_rules_loaded, git_state_checked]
+    dependencies: [product-analysis]
+    validation_status: UNKNOWN
+    evidence: []
+  - id: SKL-CORE-CJM-001
+    name: customer-journey-mapping
+    version: 0.2.0
+    file: .aimes/skills/customer-journey-mapping/SKILL.md
+    purpose: "客户旅程、体验痛点、关键时刻与改进机会分析"
+    triggers: [customer_journey, journey_mapping, experience_pain_points]
+    inputs: [product_or_market, decision_to_support, project_context]
+    outputs: [personas, journey_stages, pain_points, opportunities, action_plan]
+    applies_to: [all]
+    risk_level: medium
+    required_capabilities: [read_project_files]
+    forbidden_actions: [fabricate_sources, overwrite_user_changes, fabricate_verification]
+    prerequisites: [project_rules_loaded, git_state_checked]
+    dependencies: [product-analysis]
     validation_status: UNKNOWN
     evidence: []
