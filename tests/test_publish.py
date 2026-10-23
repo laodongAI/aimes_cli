@@ -229,7 +229,7 @@ class PublishTests(unittest.TestCase):
         self.assertTrue(is_excluded('.aimes/credentials.json'))
 
     def test_collect_files_keeps_aimes_trae_rule_but_filters_other_trae_state(self):
-        (self.root / '.gitignore').write_text('.trae/\\n', encoding='utf-8')
+        (self.root / '.gitignore').write_text('.trae/' + chr(10), encoding='utf-8')
         rule = self.root / '.trae' / 'rules' / '00-aimes-governance.md'
         rule.parent.mkdir(parents=True)
         rule.write_text('# AIMES rule', encoding='utf-8')
