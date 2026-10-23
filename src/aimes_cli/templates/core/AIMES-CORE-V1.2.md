@@ -1373,6 +1373,31 @@ UI 任务的交付报告必须列出：规范基线、检查范围、发现及�
 
 ---
 
+## 全局 Skill 路由（必须遵守）
+
+在任务执行前，根据任务类型检查 `.aimes/skills/registry.yaml` 并读取对应 Skill。只提及名称不算调用；必须按步骤执行并产出其输出契约。按需组合 Skill，不要机械加载所有 Skill。
+
+| 任务类型 | 必须读取的项目级 Skill | 触发示例 |
+|---|---|---|
+| 新会话、接手项目、上下文不完整 | `.aimes/skills/project-onboarding/SKILL.md` | 新项目、任务交接、恢复进度 |
+| 新功能、需求变更、歧义、验收标准 | `.aimes/skills/requirement-cognition/SKILL.md` | 需求分析、功能范围、验收条件 |
+| 复用现有实现、类似问题、重构 | `.aimes/skills/project-knowledge-reuse/SKILL.md` | 查找既有模式、避免重复实现 |
+| 实施前、缺陷修复、依赖升级、重构 | `.aimes/skills/change-impact-analysis/SKILL.md` | 变更影响、回归范围、回滚风险 |
+| 架构、公共 API、数据模型、集成边界 | `.aimes/skills/architecture-contract-review/SKILL.md` | ADR、契约、兼容性、安全边界 |
+| 已批准任务的代码修改 | `.aimes/skills/controlled-implementation/SKILL.md` | 功能开发、缺陷修复、受控重构 |
+| 新功能、缺陷、回归、发布验证 | `.aimes/skills/requirement-driven-testing/SKILL.md` | 测试设计、需求覆盖、发布验收 |
+| 产品/市场/竞品/财务/定位/用户旅程 | `.aimes/skills/product-analysis/SKILL.md` 及相关专项 Skill | 产品发现、市场进入、投资评估 |
+| UI 设计、组件系统、前端实现、视觉回归 | 对应的 UI 专项 Skill（见注册表） | 新页面、重设计、无障碍、浏览器验证 |
+
+路由护栏：
+1. 先查注册表，再检查对应 Skill 文件存在且可读；不得假设注册表路由自动意味着工具已加载。
+2. 多 Skill 组合应说明调用顺序和原因；典型链路为需求认知 → 影响分析 → 架构契约审查（适用时）→ 受控实施 → 需求驱动测试。
+3. 文件缺失、路由无效或能力不可用时，记录实际路径并标记 `BLOCKED` / `NOT_RUN`；宿主级 Skill 可作降级辅助，但不能冒充 AIMES Skill 已调用。
+4. 专业 Skill 不得覆盖 Core 的用户修改保护、批准门禁、证据语义和工具能力边界。
+5. Skill 资产存在、静态路由和自动化测试通过，不证明 ZCode、Trae Code 或其他工具运行时已加载或遵循规则。
+
+---
+
 ## 需求与产品分析 Skill 强制路由（必须遵守）
 
 凡任务涉及需求澄清、需求拆分、功能范围、验收标准、产品机会、市场判断、用户旅程或产品战略，必须先检查项目级 Skill 注册表并读取匹配的 Skill。只提及 Skill 名称不算调用，必须按步骤执行并产出约定的结构化结果。
