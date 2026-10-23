@@ -59,6 +59,18 @@ class PromptAssetTests(unittest.TestCase):
             self.assertIn(f".aimes/skills/{name}/SKILL.md", deployed)
             self.assertIn("## Workflow / 工作流程", deployed[f".aimes/skills/{name}/SKILL.md"])
 
+    def test_prompt_optimization_skill_is_registered_and_routed_from_core(self):
+        data = yaml.safe_load((ROOT / "skills/registry.yaml").read_text(encoding="utf-8"))
+        skill = next(item for item in data["skills"] if item["name"] == "prompt-optimization")
+        self.assertEqual(skill["validation_status"], "UNKNOWN")
+        self.assertTrue((ROOT / skill["file"]).is_file())
+        core = (ROOT / "src/aimes_cli/templates/core/AIMES-CORE-V1.2.md").read_text(encoding="utf-8")
+        self.assertIn(".aimes/skills/prompt-optimization/SKILL.md", core)
+        from aimes_cli.core import proposed_files
+        deployed = proposed_files(ROOT, ["chatgpt-work"], "project")
+        self.assertIn(".aimes/skills/prompt-optimization/SKILL.md", deployed)
+        self.assertIn("prompt-optimization", deployed[".aimes/skills/registry.yaml"])
+
     def test_contract_docs_exist(self):
         for rel in ["docs/PROMPT-SYSTEM-CONTRACT-V1.0.md", "skills/ui-quality-review/SKILL.md", "skills/frontend-design/SKILL.md", "skills/design-system-governance/SKILL.md", "skills/ui-implementation-validation/SKILL.md", "docs/UI-DESIGN-GOVERNANCE.md", "examples/evaluation/ui-quality-governance-suite.yaml", "docs/SKILL-CONTRACT-V2.md", "docs/SKILL-EXECUTION-RECORD-V1.md", "docs/WORKFLOW-STATE-MACHINE-V1.md", "docs/SKILL-ORCHESTRATION-V1.0.md", "docs/PROMPT-AUDIT-AND-OPTIMIZATION-REPORT.md", "docs/PROMPT-OUTPUT-EXAMPLES-V1.0.md", "docs/CONTEXT-BUDGET-AND-FILE-PLAN-V1.0.md", "docs/TOOL-FAILURE-DEGRADATION-PROTOCOL-V1.0.md", "docs/AUDIT-TRAIL-V1.0.md"]:
             self.assertTrue((ROOT / rel).is_file(), rel)
