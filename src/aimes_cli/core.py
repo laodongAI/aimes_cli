@@ -79,6 +79,9 @@ def proposed_files(root: Path, tools: list[str], scope: str) -> dict[str, str]:
     ui_registry = template_root / 'registry.yaml'
     if ui_registry.is_file():
         files['.aimes/skills/registry.yaml'] = ui_registry.read_text(encoding='utf-8')
+    ui_suite = template_root / 'ui-quality-governance-suite.yaml'
+    if ui_suite.is_file():
+        files['.aimes/skills/ui-quality-governance-suite.yaml'] = ui_suite.read_text(encoding='utf-8')
     old_hashes = previous_manifest(root)
     config = build_config(root, tools, scope)
     existing_config_path = root / CONFIG_REL
