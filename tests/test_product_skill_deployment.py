@@ -3,7 +3,7 @@ import unittest
 
 import yaml
 
-from aimes_cli.core import init_project
+from aimes_cli.core import init_project, validate_project
 
 
 class ProductSkillDeploymentTests(unittest.TestCase):
@@ -29,6 +29,12 @@ class ProductSkillDeploymentTests(unittest.TestCase):
                 "strategic-positioning",
                 "opportunity-solution-tree",
                 "customer-journey-mapping",
+                "project-onboarding",
+                "project-knowledge-reuse",
+                "change-impact-analysis",
+                "architecture-contract-review",
+                "controlled-implementation",
+                "requirement-driven-testing",
             }
             self.assertTrue(expected.issubset(routes))
             for route in routes.values():
@@ -54,6 +60,38 @@ class ProductSkillDeploymentTests(unittest.TestCase):
             self.assertTrue(any(item["path"] == ".aimes/skills/registry.yaml" for item in result["conflicts"]))
             proposal = root / ".aimes/proposed/.aimes/skills/registry.yaml.proposed"
             self.assertTrue(proposal.is_file())
+
+    def test_validate_fails_when_registered_skill_file_is_missing(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            init_project(root, ["zcode"], dry_run=False)
+            registry_path = root / ".aimes/skills/registry.yaml"
+            registry = yaml.safe_load(registry_path.read_text(encoding="utf-8"))
+            registry["skills"][0]["file"] = ".aimes/skills/not-installed/SKILL.md"
+            registry_path.write_text(yaml.safe_dump(registry, allow_unicode=True, sort_keys=False), encoding="utf-8")
+
+            result = validate_project(root)
+
+            self.assertFalse(result["ok"])
+            self.assertTrue(any(item["code"] == "SKILL_FILE_MISSING" for item in result["findings"]))
+
+    def test_validate_rejects_skill_path_outside_project(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            init_project(root, ["zcode"], dry_run=False)
+            registry_path = root / ".aimes/skills/registry.yaml"
+            registry = yaml.safe_load(registry_path.read_text(encoding="utf-8"))
+            registry["skills"][0]["file"] = "../../outside/SKILL.md"
+            registry_path.write_text(yaml.safe_dump(registry, allow_unicode=True, sort_keys=False), encoding="utf-8")
+
+            result = validate_project(root)
+
+            self.assertFalse(result["ok"])
+            self.assertTrue(any(item["code"] == "SKILL_PATH_UNSAFE" for item in result["findings"]))
 
 
 if __name__ == "__main__":
