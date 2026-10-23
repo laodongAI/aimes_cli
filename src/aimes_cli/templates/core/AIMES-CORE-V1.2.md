@@ -1340,7 +1340,7 @@ AIMES 初始化会将 UI Skills 部署到项目的 `.aimes/skills/`，并生成 
 3. 项目已批准规范优先于通用 Skill；没有设计系统时只能提出候选基线，不得虚构批准。
 4. 读取 Skill 后按其工作流执行并产出其输出契约中的关键产物；仅提及名称不算调用。
 5. 注册表/Skill 文件存在不等于工具运行时已加载。无法确认实际读取、浏览器或截图能力时，报告具体限制；禁止虚构执行记录。
-6. 评测套件位于 `examples/evaluation/ui-quality-governance-suite.yaml`（若已随项目部署则使用其项目路径）；案例定义不等于真实工具通过。
+6. 评测套件位于 ``.aimes/skills/ui-quality-governance-suite.yaml`；案例定义不等于真实工具通过。
 
 ## UI/UX 设计规范与质量门禁（新增治理规则）
 
