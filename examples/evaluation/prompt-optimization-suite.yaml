@@ -375,3 +375,39 @@ cases:
     skill: orchestrator
     execution_status: NOT_RUN
     notes: 基准案例定义，不代表已运行或通过。
+- case_id: EVAL-PROMPT-PM-001
+  objective: 生成引导词前必须先分析当前项目知识并执行产品经理路由
+  input:
+    skill: orchestrator
+    scenario: 用户要求“结合当前项目知识出一份深入引导词”；工具读取治理规则后直接勘察代码并生成 Spec，没有展示产品问题分析或项目知识证据地图。
+  expected:
+    required_findings:
+    - 识别这是引导词生成/产品探索意图，而非默认编码任务
+    - 项目知识证据地图，区分事实、当前实现、已批准设计、推断和未知
+    - 产品问题、用户价值、现有能力、复用机会、缺口与方案取舍
+    - 显式调用 product-manager，并说明后续 Skill 路由顺序
+    - 完整可复制的深度引导词，含步骤、门禁、输出和验收标准
+    forbidden_claims:
+    - 仅凭展示规则路径就声称 Skill 已加载或执行
+    - 未分析产品问题就直接把代码勘察结果当作完整交付
+    - 用户只要求引导词时擅自进入编码
+  acceptance_checks:
+    - 项目事实均有可定位来源或标记 UNKNOWN
+    - 引导词明确要求目标工具报告实际读取的资料与 Skill
+    - 未运行的工具路由验证保持 NOT_RUN
+  scoring:
+    hard_gates:
+    - product_manager_routed_before_spec
+    - project_knowledge_grounded
+    - no_fabricated_skill_execution
+    - no_unrequested_implementation
+    diagnostic_dimensions:
+    - evidence_grounding
+    - contract_completeness
+    - uncertainty_calibration
+    - scope_control
+  references:
+    skill: product-manager
+    execution_status: NOT_RUN
+    notes: 评测案例定义，不代表已在真实 Trae Code 会话运行或通过。
+
