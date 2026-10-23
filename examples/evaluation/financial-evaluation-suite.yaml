@@ -1,0 +1,72 @@
+schema_version: 1
+suite_id: EVAL-AIMES-PROMPT-BASELINE-V1
+version: 1.1.0
+description: "财务评估 Skill 回归案例：验证财务口径、可复算性、证据边界和风险门禁。"
+cases:
+  - case_id: EVAL-FIN-001
+    objective: "ROI 必须按净增量收益和全部相关成本计算，不得将收益成本比误称为 ROI。"
+    input:
+      task: "评估功能：评估期增量收益 150000 美元，全部相关成本 100000 美元。计算 ROI、净收益和收益成本比。"
+      context: {currency: USD, period: 12_months}
+    expected:
+      required_findings: ["净收益为 50000 美元", "ROI 为 50%", "收益成本比为 1.5"]
+      forbidden_claims: ["ROI 为 150%"]
+      acceptance_checks: ["明确给出公式和代入值", "区分 ROI 与收益成本比"]
+    scoring:
+      hard_gates:
+        - {id: ROI_FORMULA_CORRECT, description: "ROI=(增量收益-全部相关成本)/全部相关成本×100%。"}
+        - {id: METRICS_NOT_CONFLATED, description: "不得将收益成本比当作 ROI。"}
+      diagnostic_dimensions: ["calculation_accuracy", "formula_transparency"]
+  - case_id: EVAL-FIN-002
+    objective: "分母为零或负数时不得伪造有限的 CAC 回收期。"
+    input:
+      task: "CAC 为 1200 美元，月度 ARPA 为 100 美元，毛利率为 0%。计算 CAC 回收期。"
+    expected:
+      required_findings: ["月度毛利贡献为 0", "回收期不可计算或不存在有限回收期"]
+      forbidden_claims: ["回收期为 12 个月"]
+      acceptance_checks: ["解释分母为零导致无法计算"]
+    scoring:
+      hard_gates:
+        - {id: ZERO_DENOMINATOR_GUARD, description: "分母为零时明确报告不可计算。"}
+      diagnostic_dimensions: ["edge_case_handling", "calculation_accuracy"]
+  - case_id: EVAL-FIN-003
+    objective: "留存改善收益必须说明基线和归因假设，不能重复计算收入。"
+    input:
+      task: "估算新功能减少流失的财务收益，但没有客户同期数据，也没有对照组。"
+    expected:
+      required_findings: ["证据不足以确认因果收益", "请求基线流失率、适用客户群、观察期和毛利贡献", "建议情景估算或实验验证"]
+      forbidden_claims: ["把全部客户 LTV 直接认定为该功能收益", "声称已验证流失下降"]
+      acceptance_checks: ["区分事实、假设和推断"]
+    scoring:
+      hard_gates:
+        - {id: NO_UNSUPPORTED_ATTRIBUTION, description: "不得将未验证的留存变化当作确定收益。"}
+        - {id: NO_FABRICATED_EVIDENCE, description: "不得声称不存在的实验或数据已经验证。"}
+      diagnostic_dimensions: ["causal_reasoning", "evidence_accuracy"]
+  - case_id: EVAL-FIN-004
+    objective: "关键现金风险不得被加权总分抵消。"
+    input:
+      task: "业务综合评分 85/100，但现金跑道只有 4 个月。给出建议。"
+    expected:
+      required_findings: ["将现金跑道不足列为关键红旗", "建议立即制定现金保护、融资或成本调整行动", "高综合评分不能抵消关键风险"]
+      forbidden_claims: ["因为总分高所以业务没有关键问题"]
+      acceptance_checks: ["红旗与综合评分分开展示"]
+    scoring:
+      hard_gates:
+        - {id: CRITICAL_RISK_GATE, description: "关键风险必须单独触发行动建议，不可被总分抵消。"}
+      diagnostic_dimensions: ["risk_prioritization", "decision_quality"]
+  - case_id: EVAL-FIN-005
+    objective: "输入不足时明确未知项，不把混合指标伪装为渠道实测值。"
+    input:
+      task: "某渠道月支出 10000 美元，但没有新增客户数和渠道留存数据，用户要求评估是否扩投。"
+    expected:
+      required_findings: ["CAC 因缺少新增客户数而不可计算", "需要补充渠道新增付费客户数及观察期间", "留存和客户质量暂时未知", "不能仅凭支出决定扩投"]
+      forbidden_claims: ["直接给出确定的渠道 CAC", "将混合 LTV 当作渠道实测 LTV"]
+      acceptance_checks: ["明确最关键的缺失数据", "可给条件性分析但不伪造结果"]
+    scoring:
+      hard_gates:
+        - {id: MISSING_DATA_TRANSPARENCY, description: "缺失关键分母时不得输出伪精确指标。"}
+        - {id: NO_PROXY_AS_FACT, description: "代理指标必须明确标注。"}
+      diagnostic_dimensions: ["missing_data_handling", "evidence_accuracy"]
+references:
+  source_docs: ["skills/product-analysis/financial-evaluation/SKILL.md"]
+  hidden_tests: []
