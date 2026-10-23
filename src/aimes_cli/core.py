@@ -224,6 +224,56 @@ def validate_project(root: Path) -> dict[str, Any]:
             elif ADAPTERS[tid].status=='manual': findings.append({'level':'warning','code':'ADAPTER_MANUAL','message':f'{ADAPTERS[tid].label} adapter remains manual/unverified.'})
             for entry in (tool.get('entry_paths',[]) if isinstance(tool,dict) else []):
                 if not (root/entry).exists(): findings.append({'level':'warning','code':'ENTRY_MISSING','message':f'Configured entry file not found: {entry}'})
+    # Validate Skill routing as a deployable contract, not just a registry file's presence.
+    registry_path = root / '.aimes/skills/registry.yaml'
+    if not registry_path.is_file():
+        findings.append({'level': 'error', 'code': 'SKILL_REGISTRY_MISSING', 'message': 'Skill registry not found: .aimes/skills/registry.yaml'})
+    else:
+        try:
+            registry = yaml.safe_load(registry_path.read_text(encoding='utf-8')) or {}
+            skills = registry.get('skills') if isinstance(registry, dict) else None
+            if not isinstance(skills, list):
+                findings.append({'level': 'error', 'code': 'SKILL_REGISTRY_INVALID', 'message': 'Skill registry must contain a skills list.'})
+            else:
+                seen_ids = set()
+                seen_names = set()
+                skill_names = set()
+                for index, skill in enumerate(skills):
+                    if not isinstance(skill, dict):
+                        findings.append({'level': 'error', 'code': 'SKILL_ENTRY_INVALID', 'message': f'Skill entry at index {index} must be a mapping.'})
+                        continue
+                    skill_id = skill.get('id')
+                    name = skill.get('name')
+                    rel = skill.get('file')
+                    if not isinstance(skill_id, str) or not skill_id.strip() or not isinstance(name, str) or not name.strip() or not isinstance(rel, str) or not rel.strip():
+                        findings.append({'level': 'error', 'code': 'SKILL_ENTRY_INVALID', 'message': f'Skill entry at index {index} must define non-empty id, name and file.'})
+                        continue
+                    if skill_id in seen_ids:
+                        findings.append({'level': 'error', 'code': 'SKILL_ID_DUPLICATE', 'message': f'Duplicate Skill id: {skill_id}'})
+                    if name in seen_names:
+                        findings.append({'level': 'error', 'code': 'SKILL_NAME_DUPLICATE', 'message': f'Duplicate Skill name: {name}'})
+                    seen_ids.add(skill_id)
+                    seen_names.add(name)
+                    skill_names.add(name)
+                    try:
+                        target = (root / rel).resolve()
+                        target.relative_to(root.resolve())
+                    except (OSError, ValueError):
+                        findings.append({'level': 'error', 'code': 'SKILL_PATH_UNSAFE', 'message': f'Skill path must remain inside project root: {rel}'})
+                        continue
+                    if not target.is_file():
+                        findings.append({'level': 'error', 'code': 'SKILL_FILE_MISSING', 'message': f'Skill route {name} points to missing file: {rel}'})
+                    triggers = skill.get('triggers')
+                    if not isinstance(triggers, list) or not triggers:
+                        findings.append({'level': 'warning', 'code': 'SKILL_TRIGGERS_MISSING', 'message': f'Skill route has no triggers: {name}'})
+                for skill in skills:
+                    if not isinstance(skill, dict):
+                        continue
+                    for dependency in skill.get('dependencies', []) if isinstance(skill.get('dependencies', []), list) else []:
+                        if dependency not in skill_names:
+                            findings.append({'level': 'warning', 'code': 'SKILL_DEPENDENCY_UNKNOWN', 'message': f"Skill {skill.get('name', '<unnamed>')} references unknown dependency: {dependency}"})
+        except Exception as e:
+            findings.append({'level': 'error', 'code': 'SKILL_REGISTRY_INVALID', 'message': f'Unable to parse Skill registry: {e}'})
     manifest_path=root/MANIFEST_REL
     if not manifest_path.exists(): findings.append({'level':'warning','code':'MANIFEST_MISSING','message':'Managed-file manifest is missing.'})
     else:
