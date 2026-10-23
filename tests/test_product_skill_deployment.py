@@ -61,6 +61,19 @@ class ProductSkillDeploymentTests(unittest.TestCase):
             proposal = root / ".aimes/proposed/.aimes/skills/registry.yaml.proposed"
             self.assertTrue(proposal.is_file())
 
+
+    def test_every_canonical_skill_is_packaged_and_registered(self):
+        repository_root = Path(__file__).resolve().parents[1]
+        canonical = yaml.safe_load((repository_root / "skills/registry.yaml").read_text(encoding="utf-8"))
+        deployable = yaml.safe_load((repository_root / "src/aimes_cli/templates/skills/registry.yaml").read_text(encoding="utf-8"))
+        deployable_names = {item["name"] for item in deployable["skills"]}
+
+        for skill in canonical["skills"]:
+            self.assertIn(skill["name"], deployable_names, f"not registered for deployment: {skill['name']}")
+            self.assertTrue((repository_root / skill["file"]).is_file(), skill["file"])
+            packaged = repository_root / "src/aimes_cli/templates/skills" / skill["name"] / "SKILL.md"
+            self.assertTrue(packaged.is_file(), f"not packaged: {skill['name']}")
+
     def test_validate_fails_when_registered_skill_file_is_missing(self):
         import tempfile
 
