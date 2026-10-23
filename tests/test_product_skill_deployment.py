@@ -21,6 +21,10 @@ def test_init_deploys_product_and_requirement_skills_and_registry_routes(tmp_pat
     routes = {item["name"]: item for item in registry["skills"]}
     assert routes["requirement-cognition"]["file"] == ".aimes/skills/requirement-cognition/SKILL.md"
     assert routes["product-analysis"]["file"] == ".aimes/skills/product-analysis/SKILL.md"
+    expected_specialists = {"market-analysis", "financial-evaluation", "strategic-positioning", "opportunity-solution-tree", "customer-journey-mapping"}
+    assert expected_specialists.issubset(routes)
+    for route in routes.values():
+        assert (tmp_path / route["file"]).is_file()
     assert "强制路由" in core.read_text(encoding="utf-8")
     assert "宿主级 Skill" in core.read_text(encoding="utf-8")
 
