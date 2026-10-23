@@ -71,6 +71,14 @@ def proposed_files(root: Path, tools: list[str], scope: str) -> dict[str, str]:
     files: dict[str, str] = {}
     effective_tools = list(tools)
     files[CORE_REL.as_posix()] = (Path(__file__).resolve().parent / 'templates/core/AIMES-CORE-V1.2.md').read_text(encoding='utf-8')
+    # Deploy callable UI Skills with the project rules; references must never point to assets that init did not install.
+    template_root = Path(__file__).resolve().parent / 'templates/skills'
+    for skill_file in sorted(template_root.glob('*/SKILL.md')):
+        rel = (Path('.aimes/skills') / skill_file.parent.name / 'SKILL.md').as_posix()
+        files[rel] = skill_file.read_text(encoding='utf-8')
+    ui_registry = template_root / 'registry.yaml'
+    if ui_registry.is_file():
+        files['.aimes/skills/registry.yaml'] = ui_registry.read_text(encoding='utf-8')
     old_hashes = previous_manifest(root)
     config = build_config(root, tools, scope)
     existing_config_path = root / CONFIG_REL
