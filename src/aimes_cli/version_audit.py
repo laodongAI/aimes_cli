@@ -68,7 +68,7 @@ def audit_project_version(root: Path) -> dict[str, Any]:
             for item in manifest["managed_files"]:
                 if not isinstance(item, dict) or not isinstance(item.get("path"), str) or not isinstance(item.get("sha256"), str):
                     continue
-                rel = item["path"].replace("\\\\", "/")
+                rel = item["path"].replace(chr(92), "/")
                 candidate = Path(rel)
                 try:
                     if candidate.is_absolute() or ".." in candidate.parts:
