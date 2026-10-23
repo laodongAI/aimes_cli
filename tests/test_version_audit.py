@@ -62,6 +62,7 @@ class ProjectVersionAuditTests(unittest.TestCase):
         manifest["managed_files"].append({"path": "../../outside-secret.txt", "sha256": "0" * 64, "status": "managed"})
         path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         report = audit_project_version(self.root)
+        self.assertEqual(report["status"], "MANIFEST_INVALID")
         self.assertTrue(any(item["code"] == "AIMES_MANIFEST_PATH_UNSAFE" for item in report["findings"]))
         self.assertNotIn("../../outside-secret.txt", report["extra_managed_files"])
 
