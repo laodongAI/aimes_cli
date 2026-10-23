@@ -185,10 +185,10 @@ skills:
     evidence: []
   - id: SKL-CORE-ONB-001
     name: project-onboarding
-    version: 0.5.1
+    version: 0.3.0
     file: .aimes/skills/project-onboarding/SKILL.md
-    purpose: "恢复项目目标、结构、当前状态与任务上下文，形成可复用的证据化项目简报"
-    triggers: [new_project, task_handoff, session_start, context_uncertain]
+    purpose: "以当前仓库事实恢复项目目标、结构、状态和任务上下文，不依赖旧聊天作为唯一来源。"
+    triggers: [new_project, task_handoff, session_start]
     inputs: [project_path, task_id, task_context]
     outputs: [project_brief, evidence_map, open_questions, next_steps]
     applies_to: [all]
@@ -202,10 +202,10 @@ skills:
     evidence: []
   - id: SKL-CORE-KNOW-001
     name: project-knowledge-reuse
-    version: 0.5.1
+    version: 0.3.0
     file: .aimes/skills/project-knowledge-reuse/SKILL.md
-    purpose: "检索并评估现有代码、设计、测试和历史问题资产，决定复用、适配、迁移或不复用"
-    triggers: [feature_implementation, bug_fix, similar_problem, refactoring, duplicate_solution_suspected]
+    purpose: "从项目代码、设计、测试、缺陷和历史任务中发现候选资产，评估适用性后决定复用、适配、模式迁移或不复用。"
+    triggers: [feature_implementation, bug_fix, similar_problem, refactoring]
     inputs: [task_id, problem_statement, project_context]
     outputs: [candidate_assets, reuse_decision_record, verification_plan]
     applies_to: [all]
@@ -219,10 +219,10 @@ skills:
     evidence: []
   - id: SKL-CORE-IMPACT-001
     name: change-impact-analysis
-    version: 0.5.1
+    version: 0.3.0
     file: .aimes/skills/change-impact-analysis/SKILL.md
-    purpose: "在实施前识别需求、模块、接口、数据、安全、测试、文档、部署与回滚影响"
-    triggers: [before_implementation, requirement_change, dependency_upgrade, bug_fix, refactoring, public_contract_change]
+    purpose: "在实施前识别变更对需求、模块、接口、数据、安全、测试、文档、部署和回滚的影响。"
+    triggers: [before_implementation, requirement_change, dependency_upgrade, bug_fix]
     inputs: [task_id, change_description, project_context]
     outputs: [impact_matrix, affected_assets, verification_plan, approval_items]
     applies_to: [all]
@@ -230,58 +230,58 @@ skills:
     required_capabilities: [read_project_files]
     forbidden_actions: [overwrite_user_changes, fabricate_verification, bypass_quality_gate]
     prerequisites: [project_rules_loaded, git_state_checked]
-    dependencies: [requirement-cognition]
+    dependencies: []
     validation_status: UNKNOWN
     evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
     evidence: []
   - id: SKL-CORE-ARCH-001
     name: architecture-contract-review
-    version: 0.5.1
+    version: 0.3.0
     file: .aimes/skills/architecture-contract-review/SKILL.md
-    purpose: "审查架构边界、接口与数据契约、ADR、安全约束、兼容性及运行恢复要求"
-    triggers: [architecture_change, public_api_change, data_model_change, integration_design, dependency_boundary_change]
+    purpose: "检查方案是否符合既有架构边界、接口契约、数据模型、ADR、安全边界和兼容性要求。"
+    triggers: [architecture_change, public_api_change, data_model_change, integration_design]
     inputs: [task_id, design_or_diff, project_context]
-    outputs: [architecture_findings, contract_review, risks, decision_options]
+    outputs: [contract_findings, decision_options, required_approvals, verification_plan]
     applies_to: [all]
     risk_level: high
     required_capabilities: [read_project_files]
     forbidden_actions: [overwrite_user_changes, fabricate_verification, bypass_quality_gate]
     prerequisites: [project_rules_loaded, git_state_checked]
-    dependencies: [change-impact-analysis]
+    dependencies: []
     validation_status: UNKNOWN
     evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
     evidence: []
   - id: SKL-CORE-IMPL-001
     name: controlled-implementation
-    version: 0.5.1
+    version: 0.3.0
     file: .aimes/skills/controlled-implementation/SKILL.md
-    purpose: "在已批准需求和授权范围内进行最小必要修改，并保护用户工作区、记录真实验证证据"
-    triggers: [approved_task, bug_fix, feature_implementation, scoped_refactoring]
+    purpose: "按已批准需求和明确范围实施最小必要变更，保护用户修改并以真实证据报告结果。"
+    triggers: [approved_task, bug_fix, feature_implementation]
     inputs: [task_id, approved_requirements, impact_analysis, project_context]
-    outputs: [implementation_plan, change_summary, verification_evidence, handoff_record]
+    outputs: [implementation_diff, verification_results, traceability_updates, delivery_report]
     applies_to: [all]
     risk_level: high
-    required_capabilities: [read_project_files, write_project_files]
+    required_capabilities: [read_project_files]
     forbidden_actions: [overwrite_user_changes, fabricate_verification, bypass_quality_gate]
     prerequisites: [project_rules_loaded, git_state_checked]
-    dependencies: [requirement-cognition, change-impact-analysis]
+    dependencies: []
     validation_status: UNKNOWN
     evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
     evidence: []
   - id: SKL-CORE-TEST-001
     name: requirement-driven-testing
-    version: 0.5.1
+    version: 0.3.0
     file: .aimes/skills/requirement-driven-testing/SKILL.md
-    purpose: "依据批准需求、可判定验收标准和风险设计测试，并区分设计、执行与验证状态"
-    triggers: [new_feature, bug_fix, release_validation, requirement_change, regression_review]
+    purpose: "从批准需求和风险出发设计可判定的测试，覆盖主流程、边界、异常和回归，并如实记录执行证据。"
+    triggers: [new_feature, bug_fix, release_validation, requirement_change]
     inputs: [task_id, approved_requirements, implementation_context]
-    outputs: [requirement_test_traceability, test_design, risk_coverage, execution_report]
+    outputs: [test_matrix, test_cases, execution_report, coverage_gaps]
     applies_to: [all]
-    risk_level: high
-    required_capabilities: [read_project_files, run_tests]
+    risk_level: medium
+    required_capabilities: [read_project_files]
     forbidden_actions: [overwrite_user_changes, fabricate_verification, bypass_quality_gate]
     prerequisites: [project_rules_loaded, git_state_checked]
-    dependencies: [requirement-cognition]
+    dependencies: []
     validation_status: UNKNOWN
     evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
     evidence: []
