@@ -44,13 +44,30 @@ def validate_branch(branch: str) -> str:
     if any(p in {"", ".", ".."} or p.startswith(".") or p.endswith(".") for p in branch.split("/")): raise ValueError(f"无效的 Git 分支名：{branch}")
     return branch
 
+def _is_aimes_governance_path(normalized: str, is_dir: bool = False) -> bool:
+    """识别应随项目发布的 AIMES 治理资产及其必要父目录。"""
+    path = normalized.strip("/")
+    exact = {"AGENTS.md", "CLAUDE.md", ".github/copilot-instructions.md", ".trae/rules/00-aimes-governance.md"}
+    prefixes = (".aimes/", "docs/_governance/", "skills/")
+    if path in exact or any(path.startswith(prefix) for prefix in prefixes):
+        return True
+    # 如果通用 .gitignore 排除 docs/** 等父目录，也必须能继续遍历到受保护的治理资产。
+    if is_dir:
+        targets = [*exact, *(prefix.rstrip("/") for prefix in prefixes)]
+        return any(target == path or target.startswith(path.rstrip("/") + "/") for target in targets)
+    return False
+
 def is_excluded(rel: str, is_dir: bool = False, extra_patterns: tuple[str, ...] | list[str] = ()) -> bool:
     normalized = rel.replace("\\", "/").strip("/")
     parts = normalized.split("/") if normalized else []
-    if any(p.lower() in EXCLUDED_DIRS for p in parts): return True
     name = parts[-1].lower() if parts else normalized.lower()
+    # 密钥、凭证和危险二进制后缀始终优先过滤，AIMES 例外不能绕过这些安全规则。
     if name in EXCLUDED_NAMES or name.startswith(".env.") or Path(name).suffix.lower() in EXCLUDED_SUFFIXES or name.endswith("~"):
         return True
+    # AIMES 规则入口、Core、Skill、Manifest 与适配配置不得被通用缓存/IDE 状态规则误过滤。
+    if _is_aimes_governance_path(normalized, is_dir):
+        return False
+    if any(p.lower() in EXCLUDED_DIRS for p in parts): return True
     # 支持 basename glob 和相对路径 glob；只能追加过滤，不能用 ! 取消安全规则。
     for raw in extra_patterns:
         pattern = str(raw).strip().replace("\\", "/").strip("/")

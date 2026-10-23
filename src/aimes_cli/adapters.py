@@ -19,6 +19,7 @@ ADAPTERS = {
     "qcode": Adapter("qcode", "QCode", "manual", (".aimes/adapters/qcode/README.md",), "Product/version and rule-loading mechanism must be identified before native files are written.", ("qcode",)),
     "claude-code": Adapter("claude-code", "Claude Code CLI", "template", ("CLAUDE.md",), "Claude Code project instruction entry.", ("claude",)),
     "codex-cli": Adapter("codex-cli", "Codex CLI", "template", ("AGENTS.md",), "Codex repository instruction entry.", ("codex",)),
+    "chatgpt-work": Adapter("chatgpt-work", "ChatGPT Work", "template", ("docs/_governance/adapters/CHATGPT-WORK-ENTRY.md", ".aimes/adapters/chatgpt-work/PROJECT-INSTRUCTIONS.md", ".aimes/adapters/chatgpt-work/README.md"), "ChatGPT Work project instructions and governance entry; automatic loading and write/execute capabilities must be verified in the actual workspace mode.", ()),
 }
 
 ALIASES = {
@@ -26,7 +27,7 @@ ALIASES = {
     "vscode-codex": "vscode-codex", "vscode-claude": "vscode-claude-code", "vscode-claude-code": "vscode-claude-code",
     "copilot": "vscode-copilot", "vscode-copilot": "vscode-copilot",
     "zcode": "zcode", "qcode": "qcode", "claude": "claude-code", "claude-code": "claude-code",
-    "codex": "codex-cli", "codex-cli": "codex-cli",
+    "codex": "codex-cli", "codex-cli": "codex-cli", "chatgpt": "chatgpt-work", "chatgpt-work": "chatgpt-work", "work": "chatgpt-work",
 }
 
 def normalize_tools(raw: str | list[str] | None) -> list[str]:

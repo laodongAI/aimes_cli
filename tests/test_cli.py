@@ -109,4 +109,18 @@ class AimesCliTests(unittest.TestCase):
             self.assertEqual(interactive_wizard(), 0)
         init_mock.assert_called_once_with(self.root, ["trae-code"], "project", True)
 
+
+    def test_chatgpt_work_adapter_deploys_entry_and_prompt_optimization_skill(self):
+        result = init_project(self.root, ['chatgpt-work'])
+        self.assertTrue(result['ok'], result)
+        self.assertTrue((self.root/'docs/_governance/adapters/CHATGPT-WORK-ENTRY.md').is_file())
+        self.assertTrue((self.root/'.aimes/adapters/chatgpt-work/PROJECT-INSTRUCTIONS.md').is_file())
+        self.assertTrue((self.root/'.aimes/adapters/chatgpt-work/README.md').is_file())
+        self.assertTrue((self.root/'.aimes/skills/prompt-optimization/SKILL.md').is_file())
+        self.assertTrue(validate_project(self.root)['ok'], validate_project(self.root))
+        import yaml
+        registry = yaml.safe_load((self.root/'.aimes/skills/registry.yaml').read_text(encoding='utf-8'))
+        prompt_route = next(item for item in registry['skills'] if item['name'] == 'prompt-optimization')
+        self.assertTrue((self.root/prompt_route['file']).is_file())
+
 if __name__ == '__main__': unittest.main()

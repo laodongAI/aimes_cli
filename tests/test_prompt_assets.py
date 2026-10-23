@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class PromptAssetTests(unittest.TestCase):
     def test_all_skills_have_required_sections(self):
         files = sorted((ROOT / "skills").glob("*/SKILL.md"))
-        self.assertEqual(len(files), 11)
+        self.assertEqual(len(files), 12)
         required = ["## Purpose / 目标与边界", "## Trigger conditions / 触发条件", "## Required inputs / 必需输入", "## Preconditions / 前置条件", "## Workflow / 工作流程", "## Outputs / 输出契约", "## Safety and permissions / 安全与权限", "## Failure handling / 失败处理", "## Completion criteria / 完成判据", "## 通用执行协议（必须遵守）", "## 评测案例"]
         for path in files:
             body = path.read_text(encoding="utf-8")
@@ -58,6 +58,18 @@ class PromptAssetTests(unittest.TestCase):
         for name in ["frontend-design", "design-system-governance", "ui-quality-review", "ui-implementation-validation"]:
             self.assertIn(f".aimes/skills/{name}/SKILL.md", deployed)
             self.assertIn("## Workflow / 工作流程", deployed[f".aimes/skills/{name}/SKILL.md"])
+
+    def test_prompt_optimization_skill_is_registered_and_routed_from_core(self):
+        data = yaml.safe_load((ROOT / "skills/registry.yaml").read_text(encoding="utf-8"))
+        skill = next(item for item in data["skills"] if item["name"] == "prompt-optimization")
+        self.assertEqual(skill["validation_status"], "UNKNOWN")
+        self.assertTrue((ROOT / skill["file"]).is_file())
+        core = (ROOT / "src/aimes_cli/templates/core/AIMES-CORE-V1.2.md").read_text(encoding="utf-8")
+        self.assertIn(".aimes/skills/prompt-optimization/SKILL.md", core)
+        from aimes_cli.core import proposed_files
+        deployed = proposed_files(ROOT, ["chatgpt-work"], "project")
+        self.assertIn(".aimes/skills/prompt-optimization/SKILL.md", deployed)
+        self.assertIn("prompt-optimization", deployed[".aimes/skills/registry.yaml"])
 
     def test_contract_docs_exist(self):
         for rel in ["docs/PROMPT-SYSTEM-CONTRACT-V1.0.md", "skills/ui-quality-review/SKILL.md", "skills/frontend-design/SKILL.md", "skills/design-system-governance/SKILL.md", "skills/ui-implementation-validation/SKILL.md", "docs/UI-DESIGN-GOVERNANCE.md", "examples/evaluation/ui-quality-governance-suite.yaml", "docs/SKILL-CONTRACT-V2.md", "docs/SKILL-EXECUTION-RECORD-V1.md", "docs/WORKFLOW-STATE-MACHINE-V1.md", "docs/SKILL-ORCHESTRATION-V1.0.md", "docs/PROMPT-AUDIT-AND-OPTIMIZATION-REPORT.md", "docs/PROMPT-OUTPUT-EXAMPLES-V1.0.md", "docs/CONTEXT-BUDGET-AND-FILE-PLAN-V1.0.md", "docs/TOOL-FAILURE-DEGRADATION-PROTOCOL-V1.0.md", "docs/AUDIT-TRAIL-V1.0.md"]:

@@ -1,4 +1,4 @@
-# AIMES 本地治理 CLI（V0.8.4）
+# AIMES 本地治理 CLI（V0.8.5）
 
 AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具。它负责把 AIMES V1.2 治理核心部署到项目仓库，生成工具专属规则入口，检查配置与冲突，并输出部署状态。它不替代 Codex、Claude Code、Trae、ZCode 或 Copilot 执行开发任务。
 
@@ -392,3 +392,11 @@ Mock Runner 只验证预置响应文本的精确子串，不评估真实模型�
 AIMES 0.8.0 增加了面向已接入项目的安全升级向导。先在项目目录执行 `aimes upgrade --dry-run` 查看已安装 CLI 版本、项目清单版本和逐文件操作计划；执行 `aimes upgrade` 进入逐项确认向导。已证明未被修改的 AIMES 托管文件会在备份后更新；新文件需确认后添加；用户修改过或无法证明由 AIMES 管理的文件绝不覆盖，只可生成候选文件供人工合并。升级完成后执行 `aimes validate`。
 
 完整策略和边界见 [`docs/SAFE-PROJECT-UPGRADE.md`](docs/SAFE-PROJECT-UPGRADE.md)。
+
+
+## V0.8.5：ChatGPT Work 适配、提示词优化 Skill 与 AIMES 文件发布保护
+
+- 新增 chatgpt-work 项目适配入口与可复制项目指令模板；规则自动加载与写入/执行能力仍需真实工作模式验证。
+- 新增 prompt-optimization Skill，并接入可部署 Skill 注册表；优化必须保留必要约束并通过同条件评测验证。
+- GitHub 镜像发布过滤器对 AIMES 治理入口、.aimes/、治理文档与 Skill 资产增加明确保护规则；密钥文件和危险后缀仍然过滤。
+- aimes publish 是镜像发布功能，不等同于本地 Git commit；本地 Git 是否忽略文件仍由项目 .gitignore 与 Git index 决定。

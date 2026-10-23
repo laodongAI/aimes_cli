@@ -220,5 +220,27 @@ class PublishTests(unittest.TestCase):
         self.assertEqual(plan["unchanged"], ["same.txt"])
 
 
+    def test_aimes_governance_files_bypass_generic_tool_and_gitignore_filters(self):
+        self.assertFalse(is_excluded('.trae', is_dir=True, extra_patterns=['.trae/']))
+        self.assertFalse(is_excluded('.trae/rules/00-aimes-governance.md', extra_patterns=['.trae/']))
+        self.assertFalse(is_excluded('.aimes/skills/registry.yaml', extra_patterns=['.aimes/**']))
+        self.assertFalse(is_excluded('docs', is_dir=True, extra_patterns=['docs/**']))
+        self.assertFalse(is_excluded('docs/_governance/AIMES-CORE-V1.2.md', extra_patterns=['docs/**']))
+        self.assertTrue(is_excluded('.trae/settings.json'))
+        self.assertTrue(is_excluded('.aimes/credentials.json'))
+
+    def test_collect_files_keeps_aimes_trae_rule_but_filters_other_trae_state(self):
+        (self.root / '.gitignore').write_text('.trae/' + chr(10), encoding='utf-8')
+        rule = self.root / '.trae' / 'rules' / '00-aimes-governance.md'
+        rule.parent.mkdir(parents=True)
+        rule.write_text('# AIMES rule', encoding='utf-8')
+        state = self.root / '.trae' / 'settings.json'
+        state.write_text('{ }', encoding='utf-8')
+        files, excluded, _ = collect_source_files(self.root)
+        self.assertIn('.trae/rules/00-aimes-governance.md', files)
+        self.assertNotIn('.trae/settings.json', files)
+        self.assertIn('.trae/settings.json', excluded)
+
+
 if __name__ == "__main__":
     unittest.main()

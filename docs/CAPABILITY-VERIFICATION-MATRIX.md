@@ -42,6 +42,7 @@
 | QCode | 手动适配说明 | 需用户确认原生入口 | `UNKNOWN` |
 | Claude Code CLI | `CLAUDE.md` | 模板适配 | `UNKNOWN`，需与 IDE 插件分开记录 |
 | Codex CLI | `AGENTS.md` | 模板适配 | `UNKNOWN`，需与 VS Code 执行模式分开记录 |
+| ChatGPT Work | `docs/_governance/adapters/CHATGPT-WORK-ENTRY.md` + 可复制项目指令模板 | 已提供适配模板；自动加载未知 | `UNKNOWN`，需在实际 Work 模式下验证规则读取、Skill 路由、权限与任务验收 |
 
 适配验证记录至少包含：工具 ID、工具版本、执行模式、操作系统、AIMES CLI/治理核心/Skill 版本、验证方法、案例 ID、观察时间、原始输出或证据路径、证据哈希、结果状态及已知限制。PASS 必须有可复核证据；缺少记录只能是 NOT_RUN/UNKNOWN。
 
@@ -70,3 +71,8 @@
 ## 7. Skill 资产完整性治理
 
 详见 [SKILL-ASSET-GOVERNANCE.md](SKILL-ASSET-GOVERNANCE.md)。所有根目录规范注册 Skill 必须同时有可部署模板和项目级路由；`aimes validate` 检查项目级注册表指向的文件、唯一性、依赖、触发器及路径边界。此类静态校验不代表 ZCode、Trae Code 或其他工具的运行时加载已验证。
+
+
+## ChatGPT Work 适配说明
+
+AIMES 提供 ChatGPT Work 治理入口与可复制项目指令，但不假设 GitHub 连接器会自动读取所有仓库文件，也不假设 Work 当前模式拥有写入、终端或提交权限。只有在指定产品版本/工作模式中完成可复核的运行时验证后，才能提升状态。GitHub 只读连接模式下，提交和测试执行必须由具备对应权限的环境完成。
