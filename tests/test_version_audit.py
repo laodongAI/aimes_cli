@@ -33,6 +33,12 @@ class ProjectVersionAuditTests(unittest.TestCase):
         self.assertIn("AGENTS.md", report["modified_files"])
         self.assertEqual(target.read_text(encoding="utf-8"), "custom user instruction\n")
 
+    def test_invalid_yaml_config_is_reported_without_crashing(self):
+        (self.root / ".aimes/config.yaml").write_text("tools: [\n", encoding="utf-8")
+        report = audit_project_version(self.root)
+        self.assertEqual(report["status"], "CONFIG_INVALID")
+        self.assertTrue(any(item["code"] == "AIMES_CONFIG_INVALID" for item in report["findings"]))
+
     def test_missing_managed_file_is_reported(self):
         (self.root / "AGENTS.md").unlink()
         report = audit_project_version(self.root)
