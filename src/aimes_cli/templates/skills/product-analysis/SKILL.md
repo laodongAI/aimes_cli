@@ -39,3 +39,15 @@ validation_status: UNKNOWN
 
 ## 失败处理与完成判据
 缺少当前数据访问能力时，标记未执行的研究并提出验证计划；不得伪造网页搜索或来源。输入缺失时说明范围限制；关键数据不可靠时降低结论强度。输出必须区分事实、推断和假设，并披露覆盖范围与盲区。状态只能是证据支持的 PASS、NOT_RUN、BLOCKED 或 UNKNOWN。
+
+
+## 专项 Skill 路由
+
+当专项 Skill 文件存在时，必须按任务类型读取并执行，不得只在报告中提及名称：
+- 市场、行业或竞品分析：market-analysis/SKILL.md
+- 成本、财务可行性或 ROI：financial-evaluation/SKILL.md
+- 产品定位、差异化或目标客群：strategic-positioning/SKILL.md
+- 机会发现、解决方案探索或实验优先级：opportunity-solution-tree/SKILL.md
+- 客户体验、旅程阶段或体验痛点：customer-journey-mapping/SKILL.md
+
+如专项文件缺失或不可读，记录路径并标记 BLOCKED/NOT_RUN；不得将本入口 Skill 的执行冒充专项 Skill 已调用。仅加载与当前决策有关的专项方法，允许组合但要说明理由。
