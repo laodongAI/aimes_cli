@@ -119,7 +119,7 @@ class AimesCliTests(unittest.TestCase):
         import yaml
         registry = yaml.safe_load((self.root/'.aimes/skills/registry.yaml').read_text(encoding='utf-8'))
         route = next(item for item in registry['skills'] if item['name'] == 'product-manager')
-        self.assertEqual(route['file'], 'skills/product-manager/SKILL.md')
+        self.assertEqual(route['file'], '.aimes/skills/product-manager/SKILL.md')
         self.assertIn('generate_guidance_prompt', route['triggers'])
         self.assertIn('product-manager/SKILL.md', (self.root/'.trae/rules/00-aimes-governance.md').read_text(encoding='utf-8'))
         self.assertIn('product-manager/SKILL.md', (self.root/'AGENTS.md').read_text(encoding='utf-8'))
