@@ -1,3 +1,10 @@
+## Unreleased - UI 设计能力可调用化
+
+- 新增 frontend-design、design-system-governance、ui-implementation-validation 三个 UI 专项 Skill，并保留增强既有 ui-quality-review；统一注册触发条件、输入输出、依赖与评测套件。
+- 将 UI Skill 路由规则写入生成的 AIMES Core，明确新页面、设计系统、局部 UI 修改和验证任务的调用时机，避免只添加文件却无法触发。
+- AIMES 初始化会将四个 UI Skill、项目级 Skill 注册表和 UI 质量评测套件部署到 `.aimes/skills/`；Python 包同步包含相关模板资源。
+- 新增 UI 设计治理文档与注册/部署回归测试。技能验证状态保持 UNKNOWN；套件定义不代表真实 IDE/CLI 已通过评测。
+
 ## 0.8.4 - 诊断与配置写入隔离
 
 - 修复 `aimes repair --apply` 在仅存在文档/Git 问题时仍触发 AIMES 初始化写入的问题。

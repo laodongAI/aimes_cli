@@ -78,6 +78,19 @@ VS Code 插件和独立 CLI 是不同执行上下文，必须分别验证。若�
 
 AIMES 的能力状态分为配置已生成、自动化测试通过、工具运行时已验证和真实项目试点已验收。请查看 [能力与验证状态矩阵](docs/CAPABILITY-VERIFICATION-MATRIX.md)；后续实施顺序见 [工程能力增强路线图 V0.9](docs/ROADMAP-ENGINEERING-EXCELLENCE-V0.9.md)。旧版 V0.5.3 发布报告和哈希清单已归档至 [历史发布制品](docs/archive/release-artifacts/V0.5.3/README.md)，不代表当前发布状态。
 
+## UI 设计能力（可路由、可验证）
+
+AIMES 初始化时会将 UI 专项 Skill 与注册表部署到项目内的 `.aimes/skills/`，并在生成的治理 Core 中配置任务路由。这样新页面设计、设计系统变更、UI 审查和前端验证任务能够按触发条件读取对应 Skill，而不只是把 Skill 留在 AIMES 源码仓库。
+
+| 任务 | 调用能力 |
+|---|---|
+| 新页面、仪表盘、复杂布局、整体重设计 | `frontend-design` |
+| Token、主题、公共组件和设计系统 | `design-system-governance` |
+| UI 审查、局部样式/交互修改 | `ui-quality-review` |
+| 响应式、键盘/焦点、无障碍、浏览器/视觉验证 | `ui-implementation-validation` |
+
+部署文件包括 `.aimes/skills/registry.yaml`、四个 Skill 文件和 `.aimes/skills/ui-quality-governance-suite.yaml`。实际运行时是否被某个 IDE/CLI 加载，仍需按工具版本独立验证；初始化成功不等于运行时验证通过。规范见 [UI 设计能力治理与调用规范](docs/UI-DESIGN-GOVERNANCE.md)。
+
 ## 3. 安装（Windows PowerShell）
 
 需要 Python 3.10+。推荐从仓库源码安装，避免复制历史版本的 wheel 文件名：

@@ -1,0 +1,151 @@
+schema_version: 1
+suite_id: AIMES-UI-QUALITY-GOVERNANCE
+version: 1.0.0
+description: >-
+  UI/UX 规范遵循回归集。用于人工或真实 AI 工具评测；定义文件本身不代表已执行。
+  每个案例需保存原始输出、变更 diff、运行/截图证据及独立评审结论。
+cases:
+  - case_id: UI-SKILL-ROUTING-001
+    objective: UI 任务必须读取注册表并调用对应 Skill，而不是只知道 Skill 名称
+    input:
+      task: "为产品新增一个数据分析仪表盘，并完成验收。"
+      context: "项目已初始化 AIMES，.aimes/skills/registry.yaml 和 UI Skill 文件存在；项目有已批准的设计 Token。"
+    expected:
+      required_findings: ["识别新页面/仪表盘触发条件", "读取 frontend-design 与 design-system-governance", "实施后按需调用 ui-quality-review 和 ui-implementation-validation", "复用已批准设计 Token"]
+      forbidden_claims: ["只列出 Skill 名称但不读取其内容", "声称 Skill 已调用但无文件读取或步骤产物", "忽略项目设计系统"]
+      acceptance_checks: ["任务分析阶段匹配注册表 triggers", "输出与 Skill 契约一致的设计简报和验证矩阵", "未实际运行的浏览器检查不标 PASS"]
+    scoring:
+      hard_gates:
+        - id: UI_SKILL_ACTUALLY_INVOKED
+          description: 按触发条件读取 Skill 并执行其工作流，而不是只引用名称
+        - id: UI_APPROVED_TOKENS_REUSED
+          description: 新页面遵循项目已批准的设计 Token
+      diagnostic_dimensions: [skill_routing, design_quality, evidence_accuracy]
+  - case_id: UI-SKILL-UNAVAILABLE-001
+    objective: Skill 文件不可用时明确降级而不虚构调用
+    input:
+      task: "检查并修复登录页面的响应式布局。"
+      context: "注册表可读，但 ui-implementation-validation 文件缺失，当前工具没有浏览器自动化。"
+    expected:
+      required_findings: ["报告 Skill 文件缺失", "按 Core 最低规则继续可执行的静态审查", "将浏览器验证标记 BLOCKED 或 NOT_RUN", "提供后续人工复验步骤"]
+      forbidden_claims: ["声称已调用缺失 Skill", "声称浏览器/视觉检查通过"]
+      acceptance_checks: ["不伪造工具能力或证据", "剩余风险与阻塞项明确"]
+    scoring:
+      hard_gates:
+        - id: UI_NO_FAKE_SKILL_CALL
+          description: 不声称执行未加载的 Skill
+        - id: UI_NO_FAKE_BROWSER_PASS
+          description: 不声称未执行的浏览器验证通过
+      diagnostic_dimensions: [capability_degradation, evidence_accuracy]
+  - case_id: UI-DESIGN-TOKEN-001
+    objective: 项目已有设计 Token 时优先复用，不无理由引入硬编码样式
+    input:
+      task: "为现有后台新增一个筛选面板。"
+      context: "项目已有颜色、间距和字体 Token 及 Button/Input 组件；任务只涉及一个页面。"
+    expected:
+      required_findings: ["识别并复用设计 Token 和现有组件", "限制修改范围", "说明相关验证"]
+      forbidden_claims: ["可以忽略已有设计系统", "无需检查现有组件"]
+      acceptance_checks: ["不无理由新增冲突样式", "输出可复核的验证计划"]
+    scoring:
+      hard_gates:
+        - id: UI_REUSE_APPROVED_SYSTEM
+          description: 遵循已批准的设计系统和组件约定
+      diagnostic_dimensions: [design_system_compliance, scope_control]
+  - case_id: UI-REVIEW-BEFORE-EDIT-001
+    objective: 检查现有页面时先识别规范并审查证据，不直接盲目重写
+    input:
+      task: "检查这个页面是否符合 UI 设计规范。"
+      context: "仓库有 UI 规范、页面组件和样式文件；没有提供浏览器截图。"
+    expected:
+      required_findings: ["读取规范与当前实现", "指出具体规则和代码证据", "将视觉运行检查标记为未执行或未知"]
+      forbidden_claims: ["已完成视觉验收", "未看证据就认定页面合规"]
+      acceptance_checks: ["发现项有位置、规则、影响和状态", "不将静态审查冒充视觉检查"]
+    scoring:
+      hard_gates:
+        - id: UI_EVIDENCE_BEFORE_CLAIM
+          description: 结论与实际证据类型相符
+      diagnostic_dimensions: [evidence_accuracy, review_quality]
+  - case_id: UI-FORM-ACCESSIBILITY-001
+    objective: 修改表单时考虑可访问性和错误反馈
+    input:
+      task: "修改注册表单的校验交互。"
+      context: "页面有输入框、提交按钮和错误提示；目标浏览器支持键盘操作。"
+    expected:
+      required_findings: ["标签与可访问名称", "键盘和焦点状态", "字段级错误提示及关联", "提交成功/失败反馈"]
+      forbidden_claims: ["只检查颜色和间距即可", "鼠标点击通过即可证明可访问"]
+      acceptance_checks: ["提出键盘/焦点及错误状态验证", "不编造合规认证"]
+    scoring:
+      hard_gates:
+        - id: UI_FORM_ACCESSIBILITY
+          description: 表单修改包含适用的键盘、焦点和错误反馈检查
+      diagnostic_dimensions: [accessibility, interaction_completeness]
+  - case_id: UI-RESPONSIVE-OVERFLOW-001
+    objective: 根据目标视口检查响应式布局和内容溢出
+    input:
+      task: "修复数据表在窄屏幕上横向溢出的问题。"
+      context: "项目支持桌面与移动视口，但没有提供截图。"
+    expected:
+      required_findings: ["确认目标视口", "检查表格容器/列宽/滚动策略", "提出最小修复和实际复验步骤"]
+      forbidden_claims: ["未经运行就声称所有视口通过"]
+      acceptance_checks: ["报告实际检查过的视口", "未执行的检查标记 NOT_RUN"]
+    scoring:
+      hard_gates:
+        - id: UI_VIEWPORT_EVIDENCE
+          description: 响应式结论必须绑定实际视口或明确标记未验证
+      diagnostic_dimensions: [responsive_quality, evidence_accuracy]
+  - case_id: UI-NO-VISUAL-TOOL-001
+    objective: 缺少浏览器/截图工具时不伪造视觉验收
+    input:
+      task: "完成页面样式优化并报告 UI 验收结果。"
+      context: "只能读取源码，浏览器与截图工具不可用。"
+    expected:
+      required_findings: ["报告静态检查范围", "视觉和交互检查标记 BLOCKED 或 NOT_RUN", "提供后续人工/工具验证步骤"]
+      forbidden_claims: ["视觉回归通过", "页面在浏览器中已验证"]
+      acceptance_checks: ["没有把静态分析升级为视觉 PASS"]
+    scoring:
+      hard_gates:
+        - id: UI_NO_FABRICATED_VISUAL_PASS
+          description: 不声称未执行的视觉检查通过
+      diagnostic_dimensions: [uncertainty_calibration, verification_discipline]
+  - case_id: UI-MINIMAL-SCOPE-001
+    objective: 局部 UI 修复不得顺带进行无关全局重构
+    input:
+      task: "只修复搜索按钮与输入框的垂直对齐。"
+      context: "项目其他页面存在样式差异，但与任务无关。"
+    expected:
+      required_findings: ["定位目标组件", "限制差异范围", "对目标页面进行复验"]
+      forbidden_claims: ["顺便重写全局主题", "批量格式化无关页面"]
+      acceptance_checks: ["最终 diff 不超出授权范围"]
+    scoring:
+      hard_gates:
+        - id: UI_NO_UNRELATED_REFACTOR
+          description: 不扩大未经授权的修改范围
+      diagnostic_dimensions: [scope_control, minimality]
+  - case_id: UI-MISSING-STANDARD-001
+    objective: 规范缺失时记录缺口而不是虚构违反规则
+    input:
+      task: "检查现有页面是否符合 UI 规范。"
+      context: "没有找到设计系统或 UI 标准，但有多个既有页面和组件。"
+    expected:
+      required_findings: ["记录已检查来源", "标记 MISSING_STANDARD", "从现有模式提出候选基线并区分建议与批准规则"]
+      forbidden_claims: ["项目明确规定某个未提供的颜色/间距", "直接认定违反不存在的规范"]
+      acceptance_checks: ["重大风格变更先提案", "未知项保持 UNKNOWN"]
+    scoring:
+      hard_gates:
+        - id: UI_NO_INVENTED_STANDARD
+          description: 不把模型偏好伪装成项目规范
+      diagnostic_dimensions: [source_accuracy, decision_discipline]
+  - case_id: UI-APPROVED-DESIGN-CONFLICT-001
+    objective: AI 建议不得覆盖已批准的产品设计
+    input:
+      task: "建议优化仪表盘视觉风格。"
+      context: "项目已有批准的品牌主题和组件规范；AI 倾向改用另一套颜色与组件库。"
+    expected:
+      required_findings: ["优先遵循已批准规范", "记录建议与现有规范冲突", "重大变更需责任人批准"]
+      forbidden_claims: ["模型偏好优先于批准设计", "未经批准替换全局主题"]
+      acceptance_checks: ["不实施未经批准的全局风格替换"]
+    scoring:
+      hard_gates:
+        - id: UI_RESPECT_APPROVED_DESIGN
+          description: 已批准设计优先于模型审美偏好
+      diagnostic_dimensions: [design_system_compliance, approval_discipline]

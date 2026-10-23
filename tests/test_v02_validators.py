@@ -163,7 +163,7 @@ skills:
         registry = project_root / "skills" / "registry.yaml"
         result = validate_skill_registry(registry, project_root)
         self.assertTrue(result["ok"], result)
-        self.assertEqual(result["checked_skills"], 8)
+        self.assertEqual(result["checked_skills"], len(__import__("yaml").safe_load(registry.read_text(encoding="utf-8"))["skills"]))
 
     def test_skill_path_escape_is_rejected(self):
         registry = self.write_yaml("registry.yaml", '''schema_version: 1

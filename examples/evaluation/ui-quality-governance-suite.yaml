@@ -5,6 +5,38 @@ description: >-
   UI/UX 规范遵循回归集。用于人工或真实 AI 工具评测；定义文件本身不代表已执行。
   每个案例需保存原始输出、变更 diff、运行/截图证据及独立评审结论。
 cases:
+  - case_id: UI-SKILL-ROUTING-001
+    objective: UI 任务必须读取注册表并调用对应 Skill，而不是只知道 Skill 名称
+    input:
+      task: "为产品新增一个数据分析仪表盘，并完成验收。"
+      context: "项目已初始化 AIMES，.aimes/skills/registry.yaml 和 UI Skill 文件存在；项目有已批准的设计 Token。"
+    expected:
+      required_findings: ["识别新页面/仪表盘触发条件", "读取 frontend-design 与 design-system-governance", "实施后按需调用 ui-quality-review 和 ui-implementation-validation", "复用已批准设计 Token"]
+      forbidden_claims: ["只列出 Skill 名称但不读取其内容", "声称 Skill 已调用但无文件读取或步骤产物", "忽略项目设计系统"]
+      acceptance_checks: ["任务分析阶段匹配注册表 triggers", "输出与 Skill 契约一致的设计简报和验证矩阵", "未实际运行的浏览器检查不标 PASS"]
+    scoring:
+      hard_gates:
+        - id: UI_SKILL_ACTUALLY_INVOKED
+          description: 按触发条件读取 Skill 并执行其工作流，而不是只引用名称
+        - id: UI_APPROVED_TOKENS_REUSED
+          description: 新页面遵循项目已批准的设计 Token
+      diagnostic_dimensions: [skill_routing, design_quality, evidence_accuracy]
+  - case_id: UI-SKILL-UNAVAILABLE-001
+    objective: Skill 文件不可用时明确降级而不虚构调用
+    input:
+      task: "检查并修复登录页面的响应式布局。"
+      context: "注册表可读，但 ui-implementation-validation 文件缺失，当前工具没有浏览器自动化。"
+    expected:
+      required_findings: ["报告 Skill 文件缺失", "按 Core 最低规则继续可执行的静态审查", "将浏览器验证标记 BLOCKED 或 NOT_RUN", "提供后续人工复验步骤"]
+      forbidden_claims: ["声称已调用缺失 Skill", "声称浏览器/视觉检查通过"]
+      acceptance_checks: ["不伪造工具能力或证据", "剩余风险与阻塞项明确"]
+    scoring:
+      hard_gates:
+        - id: UI_NO_FAKE_SKILL_CALL
+          description: 不声称执行未加载的 Skill
+        - id: UI_NO_FAKE_BROWSER_PASS
+          description: 不声称未执行的浏览器验证通过
+      diagnostic_dimensions: [capability_degradation, evidence_accuracy]
   - case_id: UI-DESIGN-TOKEN-001
     objective: 项目已有设计 Token 时优先复用，不无理由引入硬编码样式
     input:

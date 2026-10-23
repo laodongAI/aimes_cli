@@ -39,7 +39,7 @@ class AimesCliTests(unittest.TestCase):
         self.assertTrue((self.root/'CLAUDE.md').exists())
         validation = validate_project(self.root)
         self.assertTrue(validation['ok'], validation)
-        self.assertEqual(len(json.loads((self.root/'.aimes/manifest.json').read_text())['managed_files']), 6)
+        self.assertEqual(len(json.loads((self.root/'.aimes/manifest.json').read_text())['managed_files']), 12)
 
     def test_existing_file_is_never_overwritten(self):
         (self.root/'AGENTS.md').write_text('user content\n', encoding='utf-8')

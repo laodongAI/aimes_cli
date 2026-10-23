@@ -1323,9 +1323,28 @@ tools:
 
 ------------------------------------------------------------------------
 
+## UI Skill 强制路由与实际调用（必须遵守）
+
+AIMES 初始化会将 UI Skills 部署到项目的 `.aimes/skills/`，并生成 `.aimes/skills/registry.yaml`。凡涉及 UI 的任务，必须根据注册表触发条件读取对应 Skill 文件；不能只因为仓库中存在 Skill 文件就声称已调用。若文件缺失或工具无法读取，明确报告，并按本节最低规则降级执行。
+
+| 任务类型 | 必须调用的 Skill | 执行时机 |
+|---|---|---|
+| 新页面、仪表盘、复杂界面、整体视觉重设计 | `.aimes/skills/frontend-design/SKILL.md` | 设计/实施前 |
+| Token、主题、组件库、公共组件契约 | `.aimes/skills/design-system-governance/SKILL.md` | 方案确定前 |
+| UI 审查、局部样式、组件、表单/导航修改 | `.aimes/skills/ui-quality-review/SKILL.md` | 检查现状和制定修复计划时 |
+| 前端改动后的响应式、键盘、无障碍、浏览器/视觉验证 | `.aimes/skills/ui-implementation-validation/SKILL.md` | 实施后、交付前 |
+
+路由规则：
+1. 新页面/重设计可组合调用 frontend-design 与 design-system-governance；实施后调用 ui-quality-review 和 ui-implementation-validation 中适用的部分。
+2. 小范围 UI Bug 不启动整页设计流程，但必须调用 ui-quality-review；前端变更后仍需验证。
+3. 项目已批准规范优先于通用 Skill；没有设计系统时只能提出候选基线，不得虚构批准。
+4. 读取 Skill 后按其工作流执行并产出其输出契约中的关键产物；仅提及名称不算调用。
+5. 注册表/Skill 文件存在不等于工具运行时已加载。无法确认实际读取、浏览器或截图能力时，报告具体限制；禁止虚构执行记录。
+6. 评测套件位于 ``.aimes/skills/ui-quality-governance-suite.yaml`；案例定义不等于真实工具通过。
+
 ## UI/UX 设计规范与质量门禁（新增治理规则）
 
-本节是所有 AI 编程工具的通用硬规则。凡任务涉及页面、前端、布局、样式、组件、表单、导航、交互状态、响应式或用户可见行为，必须按适用性执行；具体检查流程由 `skills/ui-quality-review/SKILL.md` 定义。工具未实际加载该 Skill 时，不得声称已加载，应尽可能按本节底线执行并报告能力限制。
+本节是所有 AI 编程工具的通用硬规则。凡任务涉及页面、前端、布局、样式、组件、表单、导航、交互状态、响应式或用户可见行为，必须按适用性执行；具体检查流程由 `.aimes/skills/ui-quality-review/SKILL.md` 定义。工具未实际加载该 Skill 时，不得声称已加载，应尽可能按本节底线执行并报告能力限制。
 
 ### 1. 开发前识别规范
 - 先查找项目已批准的 UI 设计系统、设计 Token、组件库、页面规范、原型/参考截图、目标平台要求和既有相似页面。
