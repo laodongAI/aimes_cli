@@ -51,8 +51,11 @@ def _is_aimes_governance_path(normalized: str, is_dir: bool = False) -> bool:
     prefixes = (".aimes/", "docs/_governance/", "skills/")
     if path in exact or any(path.startswith(prefix) for prefix in prefixes):
         return True
-    # 允许遍历必要父目录，但不放行这些目录下的其他本地状态文件。
-    return is_dir and any(target.startswith(path.rstrip("/") + "/") for target in exact)
+    # 如果通用 .gitignore 排除 docs/** 等父目录，也必须能继续遍历到受保护的治理资产。
+    if is_dir:
+        targets = [*exact, *(prefix.rstrip("/") for prefix in prefixes)]
+        return any(target == path or target.startswith(path.rstrip("/") + "/") for target in targets)
+    return False
 
 def is_excluded(rel: str, is_dir: bool = False, extra_patterns: tuple[str, ...] | list[str] = ()) -> bool:
     normalized = rel.replace("\\", "/").strip("/")
