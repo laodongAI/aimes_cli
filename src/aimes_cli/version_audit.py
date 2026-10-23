@@ -155,6 +155,8 @@ def audit_project_version(root: Path) -> dict[str, Any]:
     else:
         status = "CURRENT"
 
+    if any(item["level"] == "error" and item["code"].startswith("AIMES_MANIFEST") for item in findings):
+        status = "MANIFEST_INVALID"
     if project_version is not None and not version_matches:
         finding("warning", "AIMES_VERSION_MISMATCH", f"项目 Manifest 版本 {project_version}，当前 CLI 版本 {__version__}。")
     if status == "CURRENT":
