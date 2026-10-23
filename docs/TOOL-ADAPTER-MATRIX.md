@@ -10,6 +10,7 @@
 | QCode | 未确认 | 生成审查说明，不猜测路径 | 手动/未验证 | 产品身份、版本、文档和实际加载行为 |
 | Claude Code CLI | `CLAUDE.md` | 生成共享入口 | 静态模板 | CLI 新会话实际加载与引用深度 |
 | Codex CLI | `AGENTS.md` | 生成共享入口 | 静态模板 | CLI 新会话实际加载与指令优先级 |
+| ChatGPT Work | `docs/_governance/adapters/CHATGPT-WORK-ENTRY.md` + 项目指令模板 | 生成治理入口与可复制指令 | `TEMPLATE`，未验证自动加载 | 在指定 Work 模式下验证规则读取、Skill 路由、写入/执行权限与真实任务结果 |
 
 ## 验证上下文
 
