@@ -65,6 +65,16 @@ class ProjectVersionAuditTests(unittest.TestCase):
         self.assertTrue(any(item["code"] == "AIMES_MANIFEST_PATH_UNSAFE" for item in report["findings"]))
         self.assertNotIn("../../outside-secret.txt", report["extra_managed_files"])
 
+    def test_interactive_menu_shows_project_version_summary(self):
+        import io
+        from contextlib import redirect_stdout
+        from aimes_cli.cli import interactive_wizard
+        output = io.StringIO()
+        with patch("aimes_cli.cli.Path.cwd", return_value=self.root), patch("builtins.input", side_effect=["0"]), redirect_stdout(output):
+            self.assertEqual(interactive_wizard(), 0)
+        self.assertIn("当前项目 AIMES 版本", output.getvalue())
+        self.assertIn("CURRENT", output.getvalue())
+
     def test_cli_command_is_registered(self):
         from aimes_cli.cli import parser
         args = parser().parse_args(["version-audit", "--root", str(self.root), "--format", "json"])
