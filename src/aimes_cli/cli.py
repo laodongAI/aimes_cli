@@ -22,6 +22,7 @@ from .cleanup_audit import audit_temp_registry
 from .metrics import build_metrics_report
 from .release_check import validate_release
 from .upgrade import plan_upgrade, apply_upgrade
+from .version_audit import audit_project_version
 from .repair import build_repair_plan, apply_safe_repairs
 from .code_repair import diagnose_command, inspect_patch, propose_patch, apply_patch, verify_patch, rollback_patch
 
@@ -33,6 +34,8 @@ def parser() -> argparse.ArgumentParser:
         sp.add_argument('--root', type=Path, help='Project root (defaults to current directory / upward detection)')
         sp.add_argument('--format', choices=['text','json'], default='text')
         sp.add_argument('--output', type=Path, help='Write report to a file')
+    version_audit = sub.add_parser('version-audit', help='Audit project AIMES version and managed-file consistency (read-only)')
+    common(version_audit)
     upgrade = sub.add_parser('upgrade', help='Safely upgrade an existing AIMES project; preview and preserve user edits')
     common(upgrade)
     upgrade.add_argument('--apply', action='store_true', help='Apply safe changes after explicit confirmation')
@@ -255,6 +258,15 @@ def emit(data, fmt='text', output: Path | None=None):
             if data.get('installed_cli_version') is not None: lines.append(f"Installed AIMES CLI version: {data['installed_cli_version']}")
             if data.get('project_cli_version') is not None: lines.append(f"Project manifest CLI version: {data['project_cli_version']}")
             if data.get('project_cli_version_before') is not None: lines.append(f"Project manifest CLI version before upgrade: {data['project_cli_version_before']}")
+            if data.get('status') is not None: lines.append(f"AIMES version consistency: {data['status']}")
+            if data.get('summary') and 'expected' in data['summary']:
+                summary = data['summary']
+                lines.append("Managed files: expected={expected}, current={current}, outdated={outdated}, modified/customized={modified}, missing={missing}, unreadable={unreadable}, extra={extra}".format(**{key: summary.get(key, 0) for key in ('expected','current','outdated','modified','missing','unreadable','extra')}))
+            for key, label in [('outdated_files','Outdated files'),('modified_files','Modified/customized files'),('missing_files','Missing files'),('unreadable_files','Unreadable files'),('extra_managed_files','Legacy/extra managed files'),('manifest_hash_mismatch_files','Manifest hash mismatches')]:
+                if data.get(key):
+                    lines.append(label + ':')
+                    for path in data[key][:50]: lines.append('  - ' + path)
+                    if len(data[key]) > 50: lines.append(f"  ... another {len(data[key]) - 50} file(s)")
             if data.get('governance_target_version') is not None: lines.append(f"Target governance version: {data['governance_target_version']}")
             if 'ok' in data: lines.append(f"Result: {'PASS' if data['ok'] else 'NEEDS ATTENTION'}")
             if 'dry_run' in data: lines.append(f"Mode: {'dry-run (no files written)' if data['dry_run'] else 'apply'}")
@@ -346,6 +358,17 @@ def interactive_wizard():
     """交互式主菜单：让用户先选择任务，再逐步选择参数。"""
     print(f"\nAIMES 智能工程助手 v{__version__}")
     print("当前目录：" + str(Path.cwd()))
+    try:
+        audit_root = find_root(Path.cwd()).resolve()
+        version_report = audit_project_version(audit_root)
+        if version_report.get("status") == "NOT_INITIALIZED":
+            print("当前项目 AIMES 状态：尚未初始化（未发现 .aimes/config.yaml）")
+        else:
+            summary = version_report.get("summary", {})
+            project_version = version_report.get("project_cli_version") or "unknown"
+            print(f"当前项目 AIMES 版本：{project_version}；当前 CLI：{__version__}；文件一致性：{version_report.get('status')}（当前 {summary.get('current', 0)}/{summary.get('expected', 0)}）")
+    except (OSError, ValueError, TypeError) as exc:
+        print(f"当前项目 AIMES 版本检查失败：{exc}")
     actions = [
         ("初始化项目", "init"),
         ("配置 AI 工具", "configure"),
@@ -353,6 +376,7 @@ def interactive_wizard():
         ("验证项目配置", "validate"),
         ("检查本机工具环境", "doctor"),
         ("查看部署状态", "status"),
+        ("检查 AIMES 版本一致性", "version-audit"),
         ("预览配置变更", "diff"),
         ("发布项目到 GitHub", "publish"),
         ("升级现有项目 AIMES", "upgrade"),
@@ -362,7 +386,7 @@ def interactive_wizard():
         for i, (label, _) in enumerate(actions, 1):
             print(f"  {i}. {label}")
         print("  0. 退出")
-        choice = input("请输入序号 [0-9]：").strip()
+        choice = input(f"请输入序号 [0-{len(actions)}]：").strip()
         if choice in ("0", "q", "quit", "exit"):
             print("已退出 AIMES。")
             return 0
@@ -370,6 +394,9 @@ def interactive_wizard():
             print("输入无效，请输入菜单中的序号。")
             continue
         label, command = actions[int(choice)-1]
+        if command == "version-audit":
+            emit(audit_project_version(find_root(Path.cwd()).resolve()))
+            continue
         if command == "publish":
             try: run_publish_wizard()
             except (ValueError, OSError) as exc: print(f"发布配置错误：{exc}")
@@ -599,6 +626,10 @@ def main(argv=None):
     args=parser().parse_args(argv)
     root=(getattr(args, 'root', None) or find_root()).resolve()
     try:
+        if args.command == 'version-audit':
+            result = audit_project_version(root)
+            emit(result, args.format, args.output)
+            return 0 if result.get('ok') else 1
         if args.command == 'repair':
             if args.apply:
                 result = apply_safe_repairs(root, confirm=args.confirm, tools=args.tools)
