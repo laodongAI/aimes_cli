@@ -70,3 +70,36 @@ skills:
     validation_status: UNKNOWN
     evaluation_suite: AIMES-UI-QUALITY-GOVERNANCE
     evidence: []
+
+  - id: SKL-CORE-REQ-001
+    name: requirement-cognition
+    version: 1.0.0
+    file: .aimes/skills/requirement-cognition/SKILL.md
+    purpose: "将自然语言需求转化为可确认、可设计、可实施、可测试、可追溯的结构化需求"
+    triggers: [new_feature, requirement_change, ambiguous_request, acceptance_review, feature_scope, requirement_analysis]
+    inputs: [task_id, requirement_source, project_context]
+    outputs: [requirement_cognition_record, open_questions, review_report, approval_gates]
+    applies_to: [all]
+    risk_level: medium
+    required_capabilities: [read_project_files]
+    forbidden_actions: [overwrite_user_changes, fabricate_verification, bypass_approval]
+    prerequisites: [project_rules_loaded, git_state_checked]
+    dependencies: []
+    validation_status: UNKNOWN
+    evidence: []
+  - id: SKL-CORE-PRODUCT-001
+    name: product-analysis
+    version: 1.0.0
+    file: .aimes/skills/product-analysis/SKILL.md
+    purpose: "按任务选择市场分析、战略定位、客户旅程和机会-解决方案树等产品分析方法"
+    triggers: [product_analysis, market_analysis, competitor_analysis, market_entry, strategic_positioning, customer_journey, opportunity_solution_tree, product_discovery]
+    inputs: [product_or_market, decision_to_support, project_context]
+    outputs: [analysis_scope, evidence_ledger, key_findings, options_and_tradeoffs, open_questions, decision_recommendation]
+    applies_to: [all]
+    risk_level: medium
+    required_capabilities: [read_project_files]
+    forbidden_actions: [fabricate_sources, overwrite_user_changes, fabricate_verification]
+    prerequisites: [project_rules_loaded, git_state_checked]
+    dependencies: []
+    validation_status: UNKNOWN
+    evidence: []
