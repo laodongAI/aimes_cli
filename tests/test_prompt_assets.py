@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class PromptAssetTests(unittest.TestCase):
     def test_all_skills_have_required_sections(self):
         files = sorted((ROOT / "skills").glob("*/SKILL.md"))
-        self.assertEqual(len(files), 12)
+        self.assertEqual(len(files), 13)
         required = ["## Purpose / 目标与边界", "## Trigger conditions / 触发条件", "## Required inputs / 必需输入", "## Preconditions / 前置条件", "## Workflow / 工作流程", "## Outputs / 输出契约", "## Safety and permissions / 安全与权限", "## Failure handling / 失败处理", "## Completion criteria / 完成判据", "## 通用执行协议（必须遵守）", "## 评测案例"]
         for path in files:
             body = path.read_text(encoding="utf-8")
