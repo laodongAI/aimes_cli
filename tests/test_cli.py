@@ -110,6 +110,21 @@ class AimesCliTests(unittest.TestCase):
         init_mock.assert_called_once_with(self.root, ["trae-code"], "project", True)
 
 
+    def test_product_manager_skill_is_deployed_and_routed(self):
+        result = init_project(self.root, ['trae-code', 'codex-cli'])
+        self.assertTrue(result['ok'], result)
+        skill_path = self.root/'.aimes/skills/product-manager/SKILL.md'
+        self.assertTrue(skill_path.is_file())
+        self.assertIn('项目知识基线', skill_path.read_text(encoding='utf-8'))
+        import yaml
+        registry = yaml.safe_load((self.root/'.aimes/skills/registry.yaml').read_text(encoding='utf-8'))
+        route = next(item for item in registry['skills'] if item['name'] == 'product-manager')
+        self.assertEqual(route['file'], 'skills/product-manager/SKILL.md')
+        self.assertIn('generate_guidance_prompt', route['triggers'])
+        self.assertIn('product-manager/SKILL.md', (self.root/'.trae/rules/00-aimes-governance.md').read_text(encoding='utf-8'))
+        self.assertIn('product-manager/SKILL.md', (self.root/'AGENTS.md').read_text(encoding='utf-8'))
+        self.assertTrue(validate_project(self.root)['ok'], validate_project(self.root))
+
     def test_chatgpt_work_adapter_deploys_entry_and_prompt_optimization_skill(self):
         result = init_project(self.root, ['chatgpt-work'])
         self.assertTrue(result['ok'], result)
