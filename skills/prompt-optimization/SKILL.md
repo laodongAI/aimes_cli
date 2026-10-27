@@ -1,9 +1,10 @@
 ---
+name: prompt-optimization
+description: 优化提示词、项目指令、Agent/Skill 提示词和上下文工程，同时保留必要约束与硬门禁。当任务涉及 提示词优化、提示词审查、上下文工程、系统指令、智能体提示词、Token优化 等内容时使用该 Skill。
 skill_id: SKL-CORE-PROMPT-001
 version: 1.0.0
 status: PROPOSED
 ---
-
 # Skill：提示词分析与优化（Prompt Optimization）
 
 ## Purpose / 目标与边界

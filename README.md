@@ -1,8 +1,29 @@
-# AIMES 本地治理 CLI（V0.8.7）
+# AIMES 本地治理 CLI（V0.9.0）
 
 AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具。它负责把 AIMES V1.2 治理核心部署到项目仓库，生成工具专属规则入口，检查配置与冲突，并输出部署状态。它不替代 Codex、Claude Code、Trae、ZCode 或 Copilot 执行开发任务。
 
 > 当前版本是本地优先的工程治理 CLI。包版本与运行时版本由同一版本源驱动；真实 AI 工具运行时是否加载规则、行为是否改善，必须以独立验证记录为准。CI 中的 Windows EXE 构建/冒烟测试不等于 GitHub Release 或下载资产已经发布。
+
+## Skill 实际调用与规则强制（进行中）
+
+为解决"规则文件已部署不等于工具运行时真的调用 Skill、遵守规则"，AIMES 增加了四条强制链（设计见 [Skill 实际调用与规则强制链](docs/SKILL-ROUTING-AND-ENFORCEMENT.md)）：
+
+```powershell
+# 1) 确定性路由：按注册表 trigger（含中文别名）返回必读 Skill 与输入输出契约
+aimes skill route "实现新功能前先做需求分析" --root . --format json
+
+# 2) MCP 服务：支持 MCP 的宿主在任务前调用 aimes_skill_route / aimes_read_skill / aimes_validate_delivery
+aimes mcp serve --root .
+
+# 3) 交付报告门禁：校验 Core 8.3 固定标题、VERIFIED 必须绑定 PASS 证据、报告等级不得低于风险等级
+aimes delivery validate path/to/delivery-report.md --root .
+
+# 4) 提交闸门：生成只读检查的 pre-commit 钩子（激活需用户执行 git config core.hooksPath hooks）
+aimes hook install --root .
+aimes hook install --root . --apply --confirm HOOK
+```
+
+同时，全部可部署 Skill 的 frontmatter 已增加原生 `name`/`description` 字段；选择 Claude Code 系工具初始化时，还会把 Skill 镜像部署到 `.claude/skills/`，让宿主的原生 Skill 发现机制可以直接路由。生成的薄工具入口新增"任务开始前先执行 Skill 路由"的强制指令。以上均为本地机制：是否被某个 IDE/CLI 在运行时真实加载与遵循，仍须用探针和试点证据独立验证，静态部署成功不等于运行时已验证。
 
 ## 0.1 诊断后生成修复选项，并安全自动修复
 

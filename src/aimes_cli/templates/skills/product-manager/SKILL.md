@@ -1,4 +1,6 @@
 ---
+name: product-manager
+description: 基于当前项目知识进行产品问题分析、用户价值与范围取舍，并生成包含项目事实、Skill 路由、执行步骤、门禁和验收标准的深度引导词。当任务涉及 引导词、开发提示词、产品构想、需求探索、下一步任务、深度引导 等内容时使用该 Skill。
 skill_id: SKL-CORE-PM-001
 version: 1.0.0
 status: PROPOSED

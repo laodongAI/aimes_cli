@@ -1,8 +1,9 @@
 ---
+name: design-system-governance
+description: 盘点并治理设计 Token、组件契约、主题与跨页面一致性。当任务涉及 设计系统、设计令牌、主题变更、组件库、公共组件、视觉一致性 等内容时使用该 Skill。
 skill_id: SKL-CORE-UI-SYSTEM-001
 change_summary: "V1.0：新增项目设计系统、Token 与组件约定治理"
----
-# Skill：Design System Governance（设计系统治理）
+---# Skill：Design System Governance（设计系统治理）
 
 ## Purpose / 目标与边界
 识别、建立和维护项目设计系统，包括设计 Token、组件契约、状态约定、使用示例和变更治理，确保多页面与多 AI 工具之间保持一致。它不要求所有项目采用同一套视觉风格，也不自动替换现有组件库。

@@ -1,4 +1,6 @@
 ---
+name: ui-quality-review
+description: 对 UI/UX 规范、交互、布局和实现进行证据化审查并提出受控修复。当任务涉及 UI审查、界面质量、样式修改、组件样式、表单交互、UI缺陷 等内容时使用该 Skill。
 skill_id: SKL-CORE-UI-001
 change_summary: "V1.0：新增 UI/UX 规范识别、审查、受控修复与证据化复验"
 ---

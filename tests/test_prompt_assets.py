@@ -19,7 +19,7 @@ class PromptAssetTests(unittest.TestCase):
         self.assertGreaterEqual(len(data["skills"]), 11)
         versions = {x["name"]: x["version"] for x in data["skills"]}
         self.assertEqual(versions["ui-quality-review"], "1.0.0")
-        self.assertEqual(versions["frontend-design"], "1.0.0")
+        self.assertEqual(versions["frontend-design"], "1.1.0")
         self.assertEqual(versions["design-system-governance"], "1.0.0")
         self.assertEqual(versions["ui-implementation-validation"], "1.0.0")
         self.assertTrue(all(x["validation_status"] == "UNKNOWN" for x in data["skills"]))

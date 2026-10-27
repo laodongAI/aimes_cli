@@ -1,8 +1,9 @@
 ---
+name: ui-implementation-validation
+description: 验证前端实现的构建、交互、响应式、可访问性和视觉回归。当任务涉及 前端验证、响应式验证、无障碍检查、视觉回归、浏览器验证 等内容时使用该 Skill。
 skill_id: SKL-CORE-UI-VERIFY-001
 change_summary: "V1.0：新增 UI 响应式、可访问性、浏览器和视觉回归验证流程"
----
-# Skill：UI Implementation Validation（界面实现验证）
+---# Skill：UI Implementation Validation（界面实现验证）
 
 ## Purpose / 目标与边界
 针对前端页面变更制定并执行与风险相称的验证，覆盖交互行为、响应式、键盘与焦点、可访问性、控制台错误和视觉回归。该 Skill 负责验证而不是设计决策；工具能力必须先确认，不能把计划当作执行证据。

@@ -1,4 +1,6 @@
 ---
+name: opportunity-solution-tree
+description: 从用户机会到解决方案、实验与优先级的结构化探索。当任务涉及 机会树、机会发现、方案优先级、解决方案探索 等内容时使用该 Skill。
 skill_id: SKL-CORE-OST-001
 name: opportunity-solution-tree
 version: 0.2.0

@@ -1,4 +1,6 @@
 ---
+name: project-knowledge-reuse
+description: 从项目代码、设计、测试、缺陷和历史任务中发现候选资产，评估适用性后决定复用、适配、模式迁移或不复用。当任务涉及 复用、知识复用、类似实现、重构、既有模式 等内容时使用该 Skill。
 skill_id: SKL-CORE-KNOW-001
 change_summary: "V0.5.1：契约、决策分支、证据语义与评测案例全量优化"
 ---

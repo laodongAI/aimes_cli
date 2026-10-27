@@ -1,4 +1,6 @@
 ---
+name: customer-journey-mapping
+description: 客户旅程、体验痛点、关键时刻与改进机会分析。当任务涉及 客户旅程、旅程地图、体验痛点、转化漏斗 等内容时使用该 Skill。
 skill_id: SKL-CORE-CJM-001
 name: customer-journey-mapping
 version: 0.2.0

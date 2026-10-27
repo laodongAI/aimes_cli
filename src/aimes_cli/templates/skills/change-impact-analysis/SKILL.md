@@ -1,4 +1,6 @@
 ---
+name: change-impact-analysis
+description: 在实施前识别变更对需求、模块、接口、数据、安全、测试、文档、部署和回滚的影响。当任务涉及 变更影响、影响分析、回归范围、回滚风险、实施前分析 等内容时使用该 Skill。
 skill_id: SKL-CORE-IMPACT-001
 change_summary: "V0.5.1：契约、决策分支、证据语义与评测案例全量优化"
 ---

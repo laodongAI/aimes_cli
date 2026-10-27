@@ -1,4 +1,6 @@
 ---
+name: financial-evaluation
+description: 产品/项目的财务可行性、成本收益与投资回报评估。当任务涉及 财务评估、成本收益、投资回报、商业案例、预算评估 等内容时使用该 Skill。
 skill_id: SKL-CORE-FIN-001
 name: financial-evaluation
 version: 0.2.0
@@ -1002,10 +1004,10 @@ ROI = 年度扩展收入 / 开发成本
 
 ## References / 参考资料
 
-- [acquisition-channel-advisor](../../acquisition-channel-advisor/SKILL.md) - 获客渠道顾问
-- [business-health-diagnostic](../../business-health-diagnostic/SKILL.md) - 业务健康诊断
-- [feature-investment-advisor](../../feature-investment-advisor/SKILL.md) - 功能投资顾问
-- [prioritization-advisor](../../prioritization-advisor/SKILL.md) - 优先级顾问
+- `acquisition-channel-advisor`（计划中的独立 Skill，尚未收录）- 获客渠道顾问
+- `business-health-diagnostic`（计划中的独立 Skill，尚未收录）- 业务健康诊断
+- `feature-investment-advisor`（计划中的独立 Skill，尚未收录）- 功能投资顾问
+- `prioritization-advisor`（计划中的独立 Skill，尚未收录）- 优先级顾问
 - SaaS Metrics 2.0 - A Guide to Measuring and Managing the Performance of Your SaaS Business
 - "The Lean Startup" by Eric Ries
 - "Crossing the Chasm" by Geoffrey Moore

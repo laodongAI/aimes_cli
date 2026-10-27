@@ -4,10 +4,10 @@ description: "项目级需求、产品分析与 UI 能力路由注册表；由 A
 skills:
   - id: SKL-CORE-UI-DESIGN-001
     name: frontend-design
-    version: 1.0.0
+    version: 1.1.0
     file: .aimes/skills/frontend-design/SKILL.md
-    purpose: "将产品目标转化为具有明确视觉方向、可实现且可验证的界面设计"
-    triggers: [frontend_design, new_page, page_redesign, dashboard_design, complex_ui, visual_direction, design_prototype]
+    purpose: "将产品目标转化为具有明确视觉方向、可实现且可验证的界面设计；含反模板化设计规则与两遍设计流程"
+    triggers: [frontend_design, new_page, page_redesign, dashboard_design, complex_ui, visual_direction, design_prototype, 新页面, 页面设计, 界面设计, 仪表盘设计, 视觉重设计, 复杂布局, 视觉方向, 反模板化, 去AI味, 字体搭配, 配色方案]
     inputs: [task_id, product_goal, target_users, primary_user_tasks, project_context]
     outputs: [design_brief, visual_direction, page_structure, component_plan, state_matrix, verification_plan]
     applies_to: [all]
@@ -24,7 +24,7 @@ skills:
     version: 1.0.0
     file: .aimes/skills/design-system-governance/SKILL.md
     purpose: "盘点并治理设计 Token、组件契约、主题与跨页面一致性"
-    triggers: [design_system, design_tokens, component_library, theme_change, shared_component_change, visual_consistency, design_standard_missing]
+    triggers: [design_system, design_tokens, component_library, theme_change, shared_component_change, visual_consistency, design_standard_missing, 设计系统, 设计令牌, 主题变更, 组件库, 公共组件, 视觉一致性]
     inputs: [task_id, project_context, ui_paths, existing_design_assets]
     outputs: [design_system_inventory, approved_rules, proposed_tokens, component_contracts, consistency_findings, migration_plan]
     applies_to: [all]
@@ -41,7 +41,7 @@ skills:
     version: 1.0.0
     file: .aimes/skills/ui-quality-review/SKILL.md
     purpose: "对 UI/UX 规范、交互、布局和实现进行证据化审查并提出受控修复"
-    triggers: [ui_design, frontend_implementation, ui_review, visual_regression, responsive_layout, accessibility_review, component_style_change, ui_bug_fix, form_interaction_change]
+    triggers: [ui_design, frontend_implementation, ui_review, visual_regression, responsive_layout, accessibility_review, component_style_change, ui_bug_fix, form_interaction_change, UI审查, 界面质量, 样式修改, 组件样式, 表单交互, UI缺陷]
     inputs: [task_id, task_scope, project_context, relevant_ui_paths_or_runtime_target]
     outputs: [ui_baseline, ui_scope, ui_findings, change_plan, verification_matrix, ui_review_report]
     applies_to: [all]
@@ -58,7 +58,7 @@ skills:
     version: 1.0.0
     file: .aimes/skills/ui-implementation-validation/SKILL.md
     purpose: "验证前端实现的构建、交互、响应式、可访问性和视觉回归"
-    triggers: [ui_implementation, responsive_layout, accessibility_review, visual_regression, form_interaction_change, frontend_build, browser_verification]
+    triggers: [ui_implementation, responsive_layout, accessibility_review, visual_regression, form_interaction_change, frontend_build, browser_verification, 前端验证, 响应式验证, 无障碍检查, 视觉回归, 浏览器验证]
     inputs: [task_id, changed_ui_paths, acceptance_criteria, project_context]
     outputs: [verification_matrix, commands_executed, browser_evidence, viewport_results, accessibility_findings, final_status]
     applies_to: [all]
@@ -76,7 +76,7 @@ skills:
     version: 1.0.0
     file: .aimes/skills/requirement-cognition/SKILL.md
     purpose: "将自然语言需求转化为可确认、可设计、可实施、可测试、可追溯的结构化需求"
-    triggers: [new_feature, requirement_change, ambiguous_request, acceptance_review, feature_scope, requirement_analysis]
+    triggers: [new_feature, requirement_change, ambiguous_request, acceptance_review, feature_scope, requirement_analysis, 新功能, 需求变更, 需求分析, 需求澄清, 验收标准, 功能范围]
     inputs: [task_id, requirement_source, project_context]
     outputs: [requirement_cognition_record, open_questions, review_report, approval_gates]
     applies_to: [all]
@@ -92,7 +92,7 @@ skills:
     version: 1.0.0
     file: .aimes/skills/product-analysis/SKILL.md
     purpose: "按任务选择市场分析、战略定位、客户旅程和机会-解决方案树等产品分析方法"
-    triggers: [product_analysis, market_analysis, competitor_analysis, market_entry, strategic_positioning, customer_journey, opportunity_solution_tree, product_discovery]
+    triggers: [product_analysis, market_analysis, competitor_analysis, market_entry, strategic_positioning, customer_journey, opportunity_solution_tree, product_discovery, 产品分析, 市场分析, 竞品分析, 市场进入, 战略定位, 客户旅程, 产品发现]
     inputs: [product_or_market, decision_to_support, project_context]
     outputs: [analysis_scope, evidence_ledger, key_findings, options_and_tradeoffs, open_questions, decision_recommendation]
     applies_to: [all]
@@ -108,7 +108,7 @@ skills:
     version: 0.2.0
     file: .aimes/skills/market-analysis/SKILL.md
     purpose: "市场、行业结构、竞争环境与市场进入分析"
-    triggers: [market_analysis, competitor_analysis, market_entry, industry_analysis]
+    triggers: [market_analysis, competitor_analysis, market_entry, industry_analysis, 市场分析, 竞品研究, 行业分析, 市场进入, 波特五力]
     inputs: [product_or_market, decision_to_support, project_context]
     outputs: [market_scope, five_forces, pestel_swot, evidence_ledger, market_recommendation]
     applies_to: [all]
@@ -124,7 +124,7 @@ skills:
     version: 0.2.0
     file: .aimes/skills/financial-evaluation/SKILL.md
     purpose: "产品/项目的财务可行性、成本收益与投资回报评估"
-    triggers: [financial_evaluation, cost_benefit, roi_analysis, business_case]
+    triggers: [financial_evaluation, cost_benefit, roi_analysis, business_case, 财务评估, 成本收益, 投资回报, 商业案例, 预算评估]
     inputs: [product_or_market, decision_to_support, project_context]
     outputs: [assumptions, cost_model, benefit_model, sensitivity_analysis, financial_recommendation]
     applies_to: [all]
@@ -140,7 +140,7 @@ skills:
     version: 0.2.0
     file: .aimes/skills/strategic-positioning/SKILL.md
     purpose: "产品定位、目标客户、差异化与战略选择"
-    triggers: [strategic_positioning, product_positioning, differentiation]
+    triggers: [strategic_positioning, product_positioning, differentiation, 战略定位, 产品定位, 差异化, 目标客户]
     inputs: [product_or_market, decision_to_support, project_context]
     outputs: [target_segments, positioning_statement, differentiation_evidence, strategic_options]
     applies_to: [all]
@@ -156,7 +156,7 @@ skills:
     version: 0.2.0
     file: .aimes/skills/opportunity-solution-tree/SKILL.md
     purpose: "从用户机会到解决方案、实验与优先级的结构化探索"
-    triggers: [opportunity_solution_tree, opportunity_discovery, solution_prioritization]
+    triggers: [opportunity_solution_tree, opportunity_discovery, solution_prioritization, 机会树, 机会发现, 方案优先级, 解决方案探索]
     inputs: [product_or_market, decision_to_support, project_context]
     outputs: [opportunity_tree, solution_options, experiments, prioritization]
     applies_to: [all]
@@ -172,7 +172,7 @@ skills:
     version: 0.2.0
     file: .aimes/skills/customer-journey-mapping/SKILL.md
     purpose: "客户旅程、体验痛点、关键时刻与改进机会分析"
-    triggers: [customer_journey, journey_mapping, experience_pain_points]
+    triggers: [customer_journey, journey_mapping, experience_pain_points, 客户旅程, 旅程地图, 体验痛点, 转化漏斗]
     inputs: [product_or_market, decision_to_support, project_context]
     outputs: [personas, journey_stages, pain_points, opportunities, action_plan]
     applies_to: [all]
@@ -188,7 +188,7 @@ skills:
     version: 0.3.0
     file: .aimes/skills/project-onboarding/SKILL.md
     purpose: "以当前仓库事实恢复项目目标、结构、状态和任务上下文，不依赖旧聊天作为唯一来源。"
-    triggers: [new_project, task_handoff, session_start]
+    triggers: [new_project, task_handoff, session_start, 新项目, 任务交接, 接手项目, 恢复进度, 上下文不完整]
     inputs: [project_path, task_id, task_context]
     outputs: [project_brief, evidence_map, open_questions, next_steps]
     applies_to: [all]
@@ -205,7 +205,7 @@ skills:
     version: 0.3.0
     file: .aimes/skills/project-knowledge-reuse/SKILL.md
     purpose: "从项目代码、设计、测试、缺陷和历史任务中发现候选资产，评估适用性后决定复用、适配、模式迁移或不复用。"
-    triggers: [feature_implementation, bug_fix, similar_problem, refactoring]
+    triggers: [feature_implementation, bug_fix, similar_problem, refactoring, 复用, 知识复用, 类似实现, 重构, 既有模式]
     inputs: [task_id, problem_statement, project_context]
     outputs: [candidate_assets, reuse_decision_record, verification_plan]
     applies_to: [all]
@@ -222,7 +222,7 @@ skills:
     version: 0.3.0
     file: .aimes/skills/change-impact-analysis/SKILL.md
     purpose: "在实施前识别变更对需求、模块、接口、数据、安全、测试、文档、部署和回滚的影响。"
-    triggers: [before_implementation, requirement_change, dependency_upgrade, bug_fix]
+    triggers: [before_implementation, requirement_change, dependency_upgrade, bug_fix, 变更影响, 影响分析, 回归范围, 回滚风险, 实施前分析]
     inputs: [task_id, change_description, project_context]
     outputs: [impact_matrix, affected_assets, verification_plan, approval_items]
     applies_to: [all]
@@ -239,7 +239,7 @@ skills:
     version: 0.3.0
     file: .aimes/skills/architecture-contract-review/SKILL.md
     purpose: "检查方案是否符合既有架构边界、接口契约、数据模型、ADR、安全边界和兼容性要求。"
-    triggers: [architecture_change, public_api_change, data_model_change, integration_design]
+    triggers: [architecture_change, public_api_change, data_model_change, integration_design, 架构变更, 公共接口, 接口契约, 数据模型变更, 架构评审, 兼容性]
     inputs: [task_id, design_or_diff, project_context]
     outputs: [contract_findings, decision_options, required_approvals, verification_plan]
     applies_to: [all]
@@ -256,7 +256,7 @@ skills:
     version: 0.3.0
     file: .aimes/skills/controlled-implementation/SKILL.md
     purpose: "按已批准需求和明确范围实施最小必要变更，保护用户修改并以真实证据报告结果。"
-    triggers: [approved_task, bug_fix, feature_implementation]
+    triggers: [approved_task, bug_fix, feature_implementation, 受控实施, 功能开发, 缺陷修复, 代码修改, 实施任务]
     inputs: [task_id, approved_requirements, impact_analysis, project_context]
     outputs: [implementation_diff, verification_results, traceability_updates, delivery_report]
     applies_to: [all]
@@ -273,7 +273,7 @@ skills:
     version: 0.3.0
     file: .aimes/skills/requirement-driven-testing/SKILL.md
     purpose: "从批准需求和风险出发设计可判定的测试，覆盖主流程、边界、异常和回归，并如实记录执行证据。"
-    triggers: [new_feature, bug_fix, release_validation, requirement_change]
+    triggers: [new_feature, bug_fix, release_validation, requirement_change, 测试设计, 需求覆盖, 回归测试, 发布验收, 测试用例]
     inputs: [task_id, approved_requirements, implementation_context]
     outputs: [test_matrix, test_cases, execution_report, coverage_gaps]
     applies_to: [all]
@@ -291,7 +291,7 @@ skills:
     version: 1.0.0
     file: .aimes/skills/prompt-optimization/SKILL.md
     purpose: "优化提示词、项目指令、Agent/Skill 提示词和上下文工程，同时保留必要约束与硬门禁"
-    triggers: [prompt_optimization, prompt_review, prompt_refactoring, instruction_design, system_prompt, agent_prompt, skill_prompt, context_engineering, token_optimization, prompt_quality_audit]
+    triggers: [prompt_optimization, prompt_review, prompt_refactoring, instruction_design, system_prompt, agent_prompt, skill_prompt, context_engineering, token_optimization, prompt_quality_audit, 提示词优化, 提示词审查, 上下文工程, 系统指令, 智能体提示词, Token优化]
     inputs: [original_prompt, target_tool_and_mode, task_goal, acceptance_criteria, protected_constraints]
     outputs: [diagnostic_findings, preservation_matrix, optimized_prompt, change_log, evaluation_plan, risk_and_unknowns]
     applies_to: [all]
@@ -318,6 +318,12 @@ skills:
     - product_requirement
     - project_knowledge_guidance
     - premature_spec_detection
+    - 引导词
+    - 开发提示词
+    - 产品构想
+    - 需求探索
+    - 下一步任务
+    - 深度引导
     inputs:
     - user_intent
     - project_context

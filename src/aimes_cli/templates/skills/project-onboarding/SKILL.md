@@ -1,4 +1,6 @@
 ---
+name: project-onboarding
+description: 以当前仓库事实恢复项目目标、结构、状态和任务上下文，不依赖旧聊天作为唯一来源。当任务涉及 新项目、任务交接、接手项目、恢复进度、上下文不完整 等内容时使用该 Skill。
 skill_id: SKL-CORE-ONB-001
 change_summary: "V0.5.1：契约、决策分支、证据语义与评测案例全量优化"
 ---

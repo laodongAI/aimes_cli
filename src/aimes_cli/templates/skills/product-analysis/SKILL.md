@@ -1,4 +1,6 @@
 ---
+name: product-analysis
+description: 按任务选择市场分析、战略定位、客户旅程和机会-解决方案树等产品分析方法。当任务涉及 产品分析、市场分析、竞品分析、市场进入、战略定位、客户旅程 等内容时使用该 Skill。
 skill_id: SKL-CORE-PRODUCT-001
 name: product-analysis
 version: 1.0.0

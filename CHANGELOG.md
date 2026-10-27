@@ -1,3 +1,15 @@
+## 0.9.0 - Skill 实际调用与规则强制链
+
+- 全部可部署 Skill 模板 frontmatter 增加原生 `name`/`description`，供 Claude Code 等宿主的原生 Skill 发现机制识别；选择 Claude 系工具初始化时同步部署 `.claude/skills/` AIMES 管理镜像。
+- Skill 注册表 trigger 增加中文别名；新增 `aimes skill route` 确定性路由命令与 `src/aimes_cli/skill_route.py` 匹配引擎。
+- 新增 `aimes delivery validate`：校验 AIMES Core 8.3 固定标题交付报告，强制 `VERIFIED` 绑定 PASS 证据、报告等级不低于风险等级；新增示例 `examples/delivery/delivery-report.example.md`。
+- 新增 `aimes mcp serve`：stdio MCP 服务暴露 `aimes_skill_route`、`aimes_read_skill`、`aimes_validate_delivery`，把注册表路由变成工具无关的确定性调用。
+- 新增 `aimes hook install --type pre-commit`：生成 `# managed-by: aimes` 标记的只读治理钩子，预览/确认后才写入，用户自有钩子永远保留并转 proposal。
+- AGENTS.md、CLAUDE.md、Copilot、Trae 薄入口与治理 Core 增加"任务开始前先执行 Skill 路由"强制指令及交付报告校验提示。
+- 新增 `docs/SKILL-ROUTING-AND-ENFORCEMENT.md`。所有强制链的运行时加载与遵循状态仍为 UNKNOWN，需要按工具版本独立试点验证。
+- frontend-design Skill 升级 1.1.0：吸收 Anthropic 官方 frontend-design（anthropics/skills，Apache 2.0）的反模板化规则——常见 AI 默认套路清单、主题锚定、plan→critique→build 两遍流程、版式/动效/界面文案原则；同步注册表触发词与原生 frontmatter description。
+- 修复存量文档死链：market-analysis 与 financial-evaluation SKILL.md（canonical 与部署模板两份）中指向未收录 Skill 的 8 个 Markdown 链接改为纯文本提及，`aimes docs check` 错误清零。
+
 ## 0.8.7 - 产品经理优先路由与深度引导词
 
 - 新增 product-manager Skill，要求先分析当前项目知识、用户问题/价值、现有能力、复用机会、缺口与方案取舍，再生成可复制的深度引导词。

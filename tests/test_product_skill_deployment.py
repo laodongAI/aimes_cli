@@ -107,5 +107,58 @@ class ProductSkillDeploymentTests(unittest.TestCase):
             self.assertTrue(any(item["code"] == "SKILL_PATH_UNSAFE" for item in result["findings"]))
 
 
+    def test_template_skills_have_native_discoverable_frontmatter(self):
+        repository_root = Path(__file__).resolve().parents[1]
+        template_root = repository_root / "src/aimes_cli/templates/skills"
+        registry = yaml.safe_load((template_root / "registry.yaml").read_text(encoding="utf-8"))
+        names = {item["name"] for item in registry["skills"]}
+        self.assertIn("project-onboarding", names)
+        for name in sorted(names):
+            path = template_root / name / "SKILL.md"
+            self.assertTrue(path.is_file(), name)
+            text = path.read_text(encoding="utf-8")
+            self.assertTrue(text.startswith("---\n"), f"{name}: missing frontmatter")
+            frontmatter = yaml.safe_load(text.split("---\n", 2)[1])
+            self.assertEqual(frontmatter.get("name"), name, f"{name}: frontmatter name must match directory")
+            description = frontmatter.get("description")
+            self.assertIsInstance(description, str)
+            self.assertTrue(description.strip(), f"{name}: empty description")
+
+    def test_registry_triggers_include_chinese_aliases(self):
+        repository_root = Path(__file__).resolve().parents[1]
+        registry = yaml.safe_load((repository_root / "src/aimes_cli/templates/skills/registry.yaml").read_text(encoding="utf-8"))
+        routes = {item["name"]: item for item in registry["skills"]}
+        self.assertIn("新功能", routes["requirement-cognition"]["triggers"])
+        self.assertIn("引导词", routes["product-manager"]["triggers"])
+        self.assertIn("变更影响", routes["change-impact-analysis"]["triggers"])
+
+    def test_claude_skill_mirror_deployed_only_for_claude_family_tools(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            init_project(root, ["claude-code"], dry_run=False)
+            mirror = root / ".claude/skills/project-onboarding/SKILL.md"
+            self.assertTrue(mirror.is_file())
+            frontmatter = yaml.safe_load(mirror.read_text(encoding="utf-8").split("---\n", 2)[1])
+            self.assertEqual(frontmatter["name"], "project-onboarding")
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            init_project(root, ["codex-cli"], dry_run=False)
+            self.assertFalse((root / ".claude").exists())
+
+    def test_claude_skill_mirror_is_manifest_managed(self):
+        import tempfile
+        import json
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            init_project(root, ["vscode-claude-code"], dry_run=False)
+            manifest = json.loads((root / ".aimes/manifest.json").read_text(encoding="utf-8"))
+            managed = {item["path"] for item in manifest["managed_files"]}
+            self.assertIn(".claude/skills/product-manager/SKILL.md", managed)
+
+
 if __name__ == "__main__":
     unittest.main()

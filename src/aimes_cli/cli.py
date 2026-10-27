@@ -9,6 +9,9 @@ from .v03 import validate_trace, validate_evidence, build_context_pack
 from .evaluation import validate_suite, validate_run, validate_run_against_suite, build_run_report, compare_runs
 from .v05 import validate_adapter_evidence, adapter_report, validate_context_pack
 from .skill_execution import validate_skill_execution
+from .skill_route import route_skills
+from .delivery_report import validate_delivery_report
+from .hooks import apply_hook_install, plan_hook_install, CONFIRM_WORD
 from .workflow import validate_workflow_definition
 from .workflow_run import start_workflow_run, transition_workflow_run, validate_workflow_run
 from .runtime_probe import create_runtime_probe, validate_runtime_probe
@@ -160,6 +163,10 @@ def parser() -> argparse.ArgumentParser:
     skill_validate = skill_sub.add_parser('validate', help='Validate a Skill registry and its referenced files')
     common(skill_validate); skill_validate.add_argument('path', type=Path, nargs='?', default=Path('.aimes/skills/registry.yaml'))
     skill_validate.add_argument('--id', help='Validate a single Skill ID; default validates all entries')
+    skill_route = skill_sub.add_parser('route', help='Match a task description against registry triggers and list the skills that must be read (read-only)')
+    common(skill_route); skill_route.add_argument('task_text', help='Task description, Chinese or English')
+    skill_route.add_argument('--registry', type=Path, default=Path('.aimes/skills/registry.yaml'))
+    skill_route.add_argument('--top', type=int, default=3, help='Maximum routes to return (default: 3)')
     skill_execution = skill_sub.add_parser('execution', help='Skill execution record operations')
     skill_execution_sub = skill_execution.add_subparsers(dest='skill_execution_command', required=True)
     skill_execution_validate = skill_execution_sub.add_parser('validate', help='Validate a structured Skill execution record; does not execute the Skill')
@@ -182,6 +189,10 @@ def parser() -> argparse.ArgumentParser:
     workflow_run_transition.add_argument('--evidence-ref', action='append', dest='evidence_refs', default=[])
     workflow_run_transition.add_argument('--approval-ref'); workflow_run_transition.add_argument('--guard-evidence')
     workflow_run_transition.add_argument('--confirm', required=True, help='Must be TRANSITION (case-insensitive)')
+    delivery = sub.add_parser('delivery', help='AIMES Core 8.3 delivery report operations')
+    delivery_sub = delivery.add_subparsers(dest='delivery_command', required=True)
+    delivery_validate = delivery_sub.add_parser('validate', help='Validate a fixed-heading delivery report; does not run any command')
+    common(delivery_validate); delivery_validate.add_argument('path', type=Path)
     trace = sub.add_parser('trace', help='End-to-end engineering traceability operations')
     trace_sub = trace.add_subparsers(dest='trace_command', required=True)
     trace_validate = trace_sub.add_parser('validate', help='Validate trace links and VERIFIED evidence gates')
@@ -218,6 +229,13 @@ def parser() -> argparse.ArgumentParser:
     adapter_probe_create.add_argument('--governance-version', default='1.2'); adapter_probe_create.add_argument('--observer', default='')
     adapter_probe_validate = adapter_probe_sub.add_parser('validate', help='Validate the raw response and write a V2 runtime evidence record')
     common(adapter_probe_validate); adapter_probe_validate.add_argument('probe_dir', type=Path); adapter_probe_validate.add_argument('--observer', default='')
+    hook = sub.add_parser('hook', help='Install AIMES governance Git hooks (preview first, never overwrite user hooks)')
+    hook_sub = hook.add_subparsers(dest='hook_command', required=True)
+    hook_install = hook_sub.add_parser('install', help='Preview or install a governance hook that runs read-only AIMES checks')
+    common(hook_install)
+    hook_install.add_argument('--type', choices=['pre-commit'], default='pre-commit')
+    hook_install.add_argument('--apply', action='store_true', help='Write the hook file; default is preview only')
+    hook_install.add_argument('--confirm', help=f'Must be {CONFIRM_WORD} when used with --apply')
     audit = sub.add_parser('audit', help='Local structured audit event operations')
     audit_sub = audit.add_subparsers(dest='audit_command', required=True)
     audit_validate = audit_sub.add_parser('validate', help='Validate JSONL audit event structure')
@@ -226,6 +244,10 @@ def parser() -> argparse.ArgumentParser:
     common(audit_append); audit_append.add_argument('path', type=Path); audit_append.add_argument('--run-id', required=True)
     audit_append.add_argument('--event-type', required=True); audit_append.add_argument('--status', required=True)
     audit_append.add_argument('--actor', default='aimes-cli'); audit_append.add_argument('--details-json', default='{}')
+    mcp = sub.add_parser('mcp', help='Expose AIMES governance routing to MCP-capable tools')
+    mcp_sub = mcp.add_subparsers(dest='mcp_command', required=True)
+    mcp_serve = mcp_sub.add_parser('serve', help='Serve the AIMES MCP server over stdio (skill routing and report validation)')
+    mcp_serve.add_argument('--root', type=Path, help='Project root (defaults to current directory / upward detection)')
     context = sub.add_parser('context', help='Persistent context and handoff operations')
     context_sub = context.add_subparsers(dest='context_command', required=True)
     context_pack = context_sub.add_parser('pack', help='Generate context-pack.json and HANDOFF.md from a trace manifest')
@@ -301,6 +323,20 @@ def emit(data, fmt='text', output: Path | None=None):
                 lines.append('Findings:')
                 for finding in data['findings']: lines.append(f"  - [{finding['level']}] {finding['code']}: {finding['message']}")
             if data.get('message'): lines.append(data['message'])
+            if 'matches' in data and 'task_text' in data:
+                lines.append(f"Task: {data['task_text']} (registry: {data['registry']})")
+                if not data['matches']:
+                    lines.append('No skill route matched; report the gap instead of guessing a skill.')
+                for item in data['matches']:
+                    lines.append(f"  - {item['name']} [{item.get('id')}] score={item['score']} -> {item['file']}")
+                    lines.append(f"      matched triggers: {', '.join(item['matched_triggers'])}")
+                    if item.get('inputs'): lines.append(f"      required inputs: {', '.join(str(x) for x in item['inputs'])}")
+                    if item.get('outputs'): lines.append(f"      expected outputs: {', '.join(str(x) for x in item['outputs'])}")
+                if data.get('note'): lines.append(data['note'])
+            if data.get('content_preview'):
+                lines.append('Hook content preview:')
+                lines.extend('  ' + item for item in data['content_preview'].splitlines())
+            if data.get('activation_hint'): lines.append('Hint: ' + data['activation_hint'])
             if data.get('configured') is not None: lines.append(f"Configured: {data['configured']}")
             if data.get('selected_tools'): lines.append('Selected tools: ' + ', '.join(data['selected_tools']))
             if data.get('git'): lines.append('Git: ' + json.dumps(data['git'], ensure_ascii=False))
@@ -699,6 +735,13 @@ def main(argv=None):
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'skill':
+            if args.skill_command == 'route':
+                if args.top < 1:
+                    raise ValueError('--top must be greater than zero')
+                registry = (root / args.registry).resolve() if not args.registry.is_absolute() else args.registry.resolve()
+                result = route_skills(registry, args.task_text, args.top)
+                emit(result, args.format, args.output)
+                return 0
             target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
             if args.skill_command == 'validate':
                 result = validate_skill_registry(target, root, args.id)
@@ -746,6 +789,11 @@ def main(argv=None):
             result = check_docs(root, max_entry_lines=args.max_entry_lines)
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
+        if args.command == 'delivery' and args.delivery_command == 'validate':
+            target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
+            result = validate_delivery_report(target, root)
+            emit(result, args.format, args.output)
+            return 0 if result['ok'] else 1
         if args.command == 'trace':
             target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
             result = validate_trace(target, root)
@@ -787,6 +835,13 @@ def main(argv=None):
                 result = run_mock(target, responses, args.case_ids)
                 emit(result, args.format, args.output)
                 return 0 if all(x.get('status') == 'PASS' for x in result['case_results']) and result['case_results'] else 1
+        if args.command == 'hook' and args.hook_command == 'install':
+            if args.apply and (args.confirm or '').strip().upper() != 'HOOK':
+                raise ValueError(f'Executing hook installation must be used together with --apply --confirm HOOK')
+            result = apply_hook_install(root, args.type, confirm=args.confirm) if args.apply else plan_hook_install(root, args.type)
+            result['dry_run'] = not args.apply
+            emit(result, args.format, args.output)
+            return 0 if result.get('ok', True) else 2
         if args.command == 'audit':
             target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
             if args.audit_command == 'validate':
@@ -815,6 +870,9 @@ def main(argv=None):
                 result = validate_adapter_evidence(target, root) if args.adapter_command == 'validate' else adapter_report(target, root)
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
+        if args.command == 'mcp' and args.mcp_command == 'serve':
+            from .mcp_server import serve_stdio
+            return serve_stdio(root)
         if args.command == 'context' and args.context_command == 'validate':
             target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
             handoff = args.handoff

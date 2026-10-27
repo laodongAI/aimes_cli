@@ -1,8 +1,9 @@
 ---
+name: architecture-contract-review
+description: 检查方案是否符合既有架构边界、接口契约、数据模型、ADR、安全边界和兼容性要求。当任务涉及 架构变更、公共接口、接口契约、数据模型变更、架构评审、兼容性 等内容时使用该 Skill。
 skill_id: SKL-CORE-ARCH-001
 change_summary: "V0.5.1：契约、决策分支、证据语义与评测案例全量优化"
----
-# Skill：架构与接口契约审查
+---# Skill：架构与接口契约审查
 
 ## Purpose / 目标与边界
 检查方案是否符合权威架构边界、接口/数据契约、ADR、安全约束、兼容性与运行恢复要求，并提供可复核的发现与决策选项。

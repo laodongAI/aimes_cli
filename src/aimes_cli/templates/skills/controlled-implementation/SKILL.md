@@ -1,4 +1,6 @@
 ---
+name: controlled-implementation
+description: 按已批准需求和明确范围实施最小必要变更，保护用户修改并以真实证据报告结果。当任务涉及 受控实施、功能开发、缺陷修复、代码修改、实施任务 等内容时使用该 Skill。
 skill_id: SKL-CORE-IMPL-001
 change_summary: "V0.5.1：契约、决策分支、证据语义与评测案例全量优化"
 ---

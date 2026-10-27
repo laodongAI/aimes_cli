@@ -1,4 +1,6 @@
 ---
+name: market-analysis
+description: 市场、行业结构、竞争环境与市场进入分析。当任务涉及 市场分析、竞品研究、行业分析、市场进入、波特五力 等内容时使用该 Skill。
 skill_id: SKL-CORE-MKT-001
 name: market-analysis
 version: 0.2.0
@@ -319,9 +321,9 @@ evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
 
 ## References / 参考资料
 
-- [autonomous-investigation](../autonomous-investigation/SKILL.md) - 自治调查协议
-- [intelligence-collection-disciplines](../intelligence-collection-disciplines/SKILL.md) - 情报收集学科
-- [tam-sam-som-calculator](../tam-sam-som-calculator/SKILL.md) - 市场规模计算器
-- [ansoff-matrix](../ansoff-matrix/SKILL.md) - 安索夫增长矩阵
+- `autonomous-investigation`（计划中的独立 Skill，尚未收录）- 自治调查协议
+- `intelligence-collection-disciplines`（计划中的独立 Skill，尚未收录）- 情报收集学科
+- `tam-sam-som-calculator`（计划中的独立 Skill，尚未收录）- 市场规模计算器
+- `ansoff-matrix`（计划中的独立 Skill，尚未收录）- 安索夫增长矩阵
 - Michael E. Porter, "How Competitive Forces Shape Strategy" (Harvard Business Review, 1979)
 - Francis Joseph Aguilar, "Scanning the Business Environment" (1967)

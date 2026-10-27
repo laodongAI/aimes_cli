@@ -293,9 +293,9 @@ skills:
 # ==========================================
 - id: SKL-CORE-UI-DESIGN-001
   name: frontend-design
-  version: 1.0.0
+  version: 1.1.0
   file: skills/frontend-design/SKILL.md
-  purpose: 将产品目标转化为具有明确视觉方向、可实现且可验证的界面设计。
+  purpose: 将产品目标转化为具有明确视觉方向、可实现且可验证的界面设计；含反模板化设计规则与两遍设计流程。
   triggers:
   - frontend_design
   - new_page
@@ -304,6 +304,8 @@ skills:
   - complex_ui
   - visual_direction
   - design_prototype
+  - anti_template_design
+  - typography_strategy
   inputs: [task_id, product_goal, target_users, primary_user_tasks, project_context]
   outputs: [design_brief, visual_direction, page_structure, component_plan, state_matrix, verification_plan]
   applies_to: [all]

@@ -1,4 +1,6 @@
 ---
+name: strategic-positioning
+description: 产品定位、目标客户、差异化与战略选择。当任务涉及 战略定位、产品定位、差异化、目标客户 等内容时使用该 Skill。
 skill_id: SKL-CORE-STRAT-001
 name: strategic-positioning
 version: 0.2.0

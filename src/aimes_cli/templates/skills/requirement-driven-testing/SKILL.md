@@ -1,4 +1,6 @@
 ---
+name: requirement-driven-testing
+description: 从批准需求和风险出发设计可判定的测试，覆盖主流程、边界、异常和回归，并如实记录执行证据。当任务涉及 测试设计、需求覆盖、回归测试、发布验收、测试用例 等内容时使用该 Skill。
 skill_id: SKL-CORE-TEST-001
 change_summary: "V0.5.1：契约、决策分支、证据语义与评测案例全量优化"
 ---
