@@ -11,6 +11,9 @@ class ReleaseCheckTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         (self.root / "src" / "aimes_cli" / "templates" / "core").mkdir(parents=True)
         (self.root / "src" / "aimes_cli" / "templates" / "core" / "AIMES-CORE-V1.2.md").write_text("# Core\n", encoding="utf-8")
+        state_template = self.root / "src" / "aimes_cli" / "templates" / "project-state" / "engineering-modes.yaml"
+        state_template.parent.mkdir(parents=True)
+        state_template.write_text("schema_version: 1\\nmodes: []\\n", encoding="utf-8")
         (self.root / "src" / "aimes_cli" / "data").mkdir(parents=True)
         (self.root / "src" / "aimes_cli" / "data" / "adapter-registry.yaml").write_text("schema_version: 2\n", encoding="utf-8")
         (self.root / "src" / "aimes_cli" / "__init__.py").write_text(
@@ -32,6 +35,13 @@ class ReleaseCheckTests(unittest.TestCase):
         result = validate_release(self.root)
         self.assertTrue(result["ok"], result["findings"])
         self.assertEqual(result["summary"]["failed"], 0)
+
+    def test_missing_project_state_mode_registry_template_fails(self):
+        (self.root / "src" / "aimes_cli" / "templates" / "project-state" / "engineering-modes.yaml").unlink()
+        result = validate_release(self.root)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any(item["name"] == "project_state_mode_registry_template_present" and item["status"] == "FAIL"
+                            for item in result["checks"]))
 
     def test_readme_version_mismatch_fails(self):
         (self.root / "README.md").write_text("# AIMES local CLI (V0.7.8)\n", encoding="utf-8")
