@@ -477,3 +477,8 @@ aimes version-audit --root . --format json --output .aimes/reports/version-audit
 - 新增 prompt-optimization Skill，并接入可部署 Skill 注册表；优化必须保留必要约束并通过同条件评测验证。
 - GitHub 镜像发布过滤器对 AIMES 治理入口、.aimes/、治理文档与 Skill 资产增加明确保护规则；密钥文件和危险后缀仍然过滤。
 - aimes publish 是镜像发布功能，不等同于本地 Git commit；本地 Git 是否忽略文件仍由项目 .gitignore 与 Git index 决定。
+
+
+## Automated engineering quality gates
+
+AIMES includes a read-only deterministic quality inspection command: `aimes quality inspect`. It currently reports Vue SFC, script-block, and template-block size thresholds. Project rules live in `.aimes/quality-gates.yaml`; the default is advisory (`enforce: false`) to avoid unexpectedly blocking existing projects. Enable `enforce: true` only after reviewing the baseline. See [automated engineering quality checks](docs/AUTOMATED-ENGINEERING-QUALITY-GATES.md) for rule semantics and limitations.
