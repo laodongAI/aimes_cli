@@ -90,8 +90,12 @@ def adapter_report(path: Path, root: Path | None = None) -> dict:
         mode_bucket["checks"]+=1
         mode_bucket[key]+=1
         # Old evidence remains readable; missing dimensions are inferred only for aggregation.
-        host_id = item.get("host_id") or ADAPTERS[tool_id].host_id
-        harness_id = item.get("harness_id") or ADAPTERS[tool_id].harness_id
+        host_id = item.get("host_id")
+        harness_id = item.get("harness_id")
+        if not isinstance(host_id, str) or not host_id.strip():
+            host_id = ADAPTERS[tool_id].host_id
+        if not isinstance(harness_id, str) or not harness_id.strip():
+            harness_id = ADAPTERS[tool_id].harness_id
         for grouping, group_id in ((hosts, host_id), (harnesses, harness_id)):
             group = grouping.setdefault(group_id, {"checks":0,"pass":0,"fail":0,"blocked":0,"not_run":0,"unknown":0})
             group["checks"] += 1
