@@ -88,10 +88,10 @@ class QualityRuleTests(unittest.TestCase):
             subprocess.run(["git", "-C", str(root), "config", "user.email", "test@example.com"], check=True)
             subprocess.run(["git", "-C", str(root), "config", "user.name", "AIMES Test"], check=True)
             module = root / "api.py"
-            module.write_text("def public_api(value, option=None):\\n    return value\\n", encoding="utf-8")
+            module.write_text("def public_api(value, option=None):\n    return value\n", encoding="utf-8")
             subprocess.run(["git", "-C", str(root), "add", "api.py"], check=True)
             subprocess.run(["git", "-C", str(root), "commit", "-qm", "baseline"], check=True)
-            module.write_text("def replacement(value):\\n    return value\\n", encoding="utf-8")
+            module.write_text("def replacement(value):\n    return value\n", encoding="utf-8")
             findings, metadata = inspect_public_api_compatibility(root, "HEAD")
         self.assertEqual(metadata["status"], "COMPARED")
         self.assertTrue(any(item["code"] == "PUBLIC_API_REMOVED" for item in findings))
@@ -103,10 +103,10 @@ class QualityRuleTests(unittest.TestCase):
             subprocess.run(["git", "-C", str(root), "config", "user.email", "test@example.com"], check=True)
             subprocess.run(["git", "-C", str(root), "config", "user.name", "AIMES Test"], check=True)
             module = root / "api.py"
-            module.write_text("def public_api(value, option=None):\\n    return value\\n", encoding="utf-8")
+            module.write_text("def public_api(value, option=None):\n    return value\n", encoding="utf-8")
             subprocess.run(["git", "-C", str(root), "add", "api.py"], check=True)
             subprocess.run(["git", "-C", str(root), "commit", "-qm", "baseline"], check=True)
-            module.write_text("def public_api(value, required):\\n    return value\\n", encoding="utf-8")
+            module.write_text("def public_api(value, required):\n    return value\n", encoding="utf-8")
             findings, _ = inspect_public_api_compatibility(root, "HEAD")
         self.assertTrue(any(item["code"] == "PUBLIC_API_SIGNATURE_CHANGED" for item in findings))
 
