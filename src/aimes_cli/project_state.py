@@ -138,15 +138,25 @@ def show_project_state(root: Path) -> dict[str, Any]:
     registry_path = _safe_project_path(root, MODE_REGISTRY_REL)
     registry = load_mode_registry(root) if registry_path.is_file() else {}
     mode = registry.get(state.get("engineering_mode"), {})
+    skill_registry_path = _safe_project_path(root, Path(".aimes/skills/registry.yaml"))
+    registered_skills: set[str] = set()
+    if skill_registry_path.is_file():
+        skill_payload = _read_yaml(skill_registry_path)
+        for item in skill_payload.get("skills", []) if isinstance(skill_payload.get("skills"), list) else []:
+            if isinstance(item, dict) and isinstance(item.get("name"), str):
+                registered_skills.add(item["name"])
+    routed_skills = mode.get("skills", [])
+    available_skills = [name for name in routed_skills if name in registered_skills]
+    missing_skills = [name for name in routed_skills if name not in registered_skills]
     return {
         "ok": True,
         "project": root.name,
         "state": state,
         "engineering_mode_label": mode.get("label"),
-        "routed_skills": mode.get("skills", []),
+        "routed_skills": routed_skills,\n        "available_skills": available_skills,\n        "missing_skills": missing_skills,
         "workflow": mode.get("workflow"),
         "quality_profile": mode.get("quality_profile"),
-        "note": "项目生命周期、当前工程模式和任务阶段分别维护；CLI 不读取 AI 对话内容。",
+        "note": "项目生命周期、当前工程模式和任务阶段分别维护；CLI 不读取 AI 对话内容。工作流和质量配置当前为路由元数据。",
     }
 
 
