@@ -39,7 +39,7 @@ class RuntimeProbeTests(unittest.TestCase):
 
     def test_exact_response_generates_valid_runtime_evidence(self):
         (self.probe / "response.txt").write_text(self.token_from_rule() + "\n", encoding="utf-8")
-        result = validate_runtime_probe(self.root, self.probe, observer="tester")
+        result = validate_runtime_probe(self.root, self.probe, observer="tester", confirm_fresh_session=True)
         self.assertTrue(result["ok"], result)
         evidence = self.probe / "verification-evidence.yaml"
         validated = validate_adapter_evidence(evidence, self.root)
@@ -47,6 +47,18 @@ class RuntimeProbeTests(unittest.TestCase):
         text = evidence.read_text(encoding="utf-8")
         self.assertIn("verification: PASS", text)
         self.assertIn("method: runtime_observation", text)
+
+    def test_exact_token_without_fresh_session_attestation_is_blocked(self):
+        (self.probe / "response.txt").write_text(self.token_from_rule() + "\\n", encoding="utf-8")
+        result = validate_runtime_probe(self.root, self.probe, observer="tester")
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], "BLOCKED")
+        self.assertFalse(result["fresh_session_confirmed"])
+        validated = validate_adapter_evidence(self.probe / "verification-evidence.yaml", self.root)
+        self.assertTrue(validated["ok"], validated["findings"])
+        evidence = (self.probe / "verification-evidence.yaml").read_text(encoding="utf-8")
+        self.assertIn("verification: BLOCKED", evidence)
+        self.assertIn("fresh_session_confirmed: false", evidence)
 
     def test_mismatched_response_is_fail_not_pass(self):
         (self.probe / "response.txt").write_text("I think the token is hidden.\n", encoding="utf-8")
