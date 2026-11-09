@@ -42,6 +42,20 @@ def _write_new(path: Path, content: str) -> None:
         stream.write(content)
 
 
+def _checked_probe_file(path: Path, probe_root: Path, label: str) -> Path:
+    """Reject symlinked or escaping probe artifacts before reading them."""
+    if path.is_symlink():
+        raise ValueError(f"Probe {label} must not be a symbolic link")
+    resolved = path.resolve()
+    try:
+        resolved.relative_to(probe_root.resolve())
+    except ValueError as exc:
+        raise ValueError(f"Probe {label} escapes the probe directory") from exc
+    if not resolved.is_file():
+        raise ValueError(f"Probe {label} is missing or is not a regular file")
+    return resolved
+
+
 def create_runtime_probe(
     root: Path, output_dir: Path, *, tool: str, product_version: str,
     governance_version: str = "1.2", observer: str = "",
@@ -147,8 +161,9 @@ def validate_runtime_probe(root: Path, probe_dir: Path, *, observer: str = "") -
     root = root.resolve()
     target = _inside(probe_dir, root)
     manifest_path = target / "probe-manifest.json"
-    if not manifest_path.is_file():
-        raise ValueError(f"Probe manifest not found: {manifest_path}")
+    if not manifest_path.is_file() or manifest_path.is_symlink():
+        raise ValueError(f"Probe manifest not found or is not a regular file: {manifest_path}")
+    manifest_path = _checked_probe_file(manifest_path, target, "manifest")
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -169,11 +184,11 @@ def validate_runtime_probe(root: Path, probe_dir: Path, *, observer: str = "") -
             raise ValueError(f"Probe manifest field {field} must be a non-empty string when present")
     if manifest["rule_entry"] != PROBE_TOOLS[tool]["entry"]:
         raise ValueError("Probe manifest rule_entry does not match the selected tool")
-    prompt_path = target / "PROMPT.txt"
-    if not prompt_path.is_file() or _sha256(prompt_path) != manifest["prompt_sha256"]:
+    prompt_path = _checked_probe_file(target / "PROMPT.txt", target, "prompt")
+    if _sha256(prompt_path) != manifest["prompt_sha256"]:
         raise ValueError("Probe prompt is missing or changed since probe creation")
-    rule_path = target / PROBE_TOOLS[tool]["entry"]
-    if not rule_path.is_file() or _sha256(rule_path) != manifest.get("rule_sha256"):
+    rule_path = _checked_probe_file(target / PROBE_TOOLS[tool]["entry"], target, "native rule entry")
+    if _sha256(rule_path) != manifest.get("rule_sha256"):
         raise ValueError("Native rule entry is missing or changed since probe creation; do not trust this probe")
     rule_text = rule_path.read_text(encoding="utf-8-sig")
     marker = "reply with exactly the following token and no other text:\n\n"
@@ -183,7 +198,7 @@ def validate_runtime_probe(root: Path, probe_dir: Path, *, observer: str = "") -
     if not token.startswith("AIMES_PROBE_") or len(token) != len("AIMES_PROBE_") + 32:
         raise ValueError("Probe token is missing or invalid")
     response_path = target / "response.txt"
-    if not response_path.is_file():
+    if not response_path.exists():
         return {
             "schema_version": 1,
             "validator": "aimes-runtime-probe-validate",
@@ -193,6 +208,7 @@ def validate_runtime_probe(root: Path, probe_dir: Path, *, observer: str = "") -
             "message": f"Save the complete, unedited assistant reply to {response_path}",
             "note": "No response means NOT_RUN, not PASS or FAIL.",
         }
+    response_path = _checked_probe_file(response_path, target, "response")
     raw_response = response_path.read_text(encoding="utf-8-sig")
     passed = raw_response.strip() == token
     status = "PASS" if passed else "FAIL"
