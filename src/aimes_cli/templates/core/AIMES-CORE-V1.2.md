@@ -1507,6 +1507,9 @@ AIMES 项目状态由三个独立维度组成，不得压缩成单一项目状�
 
 任务开始时：
 - 读取 `aimes state show`（或通过 MCP 调用 `aimes_project_state`），同时检查当前任务记录、Git 状态和项目规则。
+- 当生命周期为 `unknown` 时调用 `aimes state assess-lifecycle`（或 MCP `aimes_assess_project_lifecycle`）获取证据候选；评估只读，不可把目录存在等同于功能完成，也不可自动写入生命周期。
+- 每个 AI 工具会话使用稳定且独立的 session ID；开始新任务时创建独立任务记录（CLI `aimes task start` 或 MCP `aimes_task_start`），阶段/状态通过任务更新命令维护，不得把不同任务进度写入同一个项目级快照。
+- 任务开始时读取当前会话（CLI `aimes session show` 或 MCP `aimes_session_show`），恢复该会话的当前任务；任务切换必须显式创建或绑定任务，禁止覆盖其他会话的任务指针。
 - 若项目生命周期为 `unknown`，检查项目目标/README、源代码结构、设计文档、测试、发布与运维记录，输出证据和候选阶段；不得因执行了 `aimes init` 就判定为新项目，证据不足时先确认。
 - AI 宿主可调用 `aimes_detect_engineering_mode` 获取关键词候选；状态确认后调用 `aimes_set_project_state` 持久化，并正确标记 `source=user|ai` 与置信度。低置信度 AI 模式写入会被 CLI/MCP 拒绝。
 - 结合当前用户意图判断工程模式；项目生命周期不能代替当前任务模式。
