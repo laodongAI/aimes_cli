@@ -1506,7 +1506,7 @@ AIMES 项目状态由三个独立维度组成，不得压缩成单一项目状�
 3. **当前任务阶段**：analysis / clarification / design / review / implementation / testing / acceptance / delivery。
 
 任务开始时：
-- 读取 `aimes state show`，同时检查当前任务记录、Git 状态和项目规则。
+- 读取 `aimes state show`（或通过 MCP 调用 `aimes_project_state`），同时检查当前任务记录、Git 状态和项目规则。\n- AI 宿主可调用 `aimes_detect_engineering_mode` 获取关键词候选；状态确认后调用 `aimes_set_project_state` 持久化，并正确标记 `source=user|ai` 与置信度。低置信度 AI 模式写入会被 CLI/MCP 拒绝。
 - 结合当前用户意图判断工程模式；项目生命周期不能代替当前任务模式。
 - 可将任务摘要传给 `aimes state detect --task-text "..."` 获取关键词候选，但该命令不读取 AI 对话、不调用模型、不自动保存状态。
 - 多模式命中或置信度低时，必须向用户确认；用户明确指定的模式优先。
