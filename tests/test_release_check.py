@@ -18,7 +18,7 @@ class ReleaseCheckTests(unittest.TestCase):
         )
         (self.root / "pyproject.toml").write_text(
             '[project]\nname = "aimes-governance-cli"\nversion = "0.7.9"\n'
-            '[tool.setuptools.package-data]\naimes_cli = ["templates/**/*.md", "schemas/*.json", "data/*.yaml", "data/*.yaml"]\n',
+            '[tool.setuptools.package-data]\naimes_cli = ["templates/**/*.md", "schemas/*.json", "data/*.yaml"]\n',
             encoding="utf-8",
         )
         (self.root / "README.md").write_text("# AIMES local CLI（V0.7.9）\n", encoding="utf-8")
