@@ -45,7 +45,8 @@
               "zcode",
               "qcode",
               "claude-code",
-              "codex-cli"
+              "codex-cli",
+              "chatgpt-work"
             ]
           },
           "product_version": {
