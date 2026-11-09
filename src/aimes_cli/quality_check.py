@@ -83,8 +83,9 @@ def inspect_project_quality(root: Path) -> dict[str, Any]:
     """Read-only, deterministic engineering checks. It never edits project files."""
     root = root.resolve()
     config, findings = _safe_config(root)
+    config_invalid = bool(findings)
     if not config.get("enabled", True):
-        return {"ok": not findings, "status": "DISABLED", "root": str(root), "summary": {"files_scanned": 0, "findings": len(findings)}, "findings": findings, "policy": {"enforce": False, "fail_on": config.get("fail_on")}}
+        return {"ok": not config_invalid, "status": "CONFIG_ERROR" if config_invalid else "DISABLED", "root": str(root), "summary": {"files_scanned": 0, "findings": len(findings)}, "findings": findings, "policy": {"enforce": False, "fail_on": config.get("fail_on")}}
     vue_files = list(_iter_vue_files(root, config["exclude"]))
     vue_config = config["vue"]
     rules = (
@@ -114,8 +115,8 @@ def inspect_project_quality(root: Path) -> dict[str, Any]:
     warnings = sum(item.get("severity") == "WARNING" for item in findings)
     enforced = config.get("enforce") is True
     return {
-        "ok": not (enforced and blocking),
-        "status": "FAIL" if enforced and blocking else "PASS_WITH_FINDINGS" if findings else "PASS",
+        "ok": not config_invalid and not (enforced and blocking),
+        "status": "CONFIG_ERROR" if config_invalid else "FAIL" if enforced and blocking else "PASS_WITH_FINDINGS" if findings else "PASS",
         "root": str(root),
         "summary": {"files_scanned": len(vue_files), "errors": errors, "warnings": warnings, "findings": len(findings)},
         "policy": {"enforce": enforced, "fail_on": fail_on, "config": ".aimes/quality-gates.yaml"},
