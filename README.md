@@ -506,7 +506,7 @@ AIMES includes a read-only deterministic quality inspection command: `aimes qual
 
 ## 项目状态与工程模式感知
 
-AIMES 支持分别维护项目生命周期、当前工程模式和任务阶段，并通过工程模式目录映射已有 Skills、工作流标识与质量配置标识。
+AIMES 支持分别维护项目生命周期、当前工程模式和任务阶段，并通过工程模式目录映射已有 Skills、工作流标识与质量配置标识。交互式 CLI 启动时会展示当前项目状态卡片。
 
 ```powershell
 # 查看当前项目状态和当前模式路由
