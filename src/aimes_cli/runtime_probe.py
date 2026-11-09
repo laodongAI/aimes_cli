@@ -156,11 +156,17 @@ def validate_runtime_probe(root: Path, probe_dir: Path, *, observer: str = "") -
     if not isinstance(manifest, dict) or manifest.get("probe_type") != "AIMES_RUNTIME_RULE_LOADING":
         raise ValueError("Invalid AIMES runtime probe manifest")
     tool = manifest.get("tool")
-    if tool not in PROBE_TOOLS:
+    if not isinstance(tool, str) or tool not in PROBE_TOOLS:
         raise ValueError("Unsupported tool ID in probe manifest")
     required_fields = ("probe_id", "product_version", "execution_mode", "platform", "rule_entry", "case_id", "aimes_cli_version", "governance_version", "rule_sha256", "prompt_sha256")
     if any(not isinstance(manifest.get(key), str) or not manifest[key].strip() for key in required_fields):
         raise ValueError("Probe manifest is missing required non-empty fields")
+    # Optional context fields may be absent in legacy manifests, but malformed
+    # values must not leak into generated evidence or cause type errors later.
+    for field in ("host_id", "harness_id", "adapter_registry_version", "observer"):
+        value = manifest.get(field)
+        if value is not None and (not isinstance(value, str) or not value.strip()):
+            raise ValueError(f"Probe manifest field {field} must be a non-empty string when present")
     if manifest["rule_entry"] != PROBE_TOOLS[tool]["entry"]:
         raise ValueError("Probe manifest rule_entry does not match the selected tool")
     prompt_path = target / "PROMPT.txt"
