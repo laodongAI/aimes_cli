@@ -192,7 +192,7 @@ def _inspect_dependency_manifests(root: Path) -> list[dict[str, Any]]:
                     values = payload.get(section, {})
                     if isinstance(values, dict):
                         for name, version in values.items():
-                            if version in {"*", "latest"}:
+                            if isinstance(version, str) and version in {"*", "latest"}:
                                 findings.append(_finding("DEPENDENCY_WILDCARD", "package.json", 1,
                                     f"{section}.{name} uses the floating version specifier {version}.",
                                     "Pin a reviewed version range and commit the package manager lockfile.",
