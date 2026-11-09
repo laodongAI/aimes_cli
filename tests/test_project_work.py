@@ -63,7 +63,7 @@ class ProjectWorkTests(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(result["mode"]["id"], "frontend-optimization")
         self.assertEqual(result["route"]["workflow"]["status"], "NOT_CONFIGURED")
-        self.assertEqual(result["route"]["quality"]["profile_status"], "MAPPING_ONLY")
+        self.assertEqual(result["route"]["quality"]["profile_status"], "AVAILABLE")
         self.assertTrue(result["route"]["skills"])
         self.assertFalse(result["execution"]["automatic"])
 
@@ -169,7 +169,7 @@ class ProjectWorkTests(unittest.TestCase):
             code = main(["state", "explain", "--root", str(self.root),
                          "--mode", "frontend-optimization", "--format", "json"])
         self.assertEqual(code, 0)
-        self.assertIn('"profile_status": "MAPPING_ONLY"', output.getvalue())
+        self.assertIn('"profile_status": "AVAILABLE"', output.getvalue())
 
         # The pre-existing task writer/lease validator remains available under the shared task command.
         output = io.StringIO()
