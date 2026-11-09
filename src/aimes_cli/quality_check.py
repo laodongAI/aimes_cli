@@ -65,7 +65,7 @@ def _safe_config(root: Path, profile_id: str | None = None, mode_id: str | None 
         profile = resolve_quality_profile(root, selected_profile)
     except (OSError, ValueError) as exc:
         return dict(DEFAULT_CONFIG), [{"severity": "ERROR", "code": "QUALITY_PROFILE_CONFIG", "message": str(exc), "path": ".aimes/quality-profiles.yaml"}], {}
-    profile_config = _merge(DEFAULT_CONFIG, {"vue": profile["overrides"]})
+    profile_config = _merge(DEFAULT_CONFIG, profile["overrides"])
     if not path.is_file():
         return profile_config, [], profile
     try:
