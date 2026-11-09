@@ -76,9 +76,12 @@ def adapter_report(path: Path, root: Path | None = None) -> dict:
     validation=validate_adapter_evidence(path,root); data=_load(path)
     summary={key:{"checks":0,"pass":0,"fail":0,"blocked":0,"not_run":0,"unknown":0} for key in ADAPTERS}
     execution_modes: dict[str, dict[str, int]] = {}
+    hosts: dict[str, dict[str, int]] = {}
+    harnesses: dict[str, dict[str, int]] = {}
     for item in data.get("checks",[]) if isinstance(data,dict) and isinstance(data.get("checks"),list) else []:
         if not isinstance(item,dict) or item.get("tool") not in summary: continue
-        bucket=summary[item["tool"]]; bucket["checks"]+=1
+        tool_id = item["tool"]
+        bucket=summary[tool_id]; bucket["checks"]+=1
         status=item.get("verification","UNKNOWN")
         key={"PASS":"pass","FAIL":"fail","BLOCKED":"blocked","NOT_RUN":"not_run","UNKNOWN":"unknown"}.get(status,"unknown")
         bucket[key]+=1
@@ -86,11 +89,20 @@ def adapter_report(path: Path, root: Path | None = None) -> dict:
         mode_bucket=execution_modes.setdefault(mode,{"checks":0,"pass":0,"fail":0,"blocked":0,"not_run":0,"unknown":0})
         mode_bucket["checks"]+=1
         mode_bucket[key]+=1
+        # Old evidence remains readable; missing dimensions are inferred only for aggregation.
+        host_id = item.get("host_id") or ADAPTERS[tool_id].host_id
+        harness_id = item.get("harness_id") or ADAPTERS[tool_id].harness_id
+        for grouping, group_id in ((hosts, host_id), (harnesses, harness_id)):
+            group = grouping.setdefault(group_id, {"checks":0,"pass":0,"fail":0,"blocked":0,"not_run":0,"unknown":0})
+            group["checks"] += 1
+            group[key] += 1
     return {
         "ok":validation["ok"],
         "schema_version":data.get("schema_version",1) if isinstance(data,dict) else None,
         "validation":validation,
         "tools":summary,
+        "hosts":hosts,
+        "harnesses":harnesses,
         "execution_modes":execution_modes,
         "interpretation":"PASS 仅表示记录的验证已通过结构校验；是否真实加载仍取决于所记录的运行证据。工具与执行模式分别统计，未记录不等于失败，也不等于通过。"
     }
