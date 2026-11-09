@@ -11,6 +11,9 @@
 - 新增只读项目生命周期证据评估 `aimes state assess-lifecycle`，输出当前生命周期、候选、置信度、信号、证据和限制，不自动修改生命周期。
 - 新增独立任务记录 `aimes task start/list/show/update` 与会话指针 `aimes session show/bind`，不同 AI 工具会话可维护各自当前任务。 新任务流程以 task/session 记录为权威，旧项目快照字段仅为兼容保留。
 - MCP Server 新增生命周期评估、任务创建/列表/更新和会话读取/绑定工具；项目级状态快照仍保留以兼容旧版本。
+- 新增 `aimes state explain [--mode]` 与 MCP `aimes_explain_engineering_mode`：检查模式映射的 Skills 是否注册/存在、工作流定义是否可用/有效、质量门禁配置是否存在，并输出推荐任务阶段。
+- 明确区分工作流元数据、实际工作流定义和可执行运行记录；模式级 quality_profile 目前仅为映射标签，全局质量门禁仍需独立运行。
+- 任务阶段禁止回退，已完成/已取消任务不可原位修改；返工通过新任务保留历史。增加 CLI/MCP/路由和状态转换回归测试。
 - Release 校验新增工程模式 YAML 模板源文件与 `templates/**/*.yaml` 包配置检查，防止 wheel/Windows EXE 漏打包状态目录。
 
 ## Unreleased - 统一质量 Finding 报告
