@@ -35,6 +35,8 @@ class ProductSkillDeploymentTests(unittest.TestCase):
                 "architecture-contract-review",
                 "controlled-implementation",
                 "requirement-driven-testing",
+                "software-engineering-standards",
+                "vue-frontend-engineering",
             }
             self.assertTrue(expected.issubset(routes))
             for route in routes.values():
