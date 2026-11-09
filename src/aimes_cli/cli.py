@@ -407,8 +407,12 @@ def emit(data, fmt='text', output: Path | None=None):
                 lines.append(f"  模式来源/置信度：{state.get('mode_source', 'unknown')} / {state.get('confidence', 'unknown')}")
                 if data.get('routed_skills'): lines.append('  路由 Skills：' + ', '.join(data['routed_skills']))
                 if data.get('missing_skills'): lines.append('  缺失 Skills：' + ', '.join(data['missing_skills']))
+                if data.get('unknown_mode'): lines.append('  WARNING：状态记录引用了未注册的工程模式')
                 if data.get('workflow'): lines.append(f"  工作流标识：{data['workflow']}（路由元数据）")
                 if data.get('quality_profile'): lines.append(f"  质量配置标识：{data['quality_profile']}（路由元数据）")
+                if data.get('next_actions'):
+                    lines.append('  下一步建议：')
+                    for action in data['next_actions']: lines.append('    - ' + action)
                 if data.get('note'): lines.append('  说明：' + data['note'])
             if data.get('modes') and isinstance(data['modes'], list):
                 lines.append('Registered engineering modes:')
