@@ -2,7 +2,7 @@ from __future__ import annotations
 import argparse, json, sys
 from pathlib import Path
 from . import __version__
-from .adapters import ADAPTERS, adapter_payload, normalize_tools
+from .adapters import ADAPTERS, ADAPTER_REGISTRY, adapter_payload, normalize_tools
 from .core import find_root, init_project, inspect_project, validate_project, doctor, status, render_text
 from .validators import validate_requirement, validate_knowledge, validate_reuse, validate_skill_registry
 from .v03 import validate_trace, validate_evidence, build_context_pack
@@ -861,7 +861,7 @@ def main(argv=None):
             return 0 if result['ok'] else 1
         if args.command == 'adapter':
             if args.adapter_command == 'list':
-                result = {'ok': True, 'registry_version': '2.0.0', 'schema_version': 2, 'adapters': adapter_payload(), 'note': 'Capability states are declarations, not runtime verification. unknown must not be interpreted as supported.'}
+                result = {'ok': True, 'registry_version': ADAPTER_REGISTRY.get('registry_version'), 'schema_version': ADAPTER_REGISTRY.get('schema_version'), 'adapters': adapter_payload(), 'note': 'Capability states are declarations, not runtime verification. unknown must not be interpreted as supported.'}
             elif args.adapter_command == 'probe':
                 if args.adapter_probe_command == 'create':
                     output_dir = (root / args.output_dir).resolve() if not args.output_dir.is_absolute() else args.output_dir.resolve()
