@@ -8,6 +8,7 @@
 - 工程模式复用既有 Skills，并明确 workflow/quality profile 当前仅为路由元数据，不宣称自动执行。
 - MCP Server 新增项目状态读取、工程模式候选识别和受控状态更新工具；低置信度 AI 模式不允许直接持久化。
 - 增加状态持久化、模式独立性、路径边界、歧义检测和 CLI 回归测试。
+- Release 校验新增工程模式 YAML 模板源文件与 `templates/**/*.yaml` 包配置检查，防止 wheel/Windows EXE 漏打包状态目录。
 
 ## Unreleased - 统一质量 Finding 报告
 
