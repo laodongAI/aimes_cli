@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import platform
+import sys
 import shutil
 import subprocess
 from datetime import datetime, timezone
@@ -101,7 +101,7 @@ def detect_adapters(tools: Iterable[str] | None = None) -> dict[str, Any]:
         "detector": "aimes-read-only-runtime-detect",
         "registry_version": ADAPTER_REGISTRY.get("registry_version"),
         "detected_at": datetime.now(timezone.utc).isoformat(),
-        "platform": f"{platform.system()} {platform.release()}",
+        "platform": sys.platform,
         "scope": "PATH executable discovery and optional --version output only; no agent session, feature, authentication, or runtime rule-loading verification",
         "adapters": records,
         "summary": {
