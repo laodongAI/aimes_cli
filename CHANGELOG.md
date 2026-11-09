@@ -17,6 +17,9 @@
 - frontend-design Skill 升级 1.1.0：吸收 Anthropic 官方 frontend-design（anthropics/skills，Apache 2.0）的反模板化规则——常见 AI 默认套路清单、主题锚定、plan→critique→build 两遍流程、版式/动效/界面文案原则；同步注册表触发词与原生 frontmatter description。
 - 修复存量文档死链：market-analysis 与 financial-evaluation SKILL.md（canonical 与部署模板两份）中指向未收录 Skill 的 8 个 Markdown 链接改为纯文本提及，`aimes docs check` 错误清零。
 
+- Added read-only `aimes adapter inspect` for Codex CLI and Claude Code project integrations (instructions, Skills, MCP, Hooks, and Agents); configuration values and credentials are not emitted, and no commands or hooks are executed.
+- Added conditional `tomli` dependency for Python 3.10 so project TOML inspection remains available across the supported Python range.
+
 ## 0.8.7 - 产品经理优先路由与深度引导词
 
 - 新增 product-manager Skill，要求先分析当前项目知识、用户问题/价值、现有能力、复用机会、缺口与方案取舍，再生成可复制的深度引导词。
