@@ -115,7 +115,8 @@ def explain_mode(root: Path, mode: str | None = None) -> dict[str, Any]:
             "workflow": _workflow_inventory(root, workflow_id),
             "quality": {
                 "profile_id": quality_profile,
-                "profile_status": profile_status,\n                "profile": profile_detail,
+                "profile_status": profile_status,
+                "profile": profile_detail,
                 "global_gate_config": quality_gate.as_posix() if quality_gate else None,
                 "global_gate_status": "AVAILABLE" if quality_gate else "NOT_CONFIGURED",
                 "note": "AVAILABLE 仅表示 profile 定义可解析；不代表质量检查已经执行。项目 quality-gates.yaml 中的显式规则覆盖 profile 默认值。",
