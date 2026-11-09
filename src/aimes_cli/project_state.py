@@ -165,6 +165,27 @@ def show_project_state(root: Path) -> dict[str, Any]:
     routed_skills = mode.get("skills", [])
     available_skills = [name for name in routed_skills if name in registered_skills]
     missing_skills = [name for name in routed_skills if name not in registered_skills]
+    next_actions: list[str] = []
+    if state.get("project_lifecycle") == "unknown":
+        next_actions.append("检查项目目标、代码、设计文档、测试和发布记录，确认项目生命周期")
+    if not state.get("engineering_mode"):
+        next_actions.append("结合当前任务描述识别工程模式；存在歧义时先向用户确认")
+    elif missing_skills:
+        next_actions.append("补齐或修复当前工程模式映射的缺失 Skill 文件")
+    phase_actions = {
+        "analysis": "完成现状分析、证据收集和影响范围识别",
+        "clarification": "澄清阻断级歧义并确认范围与验收标准",
+        "design": "形成实现设计、模块边界、复用决策和验证方案",
+        "review": "完成方案评审并记录决策与遗留风险",
+        "implementation": "按批准设计实施，复用既有资产并补充测试",
+        "testing": "执行项目真实测试/构建命令并记录结果",
+        "acceptance": "逐项验证验收标准并处理未通过项",
+        "delivery": "整理变更摘要、验证证据、风险和交付报告",
+    }
+    if state.get("task_phase") in phase_actions:
+        next_actions.append(phase_actions[state["task_phase"]])
+    elif state.get("engineering_mode"):
+        next_actions.append("确认当前任务阶段并更新 task_phase")
     return {
         "ok": True,
         "project": root.name,
@@ -172,6 +193,7 @@ def show_project_state(root: Path) -> dict[str, Any]:
         "engineering_mode_label": mode.get("label"),
         "routed_skills": routed_skills,\n        "available_skills": available_skills,\n        "missing_skills": missing_skills,
         "unknown_mode": bool(state.get("engineering_mode") and not mode),
+        "next_actions": next_actions,
         "workflow": mode.get("workflow"),
         "quality_profile": mode.get("quality_profile"),
         "note": "项目生命周期、当前工程模式和任务阶段分别维护；CLI 不读取 AI 对话内容。工作流和质量配置当前为路由元数据。",
