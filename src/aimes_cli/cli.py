@@ -33,6 +33,7 @@ from .code_repair import diagnose_command, inspect_patch, propose_patch, apply_p
 from .quality_check import inspect_project_quality
 from .quality_review import validate_ai_review_report
 from .quality_context import build_review_context
+from .quality_report import build_quality_report
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -51,6 +52,9 @@ def parser() -> argparse.ArgumentParser:
     quality_review.add_argument('--report', type=Path, required=True, help='JSON report produced by an AI tool; must be inside the project root')
     quality_context = quality_sub.add_parser('review-context', help='Build a bounded, read-only context pack for external AI engineering review')
     common(quality_context)
+    quality_report = quality_sub.add_parser('report', help='Combine deterministic and validated AI engineering findings in one report')
+    common(quality_report)
+    quality_report.add_argument('--ai-report', type=Path, help='Optional evidence-backed AI JSON report inside the project root')
     version_audit = sub.add_parser('version-audit', help='Audit project AIMES version and managed-file consistency (read-only)')
     common(version_audit)
     upgrade = sub.add_parser('upgrade', help='Safely upgrade an existing AIMES project; preview and preserve user edits')
@@ -721,6 +725,10 @@ def main(argv=None):
             return 0 if result.get('ok') else 1
         if args.command == 'quality' and args.quality_command == 'review-context':
             result = build_review_context(root)
+            emit(result, args.format, args.output)
+            return 0 if result.get('ok') else 1
+        if args.command == 'quality' and args.quality_command == 'report':
+            result = build_quality_report(root, args.ai_report)
             emit(result, args.format, args.output)
             return 0 if result.get('ok') else 1
         if args.command == 'version-audit':
