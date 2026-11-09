@@ -522,4 +522,4 @@ aimes state set --lifecycle development --mode frontend-optimization --phase ana
 aimes state detect --task-text "请优化 Vue 页面交互和响应式体验"
 ```
 
-状态模型与边界见 [项目状态与工程模式感知](docs/PROJECT-STATE-AND-ENGINEERING-MODES.md)。CLI 不读取 AI 对话内容；AI 宿主必须结合当前对话识别模式，低置信度或多模式命中时先确认。工作流与质量配置目前是路由元数据，不代表自动执行。
+MCP Server 同步提供 `aimes_project_state`、`aimes_detect_engineering_mode` 和 `aimes_set_project_state`，便于连接的 AI 宿主读取、识别和更新状态。状态模型与边界见 [项目状态与工程模式感知](docs/PROJECT-STATE-AND-ENGINEERING-MODES.md)。CLI 不读取 AI 对话内容；AI 宿主必须结合当前对话识别模式，低置信度或多模式命中时先确认。工作流与质量配置目前是路由元数据，不代表自动执行。
