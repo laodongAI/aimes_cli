@@ -92,7 +92,7 @@ aimes adapter list
 aimes adapter list --format json
 ```
 
-能力状态采用 `native / template / manual / unknown / unsupported`。其中 `template` 只表示 AIMES 有对应配置模板，绝不代表目标工具已经加载或实际支持；`unknown` 也不得按支持处理。注册表结构定义见 `schemas/adapter-registry.schema.json`。新增适配器优先修改声明式注册表，不应为工具差异修改治理核心；运行时能力仍需按产品版本和执行模式单独验证。
+能力状态采用 `native / template / manual / unknown / unsupported`。其中 `template` 只表示 AIMES 有对应配置模板，绝不代表目标工具已经加载或实际支持；`unknown` 也不得按支持处理。注册表结构定义见 `schemas/adapter-registry.schema.json`。新增适配器优先修改声明式注册表，不应为工具差异修改治理核心；运行时能力仍需按产品版本和执行模式单独验证。 `aimes adapter report <evidence.yaml>` 除按工具和执行模式统计外，还按 Host/Harness 汇总验证记录；新生成的运行时探针会记录并校验 Host/Harness 身份，旧证据仍可读取。
 
 ## 2. 锁定的工具入口
 
