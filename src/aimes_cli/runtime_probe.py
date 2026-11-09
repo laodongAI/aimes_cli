@@ -11,7 +11,7 @@ from typing import Any
 import yaml
 
 from . import __version__
-from .adapters import ADAPTERS
+from .adapters import ADAPTERS, ADAPTER_REGISTRY
 
 PROBE_TOOLS = {
     "codex-cli": {"entry": "AGENTS.md", "title": "Codex CLI"},
@@ -59,6 +59,7 @@ def create_runtime_probe(
     if target.exists():
         raise ValueError(f"Refusing to overwrite existing probe directory: {target}")
     spec = PROBE_TOOLS[tool]
+    adapter = ADAPTERS[tool]
     token = "AIMES_PROBE_" + secrets.token_hex(16).upper()
     case_id = f"RUNTIME-PROBE-{tool.upper()}-{secrets.token_hex(4).upper()}"
     entry_text = (
@@ -93,6 +94,9 @@ def create_runtime_probe(
         "probe_type": "AIMES_RUNTIME_RULE_LOADING",
         "probe_id": case_id,
         "tool": tool,
+        "host_id": adapter.host_id,
+        "harness_id": adapter.harness_id,
+        "adapter_registry_version": ADAPTER_REGISTRY.get("registry_version", "unknown"),
         "product_version": product_version.strip(),
         "execution_mode": "cli",
         "platform": f"{platform_module.system()} {platform_module.release()}",
@@ -194,6 +198,9 @@ def validate_runtime_probe(root: Path, probe_dir: Path, *, observer: str = "") -
         "checks": [{
             "id": manifest["probe_id"],
             "tool": tool,
+            "host_id": manifest.get("host_id", ADAPTERS[tool].host_id),
+            "harness_id": manifest.get("harness_id", ADAPTERS[tool].harness_id),
+            "adapter_registry_version": manifest.get("adapter_registry_version", "legacy-unknown"),
             "product_version": manifest["product_version"],
             "execution_mode": manifest["execution_mode"],
             "platform": manifest["platform"],
