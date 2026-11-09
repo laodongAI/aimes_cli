@@ -42,13 +42,11 @@
 - 新增 prompt-optimization 专业 Skill，并同步到源 Skill 注册表和 CLI 可部署模板，明确约束保留、差异审查与同条件评测要求。
 - 修复 GitHub 镜像发布过滤器：AIMES 规则入口、.aimes 配置、治理文档与 Skill 资产不会被通用 IDE 状态、缓存或 .gitignore 模式误过滤；密钥与敏感后缀仍然受保护。
 - 新增适配部署与文件过滤回归测试，更新适配矩阵、能力验证矩阵及版本元数据。
-## Unreleased - 评测证据文件完整性
+## Unreleased - UI 设计能力可调用化
 
 - 评测运行记录增加 V2 证据文件契约：PASS 案例必须引用至少一个存在且 SHA-256 匹配的原始输出、命令日志、Git diff 或测试报告等文件。
 - 校验相对路径边界、符号链接、文件大小和哈希；V1 记录保持兼容，V1 引用不被误认为文件级验证。
 - 明确哈希仅证明文件完整性，不证明行为结论真实性；真实工具行为仍需独立审查。
-
- - UI 设计能力可调用化
 
 - 新增 frontend-design、design-system-governance、ui-implementation-validation 三个 UI 专项 Skill，并保留增强既有 ui-quality-review；统一注册触发条件、输入输出、依赖与评测套件。
 - 将 UI Skill 路由规则写入生成的 AIMES Core，明确新页面、设计系统、局部 UI 修改和验证任务的调用时机，避免只添加文件却无法触发。
