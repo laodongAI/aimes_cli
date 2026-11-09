@@ -32,6 +32,19 @@ AIMES 的目标不是单纯安装规则和 Skills，而是帮助 Codex、Claude 
 
 本轮只完成适配元数据与配置层的第一步，没有声称工具 Hooks、Skills、MCP、Agent、终端或 Session 能力已被运行时验证；未证实的能力均为 `unknown`。
 
+### 2.2 2026-11-09 实施进展：只读本地运行时发现
+
+- [x] 新增 `aimes adapter detect`，按注册表检测本机 PATH 中的启动器。
+- [x] 对 CLI 启动器限时尝试 `--version`，记录版本输出、退出码、超时和执行错误。
+- [x] IDE 启动器只做可执行文件发现，不传递参数，避免误启动 GUI。
+- [x] Windows `.cmd/.bat` 不通过 Shell 执行；只报告启动器可用性。
+- [x] 将 hosted workspace 等无本地启动命令的适配器标记为 `not_detectable`，不误报为未安装。
+- [x] 增加检测器单元测试，并更新 README / CHANGELOG。
+- [ ] 在 GitHub Actions 中取得本轮提交的全量测试与发布校验结果。
+- [ ] 对 Codex CLI、Claude Code CLI 进行实际环境探测，形成带版本的本地记录；PATH 发现不等于 Agent 功能验证。
+
+本能力只证明本机启动器发现与有限版本读取，不证明工具功能、登录状态、扩展安装、MCP/Skills/Hooks 或规则加载成功。
+
 ## 3. 实施顺序
 
 ### 阶段 A：可信基线（当前阶段）
