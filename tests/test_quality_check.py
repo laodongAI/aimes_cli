@@ -64,6 +64,47 @@ class QualityCheckTests(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(result["status"], "PASS_WITH_FINDINGS")
 
+    def test_direct_http_calls_in_vue_scripts_are_reported_with_line_evidence(self):
+        source = self.root / "src" / "pages" / "Users.vue"
+        source.parent.mkdir(parents=True)
+        source.write_text(
+            "<script setup>\n"
+            "// fetch('/api/commented')\n"
+            "const load = () => fetch('/api/users')\n"
+            "axios.get('/api/users')\n"
+            "</script>\n<template><div/></template>\n",
+            encoding="utf-8",
+        )
+        self._write_config()
+        result = inspect_project_quality(self.root)
+        findings = [item for item in result["findings"] if item["code"] == "VUE_DIRECT_HTTP_CALL"]
+        self.assertEqual(len(findings), 2)
+        self.assertEqual([item["line"] for item in findings], [3, 4])
+        self.assertTrue(all(item["severity"] == "WARNING" for item in findings))
+
+    def test_direct_http_call_rule_can_be_disabled_per_project(self):
+        source = self.root / "Page.vue"
+        source.write_text("<script setup>\nfetch('/api/users')\n</script>\n", encoding="utf-8")
+        self._write_config(vue={
+            "max_sfc_lines": {"warning": 10, "error": 20},
+            "max_script_lines": {"warning": 5, "error": 10},
+            "max_template_lines": {"warning": 5, "error": 10},
+            "disallow_direct_http_calls": False,
+        })
+        result = inspect_project_quality(self.root)
+        self.assertFalse(any(item["code"] == "VUE_DIRECT_HTTP_CALL" for item in result["findings"]))
+
+    def test_invalid_direct_http_rule_type_fails_closed(self):
+        self._write_config(vue={
+            "max_sfc_lines": {"warning": 10, "error": 20},
+            "max_script_lines": {"warning": 5, "error": 10},
+            "max_template_lines": {"warning": 5, "error": 10},
+            "disallow_direct_http_calls": "yes",
+        })
+        result = inspect_project_quality(self.root)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any(item["code"] == "QUALITY_VUE_CONFIG" for item in result["findings"]))
+
     def test_invalid_config_fails_even_when_enforcement_cannot_be_trusted(self):
         target = self.root / ".aimes" / "quality-gates.yaml"
         target.parent.mkdir(parents=True)
