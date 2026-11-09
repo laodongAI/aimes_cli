@@ -46,6 +46,28 @@ class ProjectWorkTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             show_task(self.root, "../outside")
 
+    def test_task_start_rejects_unknown_mode_and_invalid_session(self):
+        with self.assertRaises(ValueError):
+            start_task(self.root, "未知模式", mode="not-registered")
+        (self.root / ".aimes/sessions").mkdir(parents=True, exist_ok=True)
+        (self.root / ".aimes/sessions/broken.yaml").write_text(
+            "schema_version: 99\nsession_id: broken\n", encoding="utf-8")
+        with self.assertRaises(ValueError):
+            start_task(self.root, "坏会话", session_id="broken")
+
+    def test_task_listing_rejects_symlink_escape(self):
+        outside = self.root.parent / (self.root.name + "-outside-tasks")
+        outside.mkdir()
+        try:
+            tasks = self.root / ".aimes/tasks"
+            tasks.mkdir(parents=True, exist_ok=True)
+            (tasks / "external.yaml").symlink_to(outside / "external.yaml")
+            with self.assertRaises(ValueError):
+                list_tasks(self.root)
+        finally:
+            (self.root / ".aimes/tasks/external.yaml").unlink(missing_ok=True)
+            outside.rmdir()
+
     def test_lifecycle_assessment_is_read_only_and_reports_evidence(self):
         set_project_state(self.root, lifecycle="development")
         before = read_project_state(self.root)
