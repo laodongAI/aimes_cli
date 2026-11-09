@@ -8,7 +8,7 @@ from .adapters import ADAPTERS
 
 VALID_VERIFICATION = {"NOT_RUN", "PASS", "FAIL", "BLOCKED", "UNKNOWN"}
 VALID_METHODS = {"manual_prompt", "file_inspection", "runtime_observation", "automated_check", "user_confirmed"}
-VALID_EXECUTION_MODES = {"ide_extension", "cli", "desktop_app", "other"}
+VALID_EXECUTION_MODES = {"ide_extension", "cli", "desktop_app", "workspace", "other"}
 VALID_SCHEMA_VERSIONS = {1, 2}
 
 def validate_adapter_evidence(path: Path, root: Path | None = None) -> dict:
