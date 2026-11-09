@@ -8,19 +8,19 @@ status: PROPOSED
 
 # Skill：Vue 前端组件化与工程实现
 
-## 目标与边界
+## Purpose / 目标与边界
 在遵循项目技术栈、设计系统和批准架构的前提下，确保 Vue 前端具备清晰组件边界、可复用能力、可测试状态和可维护结构。默认面向 Vue 3 + TypeScript；若项目不是该技术栈，标记不适用并路由到通用工程 Skill。
 
-## 触发条件
+## Trigger conditions / 触发条件
 Vue 页面/组件开发、Vue 组件重构、公共组件/Composable、Pinia Store、前端代码复用、Vue 性能和可测试性治理。涉及视觉/交互设计同时调用 frontend-design 或 ui-quality-review；涉及主题/公共组件契约调用 design-system-governance。
 
-## 必需输入
+## Required inputs / 必需输入
 task_id, approved_requirements, project_stack_and_versions, target_pages_or_modules, existing_component_inventory.
 
-## 前置检查
+## Preconditions / 前置条件
 读取项目规则、前端目录索引、package.json、构建配置、组件库和设计 Token；确认 Vue、TypeScript、Pinia、Router、UI 库版本和真实 lint/typecheck/test 命令；搜索相似组件、Composable、Store、API service、类型和测试；检查 Git 基线和授权范围。
 
-## 工作流程
+## Workflow / 工作流程
 ### 1. 页面与组件职责
 - Page/View：路由入口、页面级数据组合和布局编排，不承载所有业务细节。
 - Feature/Business Component：封装明确业务概念、局部状态和交互，通过 Props/Emits/Slots 协作。
@@ -51,14 +51,31 @@ task_id, approved_requirements, project_stack_and_versions, target_pages_or_modu
 ### 5. 测试与验证
 组件测试覆盖 Props/Emits/Slots、交互和空/加载/失败/禁用状态；Composable 测试覆盖响应式状态、边界、取消和清理；页面测试覆盖关键流程与 API 失败反馈；共享组件变更检查所有调用点和回归。运行项目真实 lint、typecheck、unit、build 和可用浏览器测试；未执行标记 NOT_RUN/BLOCKED。
 
-## 输出契约
+## Outputs / 输出契约
 component_map, reuse_decisions, props_emits_contracts, composable_and_store_boundaries, api_dependencies, test_matrix, frontend_review_findings, verification_results.
 
-## 禁止事项
+## Safety and permissions / 安全与权限
 禁止巨型 SFC；禁止复制已有公共组件、API 请求、表单校验和权限逻辑；禁止万能组件和过多布尔 Props；禁止所有状态都进 Pinia；禁止子组件直接修改 Props 或跨层访问父组件内部变量；禁止吞异常、忽略错误/空态/竞态；禁止未验证宣称构建或视觉测试通过。
 
 ## 完成判据
 组件/页面职责清晰；复用决策有证据；Props/Emits/Composable/Store/API 边界明确；测试覆盖适用交互和异常；最终 Diff 与验证状态可复核。
+
+## Failure handling / 失败处理
+
+项目栈并非 Vue 3 时，标记不适用并调用通用工程 Skill；项目规范或组件库未知时先检查配置和现有实现；共享契约风险未评审时暂停破坏性变更；测试/构建/浏览器能力缺失时标记 NOT_RUN 或 BLOCKED；发现越界修改时停止并保护用户改动。
+
+## Completion criteria / 完成判据
+
+页面/组件职责清晰；复用决策有证据；Props/Emits/Composable/Store/API 边界明确；共享契约调用点已检查；测试覆盖适用交互和异常；最终 Diff、文档同步和验证状态可复核。
+
+## 通用执行协议（必须遵守）
+
+1. 项目批准规范和现有模式优先，不机械套用模板。
+2. 先检查项目技术栈和版本，再选择适用规则。
+3. 先搜索现有组件与服务，再决定复用或抽象。
+4. 组件化以职责、语义和独立测试价值为依据。
+5. 只报告真实执行的检查；状态遵循 PASS/FAIL/NOT_RUN/BLOCKED/UNKNOWN。
+6. 变更共享契约后检查所有调用方并补回归测试。
 
 ## 评测案例
 - 新增相似页面：先检索并复用表格/筛选/表单组件。
