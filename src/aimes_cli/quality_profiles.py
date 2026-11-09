@@ -15,7 +15,9 @@ BUILTIN_REGISTRY: dict[str, Any] = {
     "profiles": {
         "baseline": {
             "description": "baseline 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。",
-            "vue": {}
+            "vue": {},
+            "python": {},
+            "general": {}
         },
         "requirements": {
             "description": "requirements 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。",
@@ -41,6 +43,16 @@ BUILTIN_REGISTRY: dict[str, Any] = {
                     "error": 400
                 }
             }
+        },
+        "backend": {
+            "description": "FastAPI/Python backend quality baseline using AST-based correctness, maintainability, security heuristics and route-layer checks.",
+            "vue": {},
+            "python": {
+                "max_file_lines": 700,
+                "max_function_lines": 70,
+                "max_cyclomatic_complexity": 10
+            },
+            "general": {"max_source_file_lines": 1000}
         },
         "frontend": {
             "description": "frontend 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。",
