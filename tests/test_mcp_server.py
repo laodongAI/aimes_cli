@@ -23,7 +23,13 @@ class McpServerTests(unittest.TestCase):
         self.assertIn("instructions", response["result"])
         listed = handle_request(self.root, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
         names = [tool["name"] for tool in listed["result"]["tools"]]
-        self.assertEqual(names, ["aimes_assess_project_lifecycle", "aimes_task_start", "aimes_task_list", "aimes_task_update", "aimes_session_show", "aimes_session_bind", "aimes_explain_engineering_mode", "aimes_project_state", "aimes_detect_engineering_mode", "aimes_set_project_state", "aimes_skill_route", "aimes_read_skill", "aimes_validate_delivery"])
+        self.assertEqual(names, ["aimes_assess_project_lifecycle", "aimes_task_start", "aimes_task_list", "aimes_task_update", "aimes_session_show", "aimes_session_bind", "aimes_explain_engineering_mode", "aimes_quality_inspect", "aimes_project_state", "aimes_detect_engineering_mode", "aimes_set_project_state", "aimes_skill_route", "aimes_read_skill", "aimes_validate_delivery"])
+
+    def test_quality_inspect_tool_uses_mode_profile(self):
+        result = call_tool(self.root, "aimes_quality_inspect", {"profile": "frontend"})
+        self.assertFalse(result["isError"])
+        payload = json.loads(result["content"][0]["text"])
+        self.assertEqual(payload["policy"]["profile"]["id"], "frontend")
 
     def test_mode_explanation_tool_reports_advisory_route(self):
         result = call_tool(self.root, "aimes_explain_engineering_mode",
