@@ -497,6 +497,7 @@ def interactive_wizard():
             summary = version_report.get("summary", {})
             project_version = version_report.get("project_cli_version") or "unknown"
             print(f"当前项目 AIMES 版本：{project_version}；当前 CLI：{__version__}；文件一致性：{version_report.get('status')}（当前 {summary.get('current', 0)}/{summary.get('expected', 0)}）")
+        emit(show_project_state(audit_root))
     except (OSError, ValueError, TypeError) as exc:
         print(f"当前项目 AIMES 版本检查失败：{exc}")
     actions = [
