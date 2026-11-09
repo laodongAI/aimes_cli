@@ -13,7 +13,7 @@ class ReleaseCheckTests(unittest.TestCase):
         (self.root / "src" / "aimes_cli" / "templates" / "core" / "AIMES-CORE-V1.2.md").write_text("# Core\n", encoding="utf-8")
         state_template = self.root / "src" / "aimes_cli" / "templates" / "project-state" / "engineering-modes.yaml"
         state_template.parent.mkdir(parents=True)
-        state_template.write_text("schema_version: 1\\nmodes: []\\n", encoding="utf-8")
+        state_template.write_text("schema_version: 1\nmodes: []\n", encoding="utf-8")
         (self.root / "src" / "aimes_cli" / "data").mkdir(parents=True)
         (self.root / "src" / "aimes_cli" / "data" / "adapter-registry.yaml").write_text("schema_version: 2\n", encoding="utf-8")
         (self.root / "src" / "aimes_cli" / "__init__.py").write_text(
