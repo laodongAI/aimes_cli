@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import platform
 from datetime import datetime, timezone
 from pathlib import Path
@@ -100,20 +99,22 @@ def _directory_evidence(root: Path, relative: str, required_name: str | None = N
         for child in sorted(directory.iterdir(), key=lambda item: item.name.casefold()):
             if child.is_symlink() or not child.is_dir():
                 continue
-            manifest = child / (required_name or "SKILL.md")
-            if manifest.is_symlink() or not manifest.is_file():
-                continue
-            try:
-                raw = manifest.read_bytes()
-                if len(raw) > MAX_CONFIG_BYTES:
+            manifests = sorted(child.glob("*.md")) if required_name == "*.md" else [child / (required_name or "SKILL.md")]
+            for manifest in manifests:
+                if manifest.is_symlink() or not manifest.is_file():
                     continue
-                items.append({
-                    "name": child.name,
-                    "manifest": manifest.relative_to(root).as_posix(),
-                    "sha256": hashlib.sha256(raw).hexdigest(),
-                })
-            except OSError:
-                continue
+                try:
+                    raw = manifest.read_bytes()
+                    if len(raw) > MAX_CONFIG_BYTES:
+                        continue
+                    items.append({
+                        "name": child.name,
+                        "manifest": manifest.relative_to(root).as_posix(),
+                        "sha256": hashlib.sha256(raw).hexdigest(),
+                    })
+                    break
+                except OSError:
+                    continue
         return {"path": relative, "status": "present", "items": items, "count": len(items)}
     except OSError:
         return {"path": relative, "status": "unknown", "reason": "unreadable", "items": []}
@@ -149,7 +150,7 @@ def _inspect_codex(root: Path) -> list[dict[str, Any]]:
     mcp_configured = isinstance(config_data, dict) and bool(config_data.get("mcp_servers"))
     agents_configured = isinstance(config_data, dict) and bool(config_data.get("agents"))
     return [
-        _integration("instructions", [instructions], instructions.get("status") in {"present", "valid"}, "AGENTS.md 的存在不证明当前 Codex 会话已加载。"),
+        _integration("instructions", [instructions], False, "AGENTS.md 的存在不证明当前 Codex 会话已加载。"),
         _integration("skills", [skills], skills.get("count", 0) > 0, "检查项目级 .agents/skills/*/SKILL.md；不验证技能触发或执行。"),
         _integration("mcp", [config], mcp_configured, "仅识别项目级 config.toml 中的 mcp_servers；不读取或展示服务器参数。"),
         _integration("hooks", [config, hooks_file], hooks_configured, "只识别 hooks 配置结构；绝不执行 Hook。"),
@@ -162,7 +163,7 @@ def _inspect_claude(root: Path) -> list[dict[str, Any]]:
     settings = _file_evidence(root, ".claude/settings.json", "json")
     mcp = _file_evidence(root, ".mcp.json", "json")
     skills = _directory_evidence(root, ".claude/skills")
-    agents_dir = _directory_evidence(root, ".claude/agents", required_name="AGENT.md")
+    agents_dir = _directory_evidence(root, ".claude/agents", required_name="*.md")
     settings_data = settings.get("_parsed", {})
     mcp_data = mcp.get("_parsed", {})
     hooks_configured = isinstance(settings_data, dict) and bool(settings_data.get("hooks"))
@@ -170,7 +171,7 @@ def _inspect_claude(root: Path) -> list[dict[str, Any]]:
         isinstance(mcp_data, dict) and bool(mcp_data.get("mcpServers"))
     ) or (isinstance(settings_data, dict) and bool(settings_data.get("mcpServers")))
     return [
-        _integration("instructions", [instructions], instructions.get("status") in {"present", "valid"}, "CLAUDE.md 的存在不证明当前 Claude Code 会话已加载。"),
+        _integration("instructions", [instructions], False, "CLAUDE.md 的存在不证明当前 Claude Code 会话已加载。"),
         _integration("skills", [skills], skills.get("count", 0) > 0, "检查项目级 .claude/skills/*/SKILL.md；不验证技能触发或执行。"),
         _integration("mcp", [mcp, settings], mcp_configured, "检查 .mcp.json 与 settings.json 的 MCP 配置结构；不读取或展示服务器参数。"),
         _integration("hooks", [settings], hooks_configured, "只识别 settings.json 的 hooks 配置；绝不执行 Hook。"),
