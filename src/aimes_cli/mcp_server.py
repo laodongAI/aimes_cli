@@ -83,7 +83,8 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "mode": {"type": "string", "description": "Engineering mode ID; defaults to persisted current mode."},
-                "profile": {"type": "string", "description": "Named quality profile ID; mutually exclusive with mode."}
+                "profile": {"type": "string", "description": "Named quality profile ID; mutually exclusive with mode."},
+                "base_ref": {"type": "string", "description": "Optional Git branch/tag/commit for public API compatibility comparison."}
             }
         }
     },
@@ -167,7 +168,7 @@ def call_tool(root: Path, name: str, arguments: dict[str, Any]) -> dict[str, Any
         if name == "aimes_assess_project_lifecycle":
             return _tool_result(assess_project_lifecycle(root))
         if name == "aimes_quality_inspect":
-            return _tool_result(inspect_project_quality(root, profile_id=arguments.get("profile"), mode_id=arguments.get("mode")))
+            return _tool_result(inspect_project_quality(root, profile_id=arguments.get("profile"), mode_id=arguments.get("mode"), base_ref=arguments.get("base_ref")))
         if name == "aimes_task_start":
             return _tool_result(start_task(root, arguments.get("title"),
                 session_id=arguments.get("session_id", "default"),
