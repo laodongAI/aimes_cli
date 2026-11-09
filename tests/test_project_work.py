@@ -71,14 +71,14 @@ class ProjectWorkTests(unittest.TestCase):
         workflow_dir = self.root / ".aimes/workflows"
         workflow_dir.mkdir(parents=True, exist_ok=True)
         (workflow_dir / "frontend-optimization.yaml").write_text(
-            "schema_version: 1\\nworkflow_id: frontend-optimization\\nversion: 1.0.0\\n"
-            "name: Frontend\\npurpose: Review UI changes\\nentry_state: analysis\\n"
-            "states:\\n  - state_id: analysis\\n    name: Analysis\\n"
-            "    entry_conditions: [task selected]\\n    required_artifacts: []\\n"
-            "    completion_criteria: [analysis complete]\\n    failure_recovery: [revise]\\n"
-            "    side_effects: [none]\\n    approval_required: false\\n"
-            "    retry_mode: never\\n    max_attempts: 1\\n"
-            "transitions: []\\n", encoding="utf-8")
+            "schema_version: 1\nworkflow_id: frontend-optimization\nversion: 1.0.0\n"
+            "name: Frontend\npurpose: Review UI changes\nentry_state: analysis\n"
+            "states:\n  - state_id: analysis\n    name: Analysis\n"
+            "    entry_conditions: [task selected]\n    required_artifacts: []\n"
+            "    completion_criteria: [analysis complete]\n    failure_recovery: [revise]\n"
+            "    side_effects: [none]\n    approval_required: false\n"
+            "    retry_mode: never\n    max_attempts: 1\n"
+            "transitions: []\n", encoding="utf-8")
         result = explain_mode(self.root, "frontend-optimization")
         self.assertEqual(result["route"]["workflow"]["status"], "AVAILABLE")
 
