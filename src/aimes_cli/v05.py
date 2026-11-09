@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 import yaml
 from .v03 import _load, _report, _add
-from .adapters import ADAPTERS
+from .adapters import ADAPTERS, ADAPTER_REGISTRY
 
 VALID_VERIFICATION = {"NOT_RUN", "PASS", "FAIL", "BLOCKED", "UNKNOWN"}
 VALID_METHODS = {"manual_prompt", "file_inspection", "runtime_observation", "automated_check", "user_confirmed"}
@@ -31,13 +31,17 @@ def validate_adapter_evidence(path: Path, root: Path | None = None) -> dict:
         tool=item.get("tool")
         if not isinstance(tool, str) or tool not in ADAPTERS: _add(fs,"ERROR","UNKNOWN_TOOL",f"{loc}.tool must be one of {sorted(ADAPTERS)}")
         if isinstance(tool, str) and tool in ADAPTERS:
-            for field, expected in (("host_id", ADAPTERS[tool].host_id), ("harness_id", ADAPTERS[tool].harness_id)):
-                supplied = item.get(field)
-                if supplied is not None and supplied != expected:
-                    _add(fs, "ERROR", "ADAPTER_CONTEXT_MISMATCH", f"{loc}.{field}={supplied!r} does not match registered adapter value {expected!r}")
             registry_version = item.get("adapter_registry_version")
             if registry_version is not None and (not isinstance(registry_version, str) or not registry_version.strip()):
                 _add(fs, "ERROR", "ADAPTER_REGISTRY_VERSION", f"{loc}.adapter_registry_version must be a non-empty string")
+            current_registry_version = ADAPTER_REGISTRY.get("registry_version")
+            if registry_version is None or registry_version == current_registry_version:
+                for field, expected in (("host_id", ADAPTERS[tool].host_id), ("harness_id", ADAPTERS[tool].harness_id)):
+                    supplied = item.get(field)
+                    if supplied is not None and supplied != expected:
+                        _add(fs, "ERROR", "ADAPTER_CONTEXT_MISMATCH", f"{loc}.{field}={supplied!r} does not match registered adapter value {expected!r}")
+            else:
+                _add(fs, "WARNING", "ADAPTER_REGISTRY_VERSION_UNAVAILABLE", f"{loc} references registry {registry_version!r}; current registry is {current_registry_version!r}, so historical Host/Harness values are retained but cannot be compared to this version.")
         verification=item.get("verification")
         if not isinstance(verification, str) or verification not in VALID_VERIFICATION: _add(fs,"ERROR","VERIFICATION_STATUS",f"{loc}.verification must be one of {sorted(VALID_VERIFICATION)}")
         method=item.get("method")
