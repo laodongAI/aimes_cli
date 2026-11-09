@@ -10,7 +10,6 @@
     "registry_version": {"type": "string", "minLength": 1},
     "description": {"type": "string"},
     "capability_states": {"type": "array", "uniqueItems": true, "items": {"enum": ["native", "template", "manual", "unknown", "unsupported"]}},
-    "capability_states": {"type": "array", "uniqueItems": true, "items": {"enum": ["native", "template", "manual", "unknown", "unsupported"]}},
     "adapters": {
       "type": "array", "minItems": 1,
       "items": {
