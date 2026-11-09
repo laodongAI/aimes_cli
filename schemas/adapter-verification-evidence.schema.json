@@ -58,6 +58,7 @@
               "ide_extension",
               "cli",
               "desktop_app",
+              "workspace",
               "other"
             ]
           },
