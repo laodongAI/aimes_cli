@@ -28,7 +28,7 @@ SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "dist", "build", "__pycach
 
 
 def _safe_config(root: Path, profile_id: str | None = None, mode_id: str | None = None) -> tuple[dict[str, Any], list[dict[str, str]], dict[str, Any]]:
-    path = root / ".aimes" / "quality-gates.yaml"
+    path = (root / ".aimes" / "quality-gates.yaml").resolve()\n    try:\n        path.relative_to(root.resolve())\n    except ValueError:\n        return dict(DEFAULT_CONFIG), [{"severity": "ERROR", "code": "QUALITY_CONFIG_PATH", "message": "Quality gate config path escapes project root", "path": ".aimes/quality-gates.yaml"}], {}
     if profile_id and mode_id:
         return dict(DEFAULT_CONFIG), [{"severity": "ERROR", "code": "QUALITY_PROFILE_SELECTION", "message": "Specify either profile_id or mode_id, not both", "path": ".aimes/quality-profiles.yaml"}], {}
     selected_mode = mode_id
