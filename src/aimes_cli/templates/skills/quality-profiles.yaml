@@ -46,6 +46,11 @@ profiles:
         warning: 220
         error: 350
   regression:
+    description: "Regression quality profile; checks configured coverage reports against an 80% line coverage threshold."
+    vue:
+      disallow_direct_http_calls: true
+    general:
+      min_coverage_percent: 80
     description: "regression 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
     vue:
       disallow_direct_http_calls: true
