@@ -10,7 +10,8 @@ from .delivery_report import validate_delivery_text
 from .skill_route import load_skill_body, route_skills
 from .project_state import show_project_state, detect_mode, load_mode_registry, set_project_state
 from .project_work import assess_project_lifecycle, start_task, update_task, list_tasks, show_session, bind_session_task
-from .mode_route import explain_mode\nfrom .quality_check import inspect_project_quality
+from .mode_route import explain_mode
+from .quality_check import inspect_project_quality
 
 PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "aimes-governance"
