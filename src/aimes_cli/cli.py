@@ -187,6 +187,8 @@ def parser() -> argparse.ArgumentParser:
     state_set.add_argument('--mode', help='Engineering mode ID; see aimes state modes')
     state_set.add_argument('--phase', choices=['analysis','clarification','design','review','implementation','testing','acceptance','delivery'])
     state_set.add_argument('--task', help='Current task title/summary')
+    state_set.add_argument('--source', choices=['user','ai','import'], default='user', help='Who selected the engineering mode (default: user)')
+    state_set.add_argument('--confidence', choices=['low','medium','high'], help='Confidence in the selected mode; defaults to high for user selection and medium for AI inference')
     state_modes = state_sub.add_parser('modes', help='List supported engineering modes and their Skill/workflow mappings')
     common(state_modes)
     state_detect = state_sub.add_parser('detect', help='Suggest a mode from explicit task text using deterministic triggers; does not persist')
@@ -856,7 +858,7 @@ def main(argv=None):
                 result['ok'] = True
             else:
                 result = set_project_state(root, lifecycle=args.lifecycle, mode=args.mode,
-                    phase=args.phase, task=args.task, source='user')
+                    phase=args.phase, task=args.task, source=args.source, confidence=args.confidence)
             emit(result, args.format, args.output)
             return 0 if result.get('ok', True) else 1
         if args.command == 'skill':
