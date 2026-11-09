@@ -36,6 +36,7 @@ from .quality_context import build_review_context
 from .quality_report import build_quality_report
 from .project_state import show_project_state, set_project_state, list_project_modes, detect_mode, load_mode_registry
 from .project_work import assess_project_lifecycle, start_task, update_task, show_task, list_tasks, show_session, bind_session_task
+from .mode_route import explain_mode
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -212,6 +213,9 @@ def parser() -> argparse.ArgumentParser:
     state_detect.add_argument('--task-text', required=True, help='Task description to classify; this is not an AI conversation reader')
     state_assess = state_sub.add_parser('assess-lifecycle', help='Collect read-only project lifecycle evidence; never changes state')
     common(state_assess)
+    state_explain = state_sub.add_parser('explain', help='Explain an engineering mode route and inspect required local assets (read-only)')
+    common(state_explain)
+    state_explain.add_argument('--mode', help='Engineering mode ID; defaults to the currently selected mode')
 
     session_parser = sub.add_parser('session', help='Manage independent AI tool session pointers')
     session_sub = session_parser.add_subparsers(dest='session_command', required=True)
@@ -889,6 +893,8 @@ def main(argv=None):
                 result['ok'] = True
             elif args.state_command == 'assess-lifecycle':
                 result = assess_project_lifecycle(root)
+            elif args.state_command == 'explain':
+                result = explain_mode(root, args.mode)
             else:
                 result = set_project_state(root, lifecycle=args.lifecycle, mode=args.mode,
                     phase=args.phase, task=args.task, source=args.source, confidence=args.confidence)
