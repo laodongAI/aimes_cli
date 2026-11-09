@@ -34,6 +34,15 @@ class SkillRouteTests(unittest.TestCase):
         result = route_skills(TEMPLATE_REGISTRY, "根据项目知识帮我出引导词")
         self.assertIn("product-manager", [item["name"] for item in result["matches"]])
 
+    def test_engineering_and_vue_tasks_route_to_specialized_skills(self):
+        engineering = route_skills(TEMPLATE_REGISTRY, "请做前端开发和代码复用质量检查")
+        engineering_names = [item["name"] for item in engineering["matches"]]
+        self.assertIn("software-engineering-standards", engineering_names)
+
+        vue = route_skills(TEMPLATE_REGISTRY, "请进行 Vue 组件化开发并检查 Composable 和 Pinia")
+        vue_names = [item["name"] for item in vue["matches"]]
+        self.assertIn("vue-frontend-engineering", vue_names)
+
     def test_route_without_match_returns_empty_list(self):
         result = route_skills(TEMPLATE_REGISTRY, "请解释这台咖啡机的工作原理")
         self.assertEqual(result["matches"], [])
