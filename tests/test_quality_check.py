@@ -64,6 +64,14 @@ class QualityCheckTests(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(result["status"], "PASS_WITH_FINDINGS")
 
+    def test_invalid_config_fails_even_when_enforcement_cannot_be_trusted(self):
+        target = self.root / ".aimes" / "quality-gates.yaml"
+        target.parent.mkdir(parents=True)
+        target.write_text("enforce: [this is not a boolean", encoding="utf-8")
+        result = inspect_project_quality(self.root)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], "CONFIG_ERROR")
+
     def test_invalid_threshold_fails_closed(self):
         self._write_config(vue={"max_sfc_lines": {"warning": 20, "error": 10}})
         result = inspect_project_quality(self.root)
