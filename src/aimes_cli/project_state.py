@@ -170,6 +170,8 @@ def show_project_state(root: Path) -> dict[str, Any]:
         next_actions.append("检查项目目标、代码、设计文档、测试和发布记录，确认项目生命周期")
     if not state.get("engineering_mode"):
         next_actions.append("结合当前任务描述识别工程模式；存在歧义时先向用户确认")
+    elif not mode:
+        next_actions.append("当前工程模式未在注册表中定义；检查模式 ID 或更新工程模式目录")
     elif missing_skills:
         next_actions.append("补齐或修复当前工程模式映射的缺失 Skill 文件")
     phase_actions = {
