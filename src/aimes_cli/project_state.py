@@ -208,6 +208,8 @@ def set_project_state(
     confidence: str | None = None, source: str = "user",
 ) -> dict[str, Any]:
     root = root.resolve()
+    if task is not None and not isinstance(task, str):
+        raise ValueError("task must be a string")
     if lifecycle is None and mode is None and phase is None and task is None:
         raise ValueError("Specify at least one of lifecycle, mode, phase or task")
     state = read_project_state(root)
