@@ -82,6 +82,18 @@ aimes publish --profile my-project --apply --confirm PUBLISH
 
 默认过滤 `.venv`、`.claude`、`.codex`、`.cursor` 等环境和 AI 工具辅助目录、日志与运行时文件、构建缓存、编译产物及凭据。发布时会自动识别项目根目录中的技术栈标志文件（如 `pyproject.toml`、`package.json`、`pom.xml`、`go.mod`、`Cargo.toml`、`.csproj`），叠加相应过滤规则，并读取 `.gitignore` 中的正向排除规则。交互式向导不再询问追加排除规则；确有需要时可使用 `--exclude` 或已保存的发布配置。配置保存和完整规则见 [发布向导文档](docs/PUBLISH-GITHUB-MIRROR.md)。
 
+## 声明式 Host / Harness 适配器（V2）
+
+工具清单已从 Python 静态字典迁移为随包分发的 `src/aimes_cli/data/adapter-registry.yaml`。每个适配器分别声明宿主（Host）、Agent Harness、执行模式、规则入口和能力状态；VS Code + Codex 与 Codex CLI 共用 Harness 标识，但保留独立执行上下文。
+
+```powershell
+# 查看当前注册的工具、Host/Harness 关系和能力状态
+aimes adapter list
+aimes adapter list --format json
+```
+
+能力状态采用 `native / template / manual / unknown / unsupported`。其中 `template` 只表示 AIMES 有对应配置模板，绝不代表目标工具已经加载或实际支持；`unknown` 也不得按支持处理。注册表结构定义见 `schemas/adapter-registry.schema.json`。新增适配器优先修改声明式注册表，不应为工具差异修改治理核心；运行时能力仍需按产品版本和执行模式单独验证。
+
 ## 2. 锁定的工具入口
 
 1. Trae Code
