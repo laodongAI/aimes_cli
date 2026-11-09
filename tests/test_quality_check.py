@@ -178,7 +178,7 @@ class QualityCheckTests(unittest.TestCase):
 
     def test_cli_quality_inspect_accepts_profile_selection(self):
         source = self.root / "Page.vue"
-        source.write_text("line\\n" * 375, encoding="utf-8")
+        source.write_text("line\n" * 375, encoding="utf-8")
         output = io.StringIO()
         with redirect_stdout(output):
             code = main(["quality", "inspect", "--root", str(self.root),
