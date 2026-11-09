@@ -134,8 +134,8 @@ class ProjectWorkTests(unittest.TestCase):
         output = io.StringIO()
         with redirect_stdout(output):
             code = main(["task", "validate", "--root", str(self.root), "--format", "json"])
-        self.assertEqual(code, 1)
-        self.assertIn("findings", output.getvalue())
+        self.assertEqual(code, 0)
+        self.assertIn("NO_ACTIVE_WRITER", output.getvalue())
 
 
 if __name__ == "__main__":
