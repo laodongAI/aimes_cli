@@ -188,9 +188,7 @@ def _inspect_claude(root: Path) -> list[dict[str, Any]]:
     settings_data = settings.get("_parsed", {})
     mcp_data = mcp.get("_parsed", {})
     hooks_configured = isinstance(settings_data, dict) and bool(settings_data.get("hooks"))
-    mcp_configured = (
-        isinstance(mcp_data, dict) and bool(mcp_data.get("mcpServers"))
-    ) or (isinstance(settings_data, dict) and bool(settings_data.get("mcpServers")))
+    mcp_configured = isinstance(mcp_data, dict) and bool(mcp_data.get("mcpServers"))
     return [
         _integration("instructions", [instructions], False, "CLAUDE.md 的存在不证明当前 Claude Code 会话已加载。"),
         _integration("skills", [skills], skills.get("count", 0) > 0, "检查项目级 .claude/skills/*/SKILL.md；不验证技能触发或执行。"),
