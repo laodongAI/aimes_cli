@@ -49,6 +49,7 @@ def _read(path: Path) -> dict[str, Any]:
 
 
 def _validate_task_record(task: dict[str, Any], task_id: str) -> None:
+    _id(task_id, "task_id")
     if type(task.get("schema_version")) is not int or task.get("schema_version") != 1:
         raise ValueError(f"Unsupported task schema version: {task_id}")
     if task.get("task_id") != task_id:
@@ -56,13 +57,15 @@ def _validate_task_record(task: dict[str, Any], task_id: str) -> None:
     title = task.get("title")
     if not isinstance(title, str) or not title.strip() or len(title) > 500:
         raise ValueError(f"Invalid task title: {task_id}")
-    if task.get("status") not in TASK_STATUSES:
+    status = task.get("status")
+    if not isinstance(status, str) or status not in TASK_STATUSES:
         raise ValueError(f"Invalid task status: {task_id}")
-    if task.get("phase") not in TASK_PHASES:
+    phase = task.get("phase")
+    if not isinstance(phase, str) or phase not in TASK_PHASES:
         raise ValueError(f"Invalid task phase: {task_id}")
     _id(task.get("session_id"), "task session_id")
     mode = task.get("engineering_mode")
-    if mode is not None and not isinstance(mode, str):
+    if mode is not None and (not isinstance(mode, str) or not mode.strip()):
         raise ValueError(f"Invalid task engineering mode: {task_id}")
 
 
