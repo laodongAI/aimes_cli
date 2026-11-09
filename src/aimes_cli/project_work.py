@@ -48,6 +48,34 @@ def _read(path: Path) -> dict[str, Any]:
     return value
 
 
+def _validate_task_record(task: dict[str, Any], task_id: str) -> None:
+    if type(task.get("schema_version")) is not int or task.get("schema_version") != 1:
+        raise ValueError(f"Unsupported task schema version: {task_id}")
+    if task.get("task_id") != task_id:
+        raise ValueError(f"Task ID does not match record path: {task_id}")
+    title = task.get("title")
+    if not isinstance(title, str) or not title.strip() or len(title) > 500:
+        raise ValueError(f"Invalid task title: {task_id}")
+    if task.get("status") not in TASK_STATUSES:
+        raise ValueError(f"Invalid task status: {task_id}")
+    if task.get("phase") not in TASK_PHASES:
+        raise ValueError(f"Invalid task phase: {task_id}")
+    _id(task.get("session_id"), "task session_id")
+    mode = task.get("engineering_mode")
+    if mode is not None and not isinstance(mode, str):
+        raise ValueError(f"Invalid task engineering mode: {task_id}")
+
+
+def _validate_session_record(session: dict[str, Any], session_id: str) -> None:
+    if type(session.get("schema_version")) is not int or session.get("schema_version") != 1:
+        raise ValueError(f"Unsupported session schema version: {session_id}")
+    if session.get("session_id") != session_id:
+        raise ValueError(f"Session ID does not match record path: {session_id}")
+    task_id = session.get("current_task_id")
+    if task_id is not None:
+        _id(task_id, "current_task_id")
+
+
 def _write(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temp_name = None
@@ -79,8 +107,7 @@ def start_task(root: Path, title: str, *, session_id: str = "default",
         raise ValueError(f"Task already exists: {task_id}")
     if session_path.exists():
         session = _read(session_path)
-        if session.get("schema_version") != 1 or session.get("session_id") != session_id:
-            raise ValueError(f"Invalid session record: {session_id}")
+        _validate_session_record(session, session_id)
     else:
         session = {"schema_version": 1, "session_id": session_id, "created_at": _now()}
     task = {
@@ -103,8 +130,7 @@ def update_task(root: Path, task_id: str, *, phase: str | None = None,
     task_id = _id(task_id, "task_id")
     path = _safe(root, TASKS_REL / f"{task_id}.yaml")
     task = _read(path)
-    if task.get("schema_version") != 1 or task.get("task_id") != task_id:
-        raise ValueError(f"Invalid task record: {task_id}")
+    _validate_task_record(task, task_id)
     if phase is None and status is None:
         raise ValueError("Specify phase or status")
     if phase is not None:
@@ -138,8 +164,7 @@ def list_tasks(root: Path, *, session_id: str | None = None) -> dict[str, Any]:
     for item_path in sorted(directory.glob("*.yaml")):
         path = _safe(root, TASKS_REL / item_path.name)
         task = _read(path)
-        if task.get("schema_version") != 1 or not isinstance(task.get("task_id"), str):
-            raise ValueError(f"Invalid task record: {path}")
+        _validate_task_record(task, path.stem)
         if session_id is None or task.get("session_id") == session_id:
             tasks.append(task)
     return {"ok": True, "tasks": tasks}
@@ -148,8 +173,7 @@ def list_tasks(root: Path, *, session_id: str | None = None) -> dict[str, Any]:
 def show_session(root: Path, session_id: str = "default") -> dict[str, Any]:
     session_id = _id(session_id, "session_id")
     session = _read(_safe(root, SESSIONS_REL / f"{session_id}.yaml"))
-    if session.get("schema_version") != 1 or session.get("session_id") != session_id:
-        raise ValueError(f"Invalid session record: {session_id}")
+    _validate_session_record(session, session_id)
     task_id = session.get("current_task_id")
     current_task = show_task(root, task_id)["task"] if task_id else None
     return {"ok": True, "session": session, "current_task": current_task}
