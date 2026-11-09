@@ -50,7 +50,7 @@
 | Codex CLI | Terminal | Codex | `cli` | `AGENTS.md` | 模板 | `UNKNOWN` |
 | ChatGPT Work | ChatGPT Work | ChatGPT Work Agent | `workspace` | `docs/_governance/adapters/CHATGPT-WORK-ENTRY.md` + 项目指令模板 | 模板 | `UNKNOWN` |
 
-适配验证记录至少包含：工具 ID、工具版本、执行模式、操作系统、AIMES CLI/治理核心/Skill 版本、验证方法、案例 ID、观察时间、原始输出或证据路径、证据哈希、结果状态及已知限制。PASS 必须有可复核证据；缺少记录只能是 NOT_RUN/UNKNOWN。
+适配验证记录至少包含：工具 ID、Host ID、Harness ID、适配器注册表版本、工具版本、执行模式、操作系统、AIMES CLI/治理核心/Skill 版本、验证方法、案例 ID、观察时间、原始输出或证据路径、证据哈希、结果状态及已知限制。旧版记录仍可读取；新探针自动写入 Host/Harness 上下文，若记录了 Host/Harness 则校验其与注册表一致。PASS 必须有可复核证据；缺少记录只能是 NOT_RUN/UNKNOWN。
 
 ## 4. 新版适配证据契约
 
