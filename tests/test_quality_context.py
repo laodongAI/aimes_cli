@@ -33,6 +33,7 @@ class ReviewContextTests(unittest.TestCase):
         result = build_review_context(self.root)
         paths = {item["path"] for item in result["files"]}
         self.assertIn("src/main.py", paths)
+        self.assertIn("src/tokenizer.py", paths)
         self.assertIn("README.md", paths)
         self.assertIn("evidence.excerpt", result["prompt"])
 
