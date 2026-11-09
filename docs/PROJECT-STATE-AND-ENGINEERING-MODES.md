@@ -60,7 +60,7 @@ aimes state modes
 
 ```bash
 aimes state set --lifecycle development --mode frontend-optimization --phase analysis --task "优化学习页面体验"
-aimes state set --mode refactoring --phase implementation --task "拆分用户模块"
+aimes state set --mode refactoring --phase implementation --task "拆分用户模块" --source ai --confidence medium
 ```
 
 候选识别：
@@ -76,7 +76,7 @@ aimes state show --format json
 aimes state detect --task-text "修复接口调用错误" --format json
 ```
 
-`detect` 不会保存候选；当命中多个模式时返回低置信度和候选列表，不擅自选择。用户显式指定模式始终优先。
+`detect` 不会保存候选；当命中多个模式时返回低置信度和候选列表，不擅自选择。用户显式指定模式始终优先。用户选择通过 `--source user` 记录；AI 根据对话判断后写入时必须使用 `--source ai --confidence high|medium`，低置信度不得持久化猜测。
 
 ## 5. AI 对话与 CLI 的职责边界
 
