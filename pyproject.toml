@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Proprietary - project governance artifacts" }
 authors = [{ name = "AIMES" }]
-dependencies = ["PyYAML>=6.0,<7.0"]
+dependencies = ["PyYAML>=6.0,<7.0", "tomli>=2.0,<3.0; python_version < '3.11'"]
 
 [project.scripts]
 aimes = "aimes_cli.cli:main"
