@@ -84,5 +84,29 @@ class ProjectStateTests(unittest.TestCase):
         self.assertIn("engineering-audit", ids)
 
 
+    def test_cli_state_commands_show_set_detect_and_list_modes(self):
+        from aimes_cli.cli import main
+        import io
+        from contextlib import redirect_stdout
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            code = main(["state", "set", "--root", str(self.root),
+                         "--mode", "frontend-optimization", "--phase", "analysis",
+                         "--lifecycle", "development", "--format", "json"])
+        self.assertEqual(code, 0)
+        saved = yaml.safe_load((self.root / ".aimes/project-state.yaml").read_text(encoding="utf-8"))
+        self.assertEqual(saved["engineering_mode"], "frontend-optimization")
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            code = main(["state", "show", "--root", str(self.root), "--format", "json"])
+        self.assertEqual(code, 0)
+        self.assertIn("vue-frontend-engineering", buffer.getvalue())
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            code = main(["state", "detect", "--root", str(self.root),
+                         "--task-text", "Vue组件化开发", "--format", "json"])
+        self.assertEqual(code, 0)
+        self.assertIn('"mode": "frontend-development"', buffer.getvalue())
+
 if __name__ == "__main__":
     unittest.main()
