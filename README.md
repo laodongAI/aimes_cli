@@ -26,7 +26,7 @@ aimes quality inspect --root . --format json
 aimes quality inspect --root . --mode frontend-development --format json
 aimes quality inspect --root . --profile frontend --format json
 # 回归模式：存在 coverage.xml / coverage.json 时按 profile 阈值检查
- aimes quality inspect --root . --profile regression --format json
+aimes quality inspect --root . --profile regression --format json
 # 比较当前工作树与指定基线之间 Python 公共 API 变更
 aimes quality inspect --root . --base-ref origin/main --format json
 aimes quality review-context --root . --format json --output .aimes/reviews/review-context.json
