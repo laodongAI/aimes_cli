@@ -151,7 +151,16 @@ def show_project_state(root: Path) -> dict[str, Any]:
     if skill_registry_path.is_file():
         skill_payload = _read_yaml(skill_registry_path)
         for item in skill_payload.get("skills", []) if isinstance(skill_payload.get("skills"), list) else []:
-            if isinstance(item, dict) and isinstance(item.get("name"), str):
+            if not isinstance(item, dict) or not isinstance(item.get("name"), str):
+                continue
+            relative_skill = item.get("file")
+            if not isinstance(relative_skill, str) or not relative_skill.strip():
+                continue
+            try:
+                skill_path = _safe_project_path(root, Path(relative_skill))
+            except ValueError:
+                continue
+            if skill_path.is_file():
                 registered_skills.add(item["name"])
     routed_skills = mode.get("skills", [])
     available_skills = [name for name in routed_skills if name in registered_skills]
@@ -162,6 +171,7 @@ def show_project_state(root: Path) -> dict[str, Any]:
         "state": state,
         "engineering_mode_label": mode.get("label"),
         "routed_skills": routed_skills,\n        "available_skills": available_skills,\n        "missing_skills": missing_skills,
+        "unknown_mode": bool(state.get("engineering_mode") and not mode),
         "workflow": mode.get("workflow"),
         "quality_profile": mode.get("quality_profile"),
         "note": "项目生命周期、当前工程模式和任务阶段分别维护；CLI 不读取 AI 对话内容。工作流和质量配置当前为路由元数据。",
