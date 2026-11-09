@@ -101,7 +101,7 @@ def detect_mode(task_text: str, registry: dict[str, dict[str, Any]]) -> dict[str
 
 def read_project_state(root: Path) -> dict[str, Any]:
     path = _safe_project_path(root, STATE_REL)
-    if not path.is_file():
+    if not path.exists():
         return {
             "schema_version": 1,
             "project_lifecycle": "unknown",
@@ -112,23 +112,30 @@ def read_project_state(root: Path) -> dict[str, Any]:
             "confidence": "low",
             "updated_at": None,
         }
+    if not path.is_file():
+        raise ValueError(f"Project state path exists but is not a regular file: {path}")
     payload = _read_yaml(path)
     _validate_state(payload)
     return payload
 
 
 def _validate_state(payload: dict[str, Any]) -> None:
-    if payload.get("schema_version") != 1:
+    if type(payload.get("schema_version")) is not int or payload.get("schema_version") != 1:
         raise ValueError("Unsupported project state schema_version")
     lifecycle = payload.get("project_lifecycle")
-    if lifecycle not in LIFECYCLES:
+    if not isinstance(lifecycle, str) or lifecycle not in LIFECYCLES:
         raise ValueError(f"Invalid project_lifecycle: {lifecycle}")
     phase = payload.get("task_phase")
-    if phase is not None and phase not in PHASES:
+    if phase is not None and (not isinstance(phase, str) or phase not in PHASES):
         raise ValueError(f"Invalid task_phase: {phase}")
     confidence = payload.get("confidence", "low")
-    if confidence not in CONFIDENCE:
+    if not isinstance(confidence, str) or confidence not in CONFIDENCE:
         raise ValueError(f"Invalid confidence: {confidence}")
+    task = payload.get("task")
+    if task is not None and not isinstance(task, str):
+        raise ValueError("task must be a string or null")
+    if not isinstance(payload.get("mode_source", "unset"), str):
+        raise ValueError("mode_source must be a string")
     mode = payload.get("engineering_mode")
     if mode is not None and (not isinstance(mode, str) or not mode.strip()):
         raise ValueError("engineering_mode must be a non-empty string or null")
@@ -183,6 +190,8 @@ def set_project_state(
             raise ValueError(f"Invalid task phase '{phase}'. Choose from: {', '.join(sorted(PHASES))}")
         state["task_phase"] = phase
     if task is not None:
+        if len(task) > 500:
+            raise ValueError("task summary must be 500 characters or fewer")
         state["task"] = task.strip() or None
     if confidence is not None:
         if confidence not in CONFIDENCE:
