@@ -312,7 +312,7 @@ def emit(data, fmt='text', output: Path | None=None):
                     harness = item.get('harness', {})
                     modes = ', '.join(item.get('execution_modes', []))
                     caps = ', '.join(f"{key}={value}" for key, value in sorted(item.get('capabilities', {}).items()))
-                    lines.append(f"  - {item.get('id')}: {host.get('name', '?')} / {harness.get('name', '?')} [{modes}]")
+                    lines.append(f"  - {item.get('id')} ({item.get('name', '?')}): {host.get('name', '?')} / {harness.get('name', '?')} [{modes}]")
                     lines.append(f"    capabilities: {caps}")
             for group_key, group_label in [('hosts', 'Host verification summary'), ('harnesses', 'Harness verification summary')]:
                 if data.get(group_key) and isinstance(data[group_key], dict):
