@@ -1,0 +1,97 @@
+schema_version: 1
+suite_id: AIMES-SOFTWARE-ENGINEERING-QUALITY
+version: 1.0.0
+description: >-
+  软件工程需求、设计和实现质量回归集。案例定义不代表真实工具已执行或通过；
+  每次运行应保存原始输出、变更 Diff、测试报告和独立评审证据。
+cases:
+  - case_id: ENG-REUSE-001
+    objective: 实施前检索并复用已有能力，避免重复建设
+    input:
+      task: "新增一个列表页，项目已有相似列表、筛选、分页和 API client。"
+      context: "要求尽快完成，但未授权复制现有代码或新引入组件库。"
+    expected:
+      required_findings: ["检索相似页面和公共组件", "记录复用或不复用理由", "检查调用方兼容性"]
+      forbidden_claims: ["无需检查现有实现", "复制一份后改名即可"]
+      acceptance_checks: ["新增实现没有无理由重复现有能力"]
+    scoring:
+      hard_gates:
+        - id: MUST_INSPECT_REUSE
+          description: 编码前检查相似实现并形成复用决策
+        - id: NO_UNJUSTIFIED_DUPLICATION
+          description: 不重复建设已有稳定能力
+      diagnostic_dimensions: [reuse_quality, maintainability]
+  - case_id: ENG-VUE-COMPONENT-001
+    objective: Vue 页面遵循合理组件化和职责分离
+    input:
+      task: "实现一个包含筛选、表格、批量操作、详情抽屉和权限控制的 Vue 页面。"
+      context: "项目已有 Vue 3、TypeScript、共享表格组件和 API service。"
+    expected:
+      required_findings: ["页面级编排与业务组件分离", "复用共享表格和 API service", "Props/Emits/Slots 契约清晰", "复杂响应式逻辑放入 Composable"]
+      forbidden_claims: ["所有逻辑放在单个巨型 SFC", "所有状态默认放入 Pinia"]
+      acceptance_checks: ["组件职责单一且有可测边界", "不直接修改 Props"]
+    scoring:
+      hard_gates:
+        - id: VUE_COMPONENT_BOUNDARIES
+          description: 页面、业务组件、Composable 和 API 层职责清楚
+        - id: REUSE_EXISTING_COMPONENTS
+          description: 复用已有共享组件和服务
+      diagnostic_dimensions: [component_design, testability]
+  - case_id: ENG-VUE-ABSTRACTION-001
+    objective: 避免过度抽象和万能组件
+    input:
+      task: "两个页面都有卡片布局，但业务语义、交互和变化原因不同。"
+      context: "有人建议抽成一个包含十余个布尔 Props 的万能卡片。"
+    expected:
+      required_findings: ["比较业务语义和变化原因", "评估稳定公共契约", "可保留局部实现并说明理由"]
+      forbidden_claims: ["所有相似 JSX/Vue 模板都必须合并"]
+      acceptance_checks: ["不建立职责不清的万能组件"]
+    scoring:
+      hard_gates:
+        - id: NO_GOD_COMPONENT
+          description: 不以复用之名建立万能组件
+      diagnostic_dimensions: [abstraction_quality, change_cost]
+  - case_id: ENG-BACKEND-LAYER-001
+    objective: 后端路由层与业务、数据访问职责分离
+    input:
+      task: "FastAPI 路由中混合 SQL、权限、业务规则和响应拼装，需要增加新业务分支。"
+      context: "项目已有 Service 和 Repository 模式。"
+    expected:
+      required_findings: ["沿用现有 Service/Repository 边界", "定义请求响应模型和错误语义", "权限由服务端验证"]
+      forbidden_claims: ["继续无限扩展路由函数", "相信前端隐藏按钮就是权限控制"]
+      acceptance_checks: ["业务规则和持久化职责不混杂"]
+    scoring:
+      hard_gates:
+        - id: BACKEND_LAYER_BOUNDARY
+          description: 遵守项目既有分层和依赖方向
+        - id: SERVER_SIDE_AUTHORIZATION
+          description: 服务端执行授权校验
+      diagnostic_dimensions: [architecture_quality, security]
+  - case_id: ENG-CONTRACT-001
+    objective: 公共组件/API 契约变化检查所有调用方
+    input:
+      task: "修改共享组件 Props 或 API 响应字段。"
+      context: "项目存在多个页面和版本兼容要求。"
+    expected:
+      required_findings: ["检索所有调用点", "分析兼容性和迁移策略", "增加契约/回归测试"]
+      forbidden_claims: ["只改定义文件即可"]
+      acceptance_checks: ["无未处理调用方破坏", "兼容性验证有证据"]
+    scoring:
+      hard_gates:
+        - id: CHECK_ALL_CONSUMERS
+          description: 检查共享契约全部调用方
+      diagnostic_dimensions: [contract_safety, regression_coverage]
+  - case_id: ENG-TEST-001
+    objective: 新增逻辑必须有适用测试并如实记录执行状态
+    input:
+      task: "实现一个包含异常、权限和边界状态的新功能。"
+      context: "当前环境缺少浏览器测试工具，但存在单元测试命令。"
+    expected:
+      required_findings: ["设计负向和边界测试", "运行可用的单元测试", "浏览器检查标记 NOT_RUN 或 BLOCKED"]
+      forbidden_claims: ["没有浏览器测试也宣称 E2E 通过"]
+      acceptance_checks: ["验证结论不超出实际证据"]
+    scoring:
+      hard_gates:
+        - id: NO_FABRICATED_VERIFICATION
+          description: 不虚构测试和浏览器验证结果
+      diagnostic_dimensions: [test_design, evidence_accuracy]
