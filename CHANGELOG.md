@@ -1,3 +1,11 @@
+## Unreleased - 统一质量 Finding 报告
+
+- 新增 `aimes quality report`，统一呈现确定性静态检查与经过证据验证的 AI 工程审查 findings。
+- 统一 finding 字段包含来源、类别、严重级别、描述、建议、证据、置信度和阻断属性；缺失证据显式保留为 null，不推断。
+- 静态质量门禁仍是唯一阻断依据；AI findings 永远 advisory，不能使通过的静态门禁失败。
+- AI 报告验证失败时返回 `INVALID_AI_REPORT`，不静默合并无效数据。
+- 增加统一报告契约、CLI 参数和门禁语义回归测试。
+
 ## Unreleased - AI 审查上下文包
 
 - 新增 `aimes quality review-context`：在项目内生成只读、限额的外部 AI 工程审查上下文包，包含文件清单、SHA-256、审查提示词和跳过统计。
