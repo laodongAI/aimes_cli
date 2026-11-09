@@ -104,6 +104,7 @@ aimes adapter list --format json
 6. QCode
 7. Claude Code CLI
 8. Codex CLI
+9. ChatGPT Work
 
 VS Code 插件和独立 CLI 是不同执行上下文，必须分别验证。若它们共享 `AGENTS.md` 或 `CLAUDE.md`，治理入口可以共用，但不能假设加载行为相同。
 
