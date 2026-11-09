@@ -4,6 +4,7 @@ import tempfile
 import unittest
 
 from aimes_cli.quality_report import build_quality_report
+from aimes_cli.cli import parser
 
 
 class UnifiedQualityReportTests(unittest.TestCase):
@@ -33,6 +34,11 @@ class UnifiedQualityReportTests(unittest.TestCase):
             }],
         }), encoding="utf-8")
         return path
+
+    def test_cli_parser_exposes_unified_report_command(self):
+        args = parser().parse_args(["quality", "report", "--root", str(self.root), "--ai-report", ".aimes/review.json", "--format", "json"])
+        self.assertEqual(args.quality_command, "report")
+        self.assertEqual(str(args.ai_report), ".aimes/review.json")
 
     def test_unifies_static_and_ai_findings(self):
         result = build_quality_report(self.root, self._ai_report())
