@@ -25,6 +25,15 @@ class RuntimeDetectionTests(unittest.TestCase):
         self.assertEqual(run.call_args.kwargs["timeout"], 4)
         self.assertFalse(run.call_args.kwargs.get("shell", False))
 
+    @patch("aimes_cli.runtime_detect.subprocess.run")
+    @patch("aimes_cli.runtime_detect.shutil.which", return_value="/opt/trae")
+    def test_ide_launcher_is_discovery_only(self, _which, run):
+        result = detect_adapters(["trae-code"])
+        command = result["adapters"][0]["commands"][0]
+        self.assertTrue(command["available"])
+        self.assertEqual(command["version_status"], "skipped_non_cli")
+        run.assert_not_called()
+
     @patch("aimes_cli.runtime_detect.shutil.which", return_value="/tools/codex.cmd")
     def test_windows_script_launcher_is_not_invoked_through_shell(self, _which):
         result = detect_adapters(["codex-cli"])
