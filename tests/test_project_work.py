@@ -85,7 +85,7 @@ class ProjectWorkTests(unittest.TestCase):
         after = read_project_state(self.root)
         self.assertEqual(before, after)
         self.assertEqual(result["current_lifecycle"], "development")
-        self.assertTrue(any(item["source"] == "tests" for item in result["evidence"]))
+        self.assertTrue(any(item["source"] == "tests" and item["signal"] == "testing" and item["weight"] == 2 for item in result["evidence"]))
         self.assertIn("candidate", result)
         self.assertIn("limitations", result)
 
