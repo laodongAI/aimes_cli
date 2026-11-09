@@ -85,7 +85,17 @@ aimes state detect --task-text "修复接口调用错误" --format json
 
 `detect` 不会保存候选；当命中多个模式时返回低置信度和候选列表，不擅自选择。用户显式指定模式始终优先。用户选择通过 `--source user` 记录；AI 根据对话判断后写入时必须使用 `--source ai --confidence high|medium`，低置信度不得持久化猜测。
 
-## 5. AI 对话与 CLI 的职责边界
+## 5. MCP 工具
+
+AIMES MCP Server 同步暴露三个项目状态工具，供已连接的 AI 宿主调用：
+
+- `aimes_project_state`：只读读取当前状态、可用/缺失 Skills 和下一步建议。
+- `aimes_detect_engineering_mode`：对宿主传入的任务摘要做确定性候选识别，不持久化。
+- `aimes_set_project_state`：持久化生命周期、模式、任务阶段或任务摘要。设置工程模式时必须提供 `source`；AI 来源的低置信度模式会被拒绝，需先向用户确认。
+
+工具声明不代表宿主已连接或自动调用；必须在目标工具中验证 MCP 连接、工具发现和真实调用证据。
+
+## 6. AI 对话与 CLI 的职责边界
 
 本地 CLI 无法自行读取 Codex、Claude Code、Trae、ZCode、QCode 或 ChatGPT 的当前对话内容。因此：
 
@@ -96,7 +106,7 @@ aimes state detect --task-text "修复接口调用错误" --format json
 5. 模式确认后，读取模式映射的 Skills，并继续调用既有 `aimes skill route`。映射是组合入口，不替代 Skill 正文和调用证据。
 6. 任务阶段变化时只更新 task_phase；工程模式变化时只更新 engineering_mode；除非有明确项目决策，不自动修改 project_lifecycle。
 
-## 6. 生命周期与任务状态约束
+## 7. 生命周期与任务状态约束
 
 生命周期取值：`unknown`、`new`、`planning`、`design`、`development`、`testing`、`release`、`operation`、`paused`、`archived`。
 
@@ -104,7 +114,7 @@ aimes state detect --task-text "修复接口调用错误" --format json
 
 初始化时生命周期默认 `unknown`，因为对一个已有仓库执行 AIMES init 并不代表它是新项目。只有显式确认后才设置为 `new` 或其他生命周期。
 
-## 7. 当前限制与后续迭代
+## 8. 当前限制与后续迭代
 
 - 状态是项目级单一快照；多用户、多分支、多会话并发时还需要 session/task 级状态模型与冲突策略。
 - 当前关键词识别是确定性辅助，不调用模型、不读取会话、不上传数据。
