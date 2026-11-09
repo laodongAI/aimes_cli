@@ -46,17 +46,19 @@ Claude Code 同理，进入 `Join-Path $probeRoot "claude-code"` 后启动 claud
 
 从项目根目录执行：
 
-    aimes adapter probe validate codex-cli --root $probeRoot --format json
+    aimes adapter probe validate codex-cli --root $probeRoot --confirm-fresh-session --format json
     aimes adapter validate codex-cli/verification-evidence.yaml --root $probeRoot --format json
 
 Claude Code 对应将命令中的 codex-cli 替换为 claude-code。验证命令可从任意当前目录执行，但必须传入相同的 --root $probeRoot。
+
+只有操作者确认刚才确实从探针目录启动了一个全新 CLI 会话，才添加 `--confirm-fresh-session`。如果 token 匹配但未作此确认，AIMES 会记录 `BLOCKED`，不会给出 PASS。该确认是操作者声明，不是 AIMES 对会话历史的密码学证明。
 
 验证命令会：
 
 - 检查探针规则入口的 SHA-256 是否仍与创建时一致；
 - 检查原始回复是否严格匹配随机 token（仅允许首尾空白）；
 - 生成 verification-evidence.yaml，记录工具版本、执行模式、平台、规则入口、观察时间、案例 ID、AIMES 版本、治理版本、原始响应路径和 SHA-256；
-- 返回 PASS、FAIL 或 NOT_RUN。没有 response.txt 时不会创建 PASS 记录；
+- 返回 PASS、FAIL、BLOCKED 或 NOT_RUN。没有 response.txt 时不会创建 PASS 记录；token 匹配但缺少新会话确认时记录 BLOCKED；
 - 拒绝覆盖已有证据文件。若需重测，请创建新的探针目录。
 
 ## 4. 安全与可信边界
