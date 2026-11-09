@@ -152,4 +152,19 @@ class EvaluationTests(unittest.TestCase):
         result = validate_run(self.put("run-v2.json", run))
         self.assertIn("EVIDENCE_ARTIFACT_SYMLINK", {x["code"] for x in result["findings"]})
 
+    def test_run_rejects_non_integer_schema_version(self):
+        run = self.run_record()
+        run["schema_version"] = []
+        result = validate_run(self.put("run-invalid-version.json", run))
+        self.assertIn("RUN_SCHEMA_VERSION", {x["code"] for x in result["findings"]})
+
+    def test_v2_pass_rejects_windows_absolute_artifact_path(self):
+        run = self.run_record()
+        run["schema_version"] = 2
+        run["case_results"][0]["evidence_artifacts"] = [{
+            "kind": "raw_response", "path": r"C:\outside\secret.txt", "sha256": "0" * 64,
+        }]
+        result = validate_run(self.put("run-v2.json", run))
+        self.assertIn("EVIDENCE_ARTIFACT_PATH", {x["code"] for x in result["findings"]})
+
 if __name__=='__main__': unittest.main()
