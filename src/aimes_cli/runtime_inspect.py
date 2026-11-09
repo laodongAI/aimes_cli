@@ -201,9 +201,9 @@ def _inspect_claude(root: Path) -> list[dict[str, Any]]:
     return [
         _integration("instructions", [instructions], False, "CLAUDE.md 的存在不证明当前 Claude Code 会话已加载。"),
         _integration("skills", [skills], skills.get("count", 0) > 0, "检查项目级 .claude/skills/*/SKILL.md；不验证技能触发或执行。"),
-        _integration("mcp", [_feature_evidence(mcp, mcp_configured)], mcp_configured, "检查 .mcp.json 与 settings.json 的 MCP 配置结构；不读取或展示服务器参数。"),
+        _integration("mcp", [_feature_evidence(mcp, mcp_configured)], mcp_configured, "仅识别项目根目录 .mcp.json 的 mcpServers；不读取或展示服务器参数。"),
         _integration("hooks", [_feature_evidence(settings, hooks_configured)], hooks_configured, "只识别 settings.json 的 hooks 配置；绝不执行 Hook。"),
-        _integration("agents", [agents_dir], agents_dir.get("count", 0) > 0, "检查项目级 .claude/agents/*/AGENT.md；不启动子 Agent。"),
+        _integration("agents", [agents_dir], agents_dir.get("count", 0) > 0, "检查项目级 .claude/agents/ 下的 Markdown Agent 定义；不启动子 Agent。"),
     ]
 
 
