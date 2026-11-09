@@ -5,6 +5,7 @@ import hashlib
 import json
 from fnmatch import fnmatch
 import os
+import subprocess
 from pathlib import Path
 import re
 import xml.etree.ElementTree as ET
@@ -239,13 +240,106 @@ def _inspect_coverage(root: Path, config: dict[str, Any]) -> tuple[list[dict[str
     return [], metadata
 
 
-def inspect_project_sources(root: Path, config: dict[str, Any], exclude_patterns: list[str] | None = None) -> tuple[list[dict[str, Any]], dict[str, int]]:
+def _public_contracts(source: str, filename: str) -> dict[str, str]:
+    try:
+        tree = ast.parse(source, filename=filename)
+    except SyntaxError:
+        return {}
+    contracts: dict[str, str] = {}
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and not node.name.startswith("_"):
+            contracts[f"function:{node.name}"] = ast.dump(node.args, include_attributes=False)
+        elif isinstance(node, ast.ClassDef) and not node.name.startswith("_"):
+            contracts[f"class:{node.name}"] = ast.dump(node.bases, include_attributes=False)
+            for member in node.body:
+                if isinstance(member, (ast.FunctionDef, ast.AsyncFunctionDef)) and not member.name.startswith("_"):
+                    contracts[f"method:{node.name}.{member.name}"] = ast.dump(member.args, include_attributes=False)
+        for decorator in getattr(node, "decorator_list", []):
+            if isinstance(decorator, ast.Call) and isinstance(decorator.func, ast.Attribute):
+                method = decorator.func.attr.upper()
+                if method in {"GET", "POST", "PUT", "PATCH", "DELETE"} and decorator.args and isinstance(decorator.args[0], ast.Constant) and isinstance(decorator.args[0].value, str):
+                    contracts[f"route:{method} {decorator.args[0].value}"] = ast.dump(getattr(node, "args", ast.arguments(posonlyargs=[], args=[], vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[])), include_attributes=False)
+    return contracts
+
+
+def inspect_public_api_compatibility(root: Path, base_ref: str | None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    metadata: dict[str, Any] = {"status": "NOT_REQUESTED", "base_ref": base_ref, "changed_files": 0}
+    if not base_ref:
+        return [], metadata
+    if base_ref.startswith("-") or any(char.isspace() for char in base_ref):
+        metadata["status"] = "INVALID_BASE_REF"
+        return [_finding("API_BASE_REF_INVALID", ".", 1,
+            "The supplied API compatibility base ref is not a valid single Git ref.",
+            "Supply a branch, tag, or commit ref without whitespace or command options.",
+            category="compatibility")], metadata
+    try:
+        verified = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--verify", "--quiet", "--end-of-options", f"{base_ref}^{{commit}}"],
+            capture_output=True, text=True, timeout=10, check=False,
+        )
+        if verified.returncode != 0:
+            raise ValueError("Git ref does not resolve to a commit")
+        changed = subprocess.run(
+            ["git", "-C", str(root), "diff", "--name-only", base_ref, "--", "*.py"],
+            capture_output=True, text=True, timeout=15, check=False,
+        )
+        if changed.returncode != 0:
+            raise ValueError("Unable to compare the selected base ref")
+    except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
+        metadata["status"] = "UNAVAILABLE"
+        return [_finding("API_BASE_REF_UNAVAILABLE", ".", 1,
+            f"Public API comparison could not run: {exc}",
+            "Run the command inside a Git repository and provide a resolvable base ref.",
+            category="compatibility")], metadata
+    paths = [item.strip() for item in changed.stdout.splitlines() if item.strip() and not item.startswith("../")]
+    metadata["changed_files"] = len(paths)
+    if len(paths) > MAX_SOURCE_FILES:
+        metadata["status"] = "LIMIT_EXCEEDED"
+        return [_finding("API_DIFF_LIMIT", ".", 1,
+            f"API comparison found {len(paths)} changed Python files; limit is {MAX_SOURCE_FILES}.",
+            "Narrow the change set or run a dedicated compatibility review.", category="compatibility")], metadata
+    findings: list[dict[str, Any]] = []
+    for relative in paths:
+        if relative.startswith("/") or ".." in Path(relative).parts:
+            continue
+        try:
+            old = subprocess.run(
+                ["git", "-C", str(root), "show", f"{base_ref}:{relative}"],
+                capture_output=True, text=True, timeout=10, check=False,
+            )
+            current_path = root / relative
+            current = current_path.read_text(encoding="utf-8-sig") if current_path.is_file() and not current_path.is_symlink() else ""
+            if old.returncode != 0 and not current:
+                continue
+            old_contracts = _public_contracts(old.stdout if old.returncode == 0 else "", relative)
+            new_contracts = _public_contracts(current, relative)
+        except (OSError, UnicodeError, subprocess.TimeoutExpired):
+            continue
+        for symbol, signature in old_contracts.items():
+            if symbol not in new_contracts:
+                findings.append(_finding("PUBLIC_API_REMOVED", relative, 1,
+                    f"Public contract {symbol} existed at {base_ref} but is absent in the working tree.",
+                    "Confirm the removal is intentional, provide a migration path, or retain a backward-compatible adapter.",
+                    severity="ERROR", category="compatibility"))
+            elif new_contracts[symbol] != signature:
+                findings.append(_finding("PUBLIC_API_SIGNATURE_CHANGED", relative, 1,
+                    f"Public contract {symbol} has a changed argument signature since {base_ref}.",
+                    "Review callers and preserve backward compatibility with defaults, overloads, or a versioned contract.",
+                    category="compatibility"))
+    metadata["status"] = "COMPARED"
+    return findings, metadata
+
+
+def inspect_project_sources(root: Path, config: dict[str, Any], exclude_patterns: list[str] | None = None, base_ref: str | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     findings: list[dict[str, Any]] = []
     counts = {"python_files_scanned": 0, "vue_files_scanned": 0, "source_files_scanned": 0, "files_skipped": 0}
     findings.extend(_inspect_dependency_manifests(root))
     coverage_findings, coverage_metadata = _inspect_coverage(root, config)
     findings.extend(coverage_findings)
     counts["coverage"] = coverage_metadata
+    api_findings, api_metadata = inspect_public_api_compatibility(root, base_ref)
+    findings.extend(api_findings)
+    counts["api_compatibility"] = api_metadata
     candidates: list[tuple[str, Path]] = []
     duplicate_functions: dict[str, list[tuple[str, str, int]]] = {}
     patterns = exclude_patterns or []
