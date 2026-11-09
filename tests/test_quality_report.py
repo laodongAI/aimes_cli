@@ -38,7 +38,7 @@ class UnifiedQualityReportTests(unittest.TestCase):
     def test_cli_parser_exposes_unified_report_command(self):
         args = parser().parse_args(["quality", "report", "--root", str(self.root), "--ai-report", ".aimes/review.json", "--format", "json"])
         self.assertEqual(args.quality_command, "report")
-        self.assertEqual(str(args.ai_report), ".aimes/review.json")
+        self.assertEqual(args.ai_report, Path(".aimes/review.json"))
 
     def test_unifies_static_and_ai_findings(self):
         result = build_quality_report(self.root, self._ai_report())
