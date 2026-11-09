@@ -15,7 +15,7 @@ VERSION_TIMEOUT_SECONDS = 4
 MAX_VERSION_OUTPUT = 500
 
 
-def _probe_command(command: str) -> dict[str, Any]:
+def _probe_command(command: str, *, probe_version: bool) -> dict[str, Any]:
     executable = shutil.which(command)
     if not executable:
         return {
@@ -33,6 +33,12 @@ def _probe_command(command: str) -> dict[str, Any]:
         "version": None,
         "version_status": "not_probed",
     }
+    # Only known CLI harnesses are queried with --version. An IDE launcher may
+    # ignore unknown flags and open a GUI, so IDE/hosted launchers are discovery-only.
+    if not probe_version:
+        result["version_status"] = "skipped_non_cli"
+        return result
+
     # Windows batch launchers require shell interpretation. Do not invoke them
     # through a shell: availability is still useful, but version stays unknown.
     if Path(executable).suffix.lower() in {".cmd", ".bat"}:
@@ -72,7 +78,7 @@ def detect_adapters(tools: Iterable[str] | None = None) -> dict[str, Any]:
     records = []
     for tool_id in selected:
         adapter = ADAPTERS[tool_id]
-        commands = [_probe_command(command) for command in adapter.detection_commands]
+        commands = [_probe_command(command, probe_version=adapter.host_type == "cli") for command in adapter.detection_commands]
         if not adapter.detection_commands:
             availability = "not_detectable"
         elif any(item["available"] for item in commands):
