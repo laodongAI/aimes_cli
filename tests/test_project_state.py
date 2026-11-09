@@ -190,5 +190,11 @@ class ProjectStateTests(unittest.TestCase):
         result = set_project_state(self.root, task="优化用户资料页面")
         self.assertEqual(result["state"]["task_phase"], "analysis")
 
+    def test_overlapping_trigger_phrases_do_not_inflate_confidence(self):
+        result = detect_mode("代码重构", load_mode_registry(self.root))
+        self.assertEqual(result["mode"], "refactoring")
+        self.assertEqual(result["confidence"], "medium")
+        self.assertEqual(result["matches"][0]["matched_triggers"], ["代码重构"])
+
 if __name__ == "__main__":
     unittest.main()
