@@ -16,6 +16,7 @@ class HookInstallTests(unittest.TestCase):
             self.assertEqual(plan["actions"], [{"path": plan["target"], "action": "create"}])
             self.assertFalse((Path(directory) / "hooks").exists())
             self.assertIn("aimes validate", plan["content_preview"])
+            self.assertIn("aimes quality inspect", plan["content_preview"])
             self.assertIn(HOOK_MARKER, plan["content_preview"])
 
     def test_apply_requires_confirm(self):
