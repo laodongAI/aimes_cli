@@ -1,6 +1,7 @@
 import unittest
 
 from aimes_cli.adapters import ADAPTERS, adapter_payload, normalize_tools
+from aimes_cli.cli import parser
 
 
 class AdapterRegistryTests(unittest.TestCase):
@@ -21,6 +22,12 @@ class AdapterRegistryTests(unittest.TestCase):
         self.assertEqual(ADAPTERS["codex-cli"].status, "template")
         self.assertEqual(ADAPTERS["codex-cli"].paths, ("AGENTS.md",))
         self.assertEqual(normalize_tools("codex,codex-cli,claude"), ["codex-cli", "claude-code"])
+
+    def test_cli_exposes_registry_listing_in_json_mode(self):
+        args = parser().parse_args(["adapter", "list", "--format", "json"])
+        self.assertEqual(args.command, "adapter")
+        self.assertEqual(args.adapter_command, "list")
+        self.assertEqual(args.format, "json")
 
     def test_registry_has_unique_ids_and_known_capability_states(self):
         ids = [item["id"] for item in adapter_payload()]
