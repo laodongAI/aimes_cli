@@ -96,10 +96,13 @@ class ProjectStateTests(unittest.TestCase):
         with redirect_stdout(buffer):
             code = main(["state", "set", "--root", str(self.root),
                          "--mode", "frontend-optimization", "--phase", "analysis",
-                         "--lifecycle", "development", "--format", "json"])
+                         "--lifecycle", "development", "--source", "ai",
+                         "--confidence", "medium", "--format", "json"])
         self.assertEqual(code, 0)
         saved = yaml.safe_load((self.root / ".aimes/project-state.yaml").read_text(encoding="utf-8"))
         self.assertEqual(saved["engineering_mode"], "frontend-optimization")
+        self.assertEqual(saved["mode_source"], "ai")
+        self.assertEqual(saved["confidence"], "medium")
         buffer = io.StringIO()
         with redirect_stdout(buffer):
             code = main(["state", "show", "--root", str(self.root), "--format", "json"])
