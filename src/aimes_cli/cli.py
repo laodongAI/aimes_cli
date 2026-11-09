@@ -183,7 +183,7 @@ def parser() -> argparse.ArgumentParser:
     common(state_show)
     state_set = state_sub.add_parser('set', help='Explicitly set lifecycle, engineering mode or task phase')
     common(state_set)
-    state_set.add_argument('--lifecycle', choices=['new','planning','design','development','testing','release','operation','paused','archived'])
+    state_set.add_argument('--lifecycle', choices=['unknown','new','planning','design','development','testing','release','operation','paused','archived'])
     state_set.add_argument('--mode', help='Engineering mode ID; see aimes state modes')
     state_set.add_argument('--phase', choices=['analysis','clarification','design','review','implementation','testing','acceptance','delivery'])
     state_set.add_argument('--task', help='Current task title/summary')
