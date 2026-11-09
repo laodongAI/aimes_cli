@@ -182,6 +182,10 @@ def assess_project_lifecycle(root: Path) -> dict[str, Any]:
         ("README.md", "README.md"), ("pyproject.toml", "pyproject.toml"),
         ("package.json", "package.json"), ("Cargo.toml", "Cargo.toml"),
         ("go.mod", "go.mod"), ("pom.xml", "pom.xml"),
+        ("src", "src"), ("app", "app"), ("backend", "backend"),
+        ("frontend", "frontend"), ("web", "web"), ("server", "server"), ("client", "client"),
+        ("docs/plan", "docs/plan"), ("docs/requirements", "docs/requirements"),
+        ("docs/product", "docs/product"),
         ("docs/architecture", "docs/architecture"), ("docs/design", "docs/design"),
         ("tests", "tests"), ("test", "test"), ("pytest.ini", "pytest.ini"),
         ("Dockerfile", "Dockerfile"), (".github/workflows", ".github/workflows"),
@@ -194,6 +198,10 @@ def assess_project_lifecycle(root: Path) -> dict[str, Any]:
             evidence.append({"source": label, "kind": "path_exists"})
             if relative in {"README.md", "pyproject.toml", "package.json", "Cargo.toml", "go.mod", "pom.xml"}:
                 signals["development"] += 1
+            if relative in {"src", "app", "backend", "frontend", "web", "server", "client"}:
+                signals["development"] += 2
+            if relative in {"docs/plan", "docs/requirements", "docs/product"}:
+                signals["planning"] += 2
             if relative in {"docs/architecture", "docs/design"}:
                 signals["design"] += 2
             if relative in {"tests", "test", "pytest.ini"}:
