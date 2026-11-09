@@ -357,7 +357,12 @@ def emit(data, fmt='text', output: Path | None=None):
                 lines.append(f"Quality gate: enforce={policy.get('enforce', False)}, fail_on={policy.get('fail_on', 'ERROR')}")
             if data.get('findings'):
                 lines.append('Findings:')
-                for finding in data['findings']: lines.append(f"  - [{finding['level']}] {finding['code']}: {finding['message']}")
+                for finding in data['findings']:
+                    severity = finding.get('level', finding.get('severity', 'INFO'))
+                    location = finding.get('path', '')
+                    if finding.get('line') is not None: location += f":{finding['line']}"
+                    prefix = f"{location}: " if location else ''
+                    lines.append(f"  - [{severity}] {finding['code']}: {prefix}{finding['message']}")
             if data.get('message'): lines.append(data['message'])
             if 'matches' in data and 'task_text' in data:
                 lines.append(f"Task: {data['task_text']} (registry: {data['registry']})")
