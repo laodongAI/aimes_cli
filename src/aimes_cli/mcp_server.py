@@ -10,7 +10,7 @@ from .delivery_report import validate_delivery_text
 from .skill_route import load_skill_body, route_skills
 from .project_state import show_project_state, detect_mode, load_mode_registry, set_project_state
 from .project_work import assess_project_lifecycle, start_task, update_task, list_tasks, show_session, bind_session_task
-from .mode_route import explain_mode
+from .mode_route import explain_mode\nfrom .quality_check import inspect_project_quality
 
 PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "aimes-governance"
@@ -74,6 +74,17 @@ TOOLS = [
             "type": "object",
             "properties": {"mode": {"type": "string", "description": "Engineering mode ID; omit to use the currently selected mode."}},
         },
+    },
+    {
+        "name": "aimes_quality_inspect",
+        "description": "Run deterministic read-only engineering quality checks using the quality profile mapped to the selected engineering mode, or an explicitly supplied profile. Project-wide enforce/fail_on policy remains authoritative; AI findings are not included.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "mode": {"type": "string", "description": "Engineering mode ID; defaults to persisted current mode."},
+                "profile": {"type": "string", "description": "Named quality profile ID; mutually exclusive with mode."}
+            }
+        }
     },
     {
         "name": "aimes_project_state",
@@ -154,6 +165,8 @@ def call_tool(root: Path, name: str, arguments: dict[str, Any]) -> dict[str, Any
     try:
         if name == "aimes_assess_project_lifecycle":
             return _tool_result(assess_project_lifecycle(root))
+        if name == "aimes_quality_inspect":
+            return _tool_result(inspect_project_quality(root, profile_id=arguments.get("profile"), mode_id=arguments.get("mode")))
         if name == "aimes_task_start":
             return _tool_result(start_task(root, arguments.get("title"),
                 session_id=arguments.get("session_id", "default"),
