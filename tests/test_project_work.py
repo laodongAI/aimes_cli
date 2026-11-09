@@ -72,7 +72,7 @@ class ProjectWorkTests(unittest.TestCase):
         tasks = self.root / ".aimes/tasks"
         tasks.mkdir(parents=True, exist_ok=True)
         (tasks / "malformed.yaml").write_text(
-            "schema_version: 1\\ntask_id: malformed\\ntitle: broken\\nstatus: [active]\\nphase: analysis\\nsession_id: default\\n",
+            "schema_version: 1\ntask_id: malformed\ntitle: broken\nstatus: [active]\nphase: analysis\nsession_id: default\n",
             encoding="utf-8")
         with self.assertRaises(ValueError):
             list_tasks(self.root)
