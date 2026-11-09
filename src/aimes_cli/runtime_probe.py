@@ -157,7 +157,7 @@ def create_runtime_probe(
     }
 
 
-def validate_runtime_probe(root: Path, probe_dir: Path, *, observer: str = "") -> dict[str, Any]:
+def validate_runtime_probe(root: Path, probe_dir: Path, *, observer: str = "", confirm_fresh_session: bool = False) -> dict[str, Any]:
     root = root.resolve()
     target = _inside(probe_dir, root)
     manifest_path = target / "probe-manifest.json"
@@ -212,8 +212,9 @@ def validate_runtime_probe(root: Path, probe_dir: Path, *, observer: str = "") -
         }
     response_path = _checked_probe_file(response_path, target, "response")
     raw_response = response_path.read_text(encoding="utf-8-sig")
-    passed = raw_response.strip() == token
-    status = "PASS" if passed else "FAIL"
+    matched = raw_response.strip() == token
+    passed = matched and confirm_fresh_session
+    status = "FAIL" if not matched else ("PASS" if confirm_fresh_session else "BLOCKED")
     observed_at = _now()
     artifact_rel = response_path.relative_to(root).as_posix()
     evidence = {
@@ -231,6 +232,7 @@ def validate_runtime_probe(root: Path, probe_dir: Path, *, observer: str = "") -
             "rule_entry": manifest["rule_entry"],
             "verification": status,
             "method": "runtime_observation",
+            "fresh_session_confirmed": bool(confirm_fresh_session),
             "observed_at": observed_at,
             "observer": observer.strip() or manifest.get("observer") or "not-recorded",
             "case_id": manifest["case_id"],
@@ -242,7 +244,9 @@ def validate_runtime_probe(root: Path, probe_dir: Path, *, observer: str = "") -
                 "Exact unique token returned in a fresh CLI session from an isolated project; "
                 "evidence demonstrates this probe only, not all project rules."
                 if passed else
-                "Assistant response did not exactly match the unique token; inspect raw response and session context."
+                ("Token matched, but the operator did not confirm a fresh session; result is BLOCKED."
+                 if matched else
+                 "Assistant response did not exactly match the unique token; inspect raw response and session context.")
             ),
         }],
     }
@@ -264,6 +268,12 @@ def validate_runtime_probe(root: Path, probe_dir: Path, *, observer: str = "") -
         "evidence_validation_command": (
             f"aimes adapter validate {evidence_path.relative_to(root).as_posix()} --root . --format json"
         ),
-        "message": "Exact response matched the unique token." if passed else "Response mismatch; runtime rule loading was not verified.",
-        "note": "PASS is scoped to this isolated probe, tool version, CLI mode, and platform. It is not proof that every governance rule is followed.",
+        "message": (
+            "Exact response matched and the operator confirmed a fresh session."
+            if passed else
+            ("Token matched, but fresh-session confirmation is missing; result is BLOCKED."
+             if matched else "Response mismatch; runtime rule loading was not verified.")
+        ),
+        "fresh_session_confirmed": bool(confirm_fresh_session),
+        "note": "PASS requires an exact token match and explicit operator confirmation of a fresh session. It remains scoped to this isolated probe, tool version, CLI mode, and platform; it does not prove every governance rule is followed.",
     }
