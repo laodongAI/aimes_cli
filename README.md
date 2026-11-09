@@ -502,3 +502,24 @@ aimes version-audit --root . --format json --output .aimes/reports/version-audit
 ## Automated engineering quality gates
 
 AIMES includes a read-only deterministic quality inspection command: `aimes quality inspect`. It reports Vue SFC, script-block, and template-block size thresholds, plus direct `fetch()`/`axios` HTTP calls inside Vue scripts that should normally live in reusable API services. Project rules live in `.aimes/quality-gates.yaml`; the default is advisory (`enforce: false`) to avoid unexpectedly blocking existing projects. Enable `enforce: true` only after reviewing the baseline. The AIMES pre-commit hook also runs this check. See [automated engineering quality checks](docs/AUTOMATED-ENGINEERING-QUALITY-GATES.md) for rule semantics and limitations.
+
+
+## 项目状态与工程模式感知
+
+AIMES 支持分别维护项目生命周期、当前工程模式和任务阶段，并通过工程模式目录映射已有 Skills、工作流标识与质量配置标识。
+
+```powershell
+# 查看当前项目状态和当前模式路由
+aimes state show
+
+# 列出工程模式
+aimes state modes
+
+# 显式设置状态
+aimes state set --lifecycle development --mode frontend-optimization --phase analysis --task "优化学习页面体验"
+
+# 对显式任务描述进行关键词候选识别（只读，不保存）
+aimes state detect --task-text "请优化 Vue 页面交互和响应式体验"
+```
+
+状态模型与边界见 [项目状态与工程模式感知](docs/PROJECT-STATE-AND-ENGINEERING-MODES.md)。CLI 不读取 AI 对话内容；AI 宿主必须结合当前对话识别模式，低置信度或多模式命中时先确认。工作流与质量配置目前是路由元数据，不代表自动执行。
