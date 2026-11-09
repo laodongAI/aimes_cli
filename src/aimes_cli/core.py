@@ -111,6 +111,9 @@ def proposed_files(root: Path, tools: list[str], scope: str) -> dict[str, str]:
     quality_gates = template_root / 'quality-gates.yaml'
     if quality_gates.is_file():
         files['.aimes/quality-gates.yaml'] = quality_gates.read_text(encoding='utf-8')
+    quality_profiles = template_root / 'quality-profiles.yaml'
+    if quality_profiles.is_file():
+        files['.aimes/quality-profiles.yaml'] = quality_profiles.read_text(encoding='utf-8')
     engineering_suite = template_root / 'software-engineering-quality-suite.yaml'
     if engineering_suite.is_file():
         files['.aimes/skills/software-engineering-quality-suite.yaml'] = engineering_suite.read_text(encoding='utf-8')
