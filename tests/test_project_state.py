@@ -85,7 +85,7 @@ class ProjectStateTests(unittest.TestCase):
         result = list_project_modes(self.root)
         ids = {item["id"] for item in result["modes"]}
         self.assertIn("frontend-optimization", ids)
-        self.assertIn("engineering-audit", ids)
+        self.assertIn("engineering-audit", ids)\n        self.assertIn("ai-model-evaluation", ids)\n        self.assertIn("technical-debt", ids)
 
 
     def test_cli_state_commands_show_set_detect_and_list_modes(self):
