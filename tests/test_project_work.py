@@ -68,6 +68,15 @@ class ProjectWorkTests(unittest.TestCase):
             (self.root / ".aimes/tasks/external.yaml").unlink(missing_ok=True)
             outside.rmdir()
 
+    def test_task_listing_rejects_malformed_record_types(self):
+        tasks = self.root / ".aimes/tasks"
+        tasks.mkdir(parents=True, exist_ok=True)
+        (tasks / "malformed.yaml").write_text(
+            "schema_version: 1\\ntask_id: malformed\\ntitle: broken\\nstatus: [active]\\nphase: analysis\\nsession_id: default\\n",
+            encoding="utf-8")
+        with self.assertRaises(ValueError):
+            list_tasks(self.root)
+
     def test_lifecycle_assessment_is_read_only_and_reports_evidence(self):
         set_project_state(self.root, lifecycle="development")
         before = read_project_state(self.root)
