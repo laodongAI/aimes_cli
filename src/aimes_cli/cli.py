@@ -31,6 +31,7 @@ from .version_audit import audit_project_version
 from .repair import build_repair_plan, apply_safe_repairs
 from .code_repair import diagnose_command, inspect_patch, propose_patch, apply_patch, verify_patch, rollback_patch
 from .quality_check import inspect_project_quality
+from .quality_review import validate_ai_review_report
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -44,6 +45,9 @@ def parser() -> argparse.ArgumentParser:
     quality_sub = quality.add_subparsers(dest='quality_command', required=True)
     quality_inspect = quality_sub.add_parser('inspect', help='Read-only project quality inspection; exits non-zero only when an enabled gate fails')
     common(quality_inspect)
+    quality_review = quality_sub.add_parser('review', help='Validate an externally generated, evidence-backed AI engineering review report; advisory only')
+    common(quality_review)
+    quality_review.add_argument('--report', type=Path, required=True, help='JSON report produced by an AI tool; must be inside the project root')
     version_audit = sub.add_parser('version-audit', help='Audit project AIMES version and managed-file consistency (read-only)')
     common(version_audit)
     upgrade = sub.add_parser('upgrade', help='Safely upgrade an existing AIMES project; preview and preserve user edits')
@@ -705,6 +709,11 @@ def main(argv=None):
     try:
         if args.command == 'quality' and args.quality_command == 'inspect':
             result = inspect_project_quality(root)
+            emit(result, args.format, args.output)
+            return 0 if result.get('ok') else 1
+        if args.command == 'quality' and args.quality_command == 'review':
+            report_path = (root / args.report).resolve() if not args.report.is_absolute() else args.report.resolve()
+            result = validate_ai_review_report(report_path, root)
             emit(result, args.format, args.output)
             return 0 if result.get('ok') else 1
         if args.command == 'version-audit':
