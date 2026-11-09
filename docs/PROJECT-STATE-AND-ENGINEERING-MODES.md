@@ -141,7 +141,7 @@ MCP 宿主应为每个工具实例/工作会话提供稳定且不与其他工具
 3. AI 可以把简洁任务描述传给 `aimes state detect` 作为候选辅助；关键词识别不是语义理解。
 4. 高置信度且与用户明确要求一致时可更新状态；中置信度结合任务语义、触发证据和项目规则判断，必要时确认；低置信度或多模式冲突必须先向用户确认。
 5. 模式确认后，读取模式映射的 Skills，并继续调用既有 `aimes skill route`。映射是组合入口，不替代 Skill 正文和调用证据。
-6. 任务阶段变化时只更新 task_phase；工程模式变化时只更新 engineering_mode；除非有明确项目决策，不自动修改 project_lifecycle。
+6. 任务阶段/状态变化时更新当前任务记录（`aimes task update`），不修改项目生命周期；工程模式写入任务记录。项目级 `aimes state set --phase/--mode/--task` 仅为兼容旧项目状态快照的管理入口，新任务流程以 task/session 记录为准。除非有明确项目决策，不自动修改 project_lifecycle。
 
 ## 8. 生命周期与任务状态约束
 
