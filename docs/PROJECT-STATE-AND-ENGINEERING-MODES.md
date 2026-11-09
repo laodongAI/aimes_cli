@@ -16,7 +16,7 @@ AIMES 将项目整体生命周期、当前任务的工程模式和任务执行�
 
 - `.aimes/project-state.yaml`：项目级状态快照，保存生命周期、当前工程模式、任务阶段、任务摘要、模式来源、置信度和更新时间。
 - `.aimes/project-state/engineering-modes.yaml`：工程模式目录，定义触发词、复用的 Skills、工作流标识和质量配置标识。
-- `aimes state show`：查看状态及当前模式对应的 Skills/工作流/质量配置路由。
+- `aimes state show`：查看状态及当前模式对应的 Skills/工作流/质量配置路由；交互式 CLI 启动时自动显示同一状态卡片。
 - `aimes state modes`：查看所有已注册工程模式。
 - `aimes state set`：显式设置项目生命周期、工程模式、任务阶段和当前任务摘要。
 - `aimes state detect --task-text "..."`：对显式传入的任务文本做确定性关键词候选识别，不写入状态。
