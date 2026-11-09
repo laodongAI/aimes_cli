@@ -1,0 +1,87 @@
+schema_version: 2
+registry_id: aimes-agent-tool-adapters
+registry_version: 2.0.0
+description: Declarative Host/Harness adapter catalog. Capability values describe integration evidence, not marketing claims.
+capability_states: [native, template, manual, unknown, unsupported]
+adapters:
+  - id: trae-code
+    name: Trae Code
+    status: template
+    host: {id: trae, type: ide, name: Trae}
+    harness: {id: trae-agent, name: Trae Agent}
+    execution_modes: [ide_extension]
+    entry_paths: [.trae/rules/00-aimes-governance.md]
+    capabilities: {instructions: template, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
+    description: Trae project rule entry; runtime loading must be verified for the installed version.
+  - id: vscode-codex
+    name: VS Code + Codex
+    status: template
+    host: {id: vscode, type: ide, name: Visual Studio Code}
+    harness: {id: codex, name: OpenAI Codex}
+    execution_modes: [ide_extension]
+    entry_paths: [AGENTS.md]
+    capabilities: {instructions: template, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
+    description: Codex running as a VS Code extension; do not infer parity with Codex CLI.
+  - id: vscode-claude-code
+    name: VS Code + Claude Code
+    status: template
+    host: {id: vscode, type: ide, name: Visual Studio Code}
+    harness: {id: claude-code, name: Anthropic Claude Code}
+    execution_modes: [ide_extension]
+    entry_paths: [CLAUDE.md]
+    capabilities: {instructions: template, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
+    description: Claude Code running through the VS Code extension; validate independently from the standalone CLI.
+  - id: vscode-copilot
+    name: VS Code + GitHub Copilot
+    status: template
+    host: {id: vscode, type: ide, name: Visual Studio Code}
+    harness: {id: github-copilot, name: GitHub Copilot}
+    execution_modes: [ide_extension]
+    entry_paths: [.github/copilot-instructions.md]
+    capabilities: {instructions: template, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
+    description: Repository-wide Copilot instruction entry; individual features vary by extension version and agent mode.
+  - id: zcode
+    name: ZCode
+    status: manual
+    host: {id: zcode, type: ide, name: ZCode}
+    harness: {id: zcode-agent, name: ZCode Agent}
+    execution_modes: [unknown]
+    entry_paths: [.aimes/adapters/zcode/README.md]
+    capabilities: {instructions: manual, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
+    description: No native rule path is assumed; inspect the installed product and record its exact version before mapping.
+  - id: qcode
+    name: QCode
+    status: manual
+    host: {id: qcode, type: ide, name: QCode}
+    harness: {id: qcode-agent, name: QCode Agent}
+    execution_modes: [unknown]
+    entry_paths: [.aimes/adapters/qcode/README.md]
+    capabilities: {instructions: manual, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
+    description: Product identity, version and native instruction mechanism must be confirmed before writing tool-specific files.
+  - id: claude-code
+    name: Claude Code CLI
+    status: template
+    host: {id: terminal, type: cli, name: Terminal}
+    harness: {id: claude-code, name: Anthropic Claude Code}
+    execution_modes: [cli]
+    entry_paths: [CLAUDE.md]
+    capabilities: {instructions: template, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
+    description: Standalone Claude Code CLI; keep its verification separate from the IDE extension.
+  - id: codex-cli
+    name: Codex CLI
+    status: template
+    host: {id: terminal, type: cli, name: Terminal}
+    harness: {id: codex, name: OpenAI Codex}
+    execution_modes: [cli]
+    entry_paths: [AGENTS.md]
+    capabilities: {instructions: template, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
+    description: Standalone Codex CLI; keep its verification separate from the VS Code extension.
+  - id: chatgpt-work
+    name: ChatGPT Work
+    status: template
+    host: {id: chatgpt-workspace, type: hosted_workspace, name: ChatGPT Work}
+    harness: {id: chatgpt-work, name: ChatGPT Work Agent}
+    execution_modes: [workspace]
+    entry_paths: [docs/_governance/adapters/CHATGPT-WORK-ENTRY.md, .aimes/adapters/chatgpt-work/PROJECT-INSTRUCTIONS.md, .aimes/adapters/chatgpt-work/README.md]
+    capabilities: {instructions: template, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
+    description: Project instruction template; automatic loading, write access and execution capabilities must be verified in the actual workspace mode.
