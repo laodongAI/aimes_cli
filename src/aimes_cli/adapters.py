@@ -28,6 +28,8 @@ class Adapter:
 
 REGISTRY_PATH = Path(__file__).parent / "data" / "adapter-registry.yaml"
 VALID_CAPABILITY_STATES = {"native", "template", "manual", "unknown", "unsupported"}
+VALID_HOST_TYPES = {"ide", "cli", "hosted_workspace", "desktop_app"}
+VALID_EXECUTION_MODES = {"ide_extension", "cli", "desktop_app", "workspace", "unknown"}
 
 
 def load_adapter_registry(path: Path = REGISTRY_PATH) -> tuple[dict[str, Adapter], dict[str, Any]]:
@@ -43,7 +45,7 @@ def load_adapter_registry(path: Path = REGISTRY_PATH) -> tuple[dict[str, Adapter
         if not isinstance(raw.get(field), str) or not raw[field].strip():
             raise RuntimeError(f"Adapter registry {field} must be a non-empty string")
     declared_states = raw.get("capability_states")
-    if not isinstance(declared_states, list) or set(declared_states) != VALID_CAPABILITY_STATES:
+    if not isinstance(declared_states, list) or any(not isinstance(value, str) for value in declared_states) or set(declared_states) != VALID_CAPABILITY_STATES:
         raise RuntimeError("Adapter registry capability_states must declare all supported capability states exactly once")
     items = raw.get("adapters")
     if not isinstance(items, list) or not items:
@@ -60,14 +62,14 @@ def load_adapter_registry(path: Path = REGISTRY_PATH) -> tuple[dict[str, Adapter
         if adapter_id in adapters:
             raise RuntimeError(f"Duplicate adapter id: {adapter_id}")
         host, harness = item.get("host"), item.get("harness")
-        if not isinstance(host, dict) or not all(isinstance(host.get(k), str) and host[k].strip() for k in ("id", "type", "name")):
-            raise RuntimeError(f"{loc}.host must define non-empty id, type and name")
+        if not isinstance(host, dict) or not all(isinstance(host.get(k), str) and host[k].strip() for k in ("id", "type", "name")) or host.get("type") not in VALID_HOST_TYPES:
+            raise RuntimeError(f"{loc}.host must define non-empty id/name and a supported host type")
         if not isinstance(harness, dict) or not all(isinstance(harness.get(k), str) and harness[k].strip() for k in ("id", "name")):
             raise RuntimeError(f"{loc}.harness must define non-empty id and name")
         modes = item.get("execution_modes")
         paths = item.get("entry_paths")
         capabilities = item.get("capabilities")
-        if not isinstance(modes, list) or not modes or any(not isinstance(x, str) or not x for x in modes):
+        if not isinstance(modes, list) or not modes or any(not isinstance(x, str) or x not in VALID_EXECUTION_MODES for x in modes):
             raise RuntimeError(f"{loc}.execution_modes must be a non-empty list of strings")
         if not isinstance(paths, list) or not paths or any(not isinstance(x, str) or not x for x in paths):
             raise RuntimeError(f"{loc}.entry_paths must be a non-empty list of strings")
