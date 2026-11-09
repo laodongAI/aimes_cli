@@ -153,5 +153,10 @@ class ProjectStateTests(unittest.TestCase):
         self.assertIn("任务阶段：分析", output)
         self.assertIn("路由 Skills：", output)
 
+    def test_ai_selected_mode_records_provenance_and_default_confidence(self):
+        result = set_project_state(self.root, mode="refactoring", source="ai")
+        self.assertEqual(result["state"]["mode_source"], "ai")
+        self.assertEqual(result["state"]["confidence"], "medium")
+
 if __name__ == "__main__":
     unittest.main()
