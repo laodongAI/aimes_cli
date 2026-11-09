@@ -198,6 +198,8 @@ def validate_runtime_probe(root: Path, probe_dir: Path, *, observer: str = "") -
     if not token.startswith("AIMES_PROBE_") or len(token) != len("AIMES_PROBE_") + 32:
         raise ValueError("Probe token is missing or invalid")
     response_path = target / "response.txt"
+    if response_path.is_symlink():
+        raise ValueError("Probe response must not be a symbolic link")
     if not response_path.exists():
         return {
             "schema_version": 1,
