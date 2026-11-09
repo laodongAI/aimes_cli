@@ -49,6 +49,16 @@ class AdapterEvidenceContextTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(any(item["code"] == "ADAPTER_CONTEXT_MISMATCH" for item in result["findings"]))
 
+    def test_historical_registry_version_is_preserved_without_current_mapping_mismatch(self):
+        self.write_record(
+            host_id="legacy-host",
+            harness_id="legacy-harness",
+            adapter_registry_version="1.0.0",
+        )
+        result = validate_adapter_evidence(self.path, self.root)
+        self.assertTrue(result["ok"], result["findings"])
+        self.assertTrue(any(item["code"] == "ADAPTER_REGISTRY_VERSION_UNAVAILABLE" for item in result["findings"]))
+
     def test_report_aggregates_multiple_hosts_under_same_harness(self):
         checks = [
             {"id": "CLI-001", "tool": "codex-cli", "host_id": "terminal", "harness_id": "codex", "verification": "NOT_RUN", "method": "file_inspection"},
