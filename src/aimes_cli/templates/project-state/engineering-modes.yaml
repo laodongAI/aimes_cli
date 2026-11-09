@@ -40,7 +40,7 @@ modes:
     quality_profile: implementation
   - id: frontend-development
     label: 前端开发
-    triggers: [frontend_development, vue_development, component_development, 前端开发, Vue开发, 组件开发]
+    triggers: [frontend_development, vue_development, component_development, 前端开发, Vue开发, Vue组件化开发, 组件化开发, 组件开发]
     skills: [software-engineering-standards, vue-frontend-engineering, design-system-governance]
     workflow: feature-development
     quality_profile: frontend
