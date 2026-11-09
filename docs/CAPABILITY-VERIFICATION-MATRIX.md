@@ -38,15 +38,15 @@
 
 ## 3. 工具适配状态
 
-| 工具执行上下文 | 入口/适配方式 | 静态配置状态 | 运行时验证状态 |
-|---|---|---|---|
-| Trae Code | `.trae/rules/00-aimes-governance.md` | 模板适配 | `UNKNOWN`，需记录具体版本和实际加载证据 |
-| VS Code + Codex | `AGENTS.md` | 模板适配 | `UNKNOWN`，不得推断等同于 Codex CLI |
-| VS Code + Claude Code | `CLAUDE.md` | 模板适配 | `UNKNOWN`，需独立验证插件执行模式 |
-| VS Code + GitHub Copilot | `.github/copilot-instructions.md` | 模板适配 | `UNKNOWN`，需独立验证当前插件版本 |
-| ZCode | 手动适配说明 | 需用户确认原生入口 | `UNKNOWN` |
-| QCode | 手动适配说明 | 需用户确认原生入口 | `UNKNOWN` |
-| Claude Code CLI | `CLAUDE.md` | 模板适配 | `UNKNOWN`，需与 IDE 插件分开记录 |
+| 工具执行上下文 | Host | Harness | 执行模式 | 入口/适配方式 | 静态配置状态 | 运行时验证状态 |
+|---|---|---|---|---|---|---|
+| Trae Code | Trae IDE | Trae Agent | `ide_extension` | `.trae/rules/00-aimes-governance.md` | 模板 | `UNKNOWN` |
+| VS Code + Codex | VS Code | Codex | `ide_extension` | `AGENTS.md` | 模板 | `UNKNOWN` |
+| VS Code + Claude Code | VS Code | Claude Code | `ide_extension` | `CLAUDE.md` | 模板 | `UNKNOWN` |
+| VS Code + GitHub Copilot | VS Code | GitHub Copilot | `ide_extension` | `.github/copilot-instructions.md` | 模板 | `UNKNOWN` |
+| ZCode | ZCode IDE | ZCode Agent | `unknown` | 手动适配说明 | 人工确认 | `UNKNOWN` |
+| QCode | QCode IDE | QCode Agent | `unknown` | 手动适配说明 | 人工确认 | `UNKNOWN` |
+| Claude Code CLI | Terminal | Claude Code | `cli` | `CLAUDE.md` | 模板 | `UNKNOWN` |
 | Codex CLI | `AGENTS.md` | 模板适配 | `UNKNOWN`，需与 VS Code 执行模式分开记录 |
 | ChatGPT Work | `docs/_governance/adapters/CHATGPT-WORK-ENTRY.md` + 可复制项目指令模板 | 已提供适配模板；自动加载未知 | `UNKNOWN`，需在实际 Work 模式下验证规则读取、Skill 路由、权限与任务验收 |
 
