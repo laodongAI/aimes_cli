@@ -5,6 +5,7 @@ description: Declarative Host/Harness adapter catalog. Capability values describ
 capability_states: [native, template, manual, unknown, unsupported]
 adapters:
   - id: trae-code
+    detection_commands: [trae]
     name: Trae Code
     status: template
     host: {id: trae, type: ide, name: Trae}
@@ -14,6 +15,7 @@ adapters:
     capabilities: {instructions: template, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
     description: Trae project rule entry; runtime loading must be verified for the installed version.
   - id: vscode-codex
+    detection_commands: [code]
     name: VS Code + Codex
     status: template
     host: {id: vscode, type: ide, name: Visual Studio Code}
@@ -23,6 +25,7 @@ adapters:
     capabilities: {instructions: template, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
     description: Codex running as a VS Code extension; do not infer parity with Codex CLI.
   - id: vscode-claude-code
+    detection_commands: [code]
     name: VS Code + Claude Code
     status: template
     host: {id: vscode, type: ide, name: Visual Studio Code}
@@ -32,6 +35,7 @@ adapters:
     capabilities: {instructions: template, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
     description: Claude Code running through the VS Code extension; validate independently from the standalone CLI.
   - id: vscode-copilot
+    detection_commands: [code]
     name: VS Code + GitHub Copilot
     status: template
     host: {id: vscode, type: ide, name: Visual Studio Code}
@@ -41,6 +45,7 @@ adapters:
     capabilities: {instructions: template, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
     description: Repository-wide Copilot instruction entry; individual features vary by extension version and agent mode.
   - id: zcode
+    detection_commands: [zcode]
     name: ZCode
     status: manual
     host: {id: zcode, type: ide, name: ZCode}
@@ -50,6 +55,7 @@ adapters:
     capabilities: {instructions: manual, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
     description: No native rule path is assumed; inspect the installed product and record its exact version before mapping.
   - id: qcode
+    detection_commands: [qcode]
     name: QCode
     status: manual
     host: {id: qcode, type: ide, name: QCode}
@@ -59,6 +65,7 @@ adapters:
     capabilities: {instructions: manual, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
     description: Product identity, version and native instruction mechanism must be confirmed before writing tool-specific files.
   - id: claude-code
+    detection_commands: [claude]
     name: Claude Code CLI
     status: template
     host: {id: terminal, type: cli, name: Terminal}
@@ -68,6 +75,7 @@ adapters:
     capabilities: {instructions: template, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
     description: Standalone Claude Code CLI; keep its verification separate from the IDE extension.
   - id: codex-cli
+    detection_commands: [codex]
     name: Codex CLI
     status: template
     host: {id: terminal, type: cli, name: Terminal}
@@ -77,6 +85,7 @@ adapters:
     capabilities: {instructions: template, skills: unknown, agents: unknown, mcp: unknown, hooks: unknown, terminal: unknown, worktree: unknown, session_resume: unknown, approval: unknown}
     description: Standalone Codex CLI; keep its verification separate from the VS Code extension.
   - id: chatgpt-work
+    detection_commands: []
     name: ChatGPT Work
     status: template
     host: {id: chatgpt-workspace, type: hosted_workspace, name: ChatGPT Work}
