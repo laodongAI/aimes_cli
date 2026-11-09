@@ -12,8 +12,8 @@ checks:
     rule_entry: AGENTS.md
     verification: UNKNOWN
     method: file_inspection
-    observed_at: ""
-    observer: ""
+    observed_at: "填写观察时间；未执行时状态保持 NOT_RUN 或 UNKNOWN"
+    observer: "填写观察者或责任人"
     case_id: "填写评测案例 ID"
     aimes_cli_version: "填写 AIMES CLI 版本"
     governance_version: "1.2"
