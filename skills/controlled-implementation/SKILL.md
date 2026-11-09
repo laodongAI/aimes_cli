@@ -124,3 +124,17 @@ task_id, approved_requirements, impact_analysis, project_context
 4. 仅在授权范围内实施最小必要修改。未经批准不得重构全局主题、替换组件库或修改无关页面。
 5. 修改后执行适用的静态、构建、组件/交互、浏览器/视口、视觉或无障碍验证；不能执行的项目标记 `NOT_RUN` / `BLOCKED` / `UNKNOWN`。
 6. 交付报告必须单独列出 UI 规范符合性、实际验证证据、未执行项和剩余风险。代码已修改不能作为 UI 验收通过的依据。
+
+
+## 软件工程实现强制检查（新增）
+
+所有代码开发、缺陷修复和重构任务，在实施前必须调用并读取 software-engineering-standards Skill；Vue 页面、组件、Composable、Pinia 或前端重构还必须调用 vue-frontend-engineering。该步骤不能由本 Skill 的通用小步实施流程替代。
+
+实施前输出 engineering_baseline、reuse_inventory 和 implementation_design；编码时按批准设计控制职责边界；交付前完成 implementation_review。至少检查：
+- 是否检索并复用了现有组件、服务、Composable/Hook、类型、API client 和测试；
+- 是否存在重复业务逻辑、巨型组件/路由、万能抽象或不合理跨层依赖；
+- 是否明确 Props/Emits、API DTO、错误语义、权限和副作用；
+- 是否补充适用单元/组件/契约/集成/E2E 测试；
+- 是否同步设计、接口、实现地图、测试和使用文档。
+
+若项目技术栈或质量命令未知，必须先定向检查；仍无法确认时标记 UNKNOWN，不得臆造。发现公共组件/API/数据契约破坏性变更时，回到 architecture-contract-review 并等待批准。
