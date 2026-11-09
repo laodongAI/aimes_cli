@@ -7,6 +7,8 @@
 ```bash
 aimes quality inspect
 aimes quality inspect --format json
+
+# 已安装 AIMES pre-commit hook 时，也会执行质量检查
 ```
 
 检查不会修改源代码。默认 `enforce: false`，发现问题只报告，不改变现有项目构建/提交行为。审查基线后，可在 `.aimes/quality-gates.yaml` 设置 `enforce: true`；达到 `fail_on` 阈值的发现将返回非零退出码。
@@ -34,4 +36,4 @@ aimes quality inspect --format json
 
 本版只对 Vue SFC 体量进行确定性检查。它**不会**仅凭文本判断组件是否应复用、是否重复实现相同业务、Page 是否违反架构分层、Props/Emits 是否设计合理。这些需要后续引入 AI 语义审查，并要求提供可复核的文件/行号、证据和置信度。
 
-本工具不会自动拆分组件或重写业务代码。自动修复必须另行设计预览、补丁审查、备份、显式确认和验证流程。
+安装的 AIMES pre-commit hook 会依次运行 `aimes validate` 与 `aimes quality inspect`；只有项目显式启用 `enforce: true` 且命中阻断级别时才会阻止提交。本工具不会自动拆分组件或重写业务代码。自动修复必须另行设计预览、补丁审查、备份、显式确认和验证流程。
