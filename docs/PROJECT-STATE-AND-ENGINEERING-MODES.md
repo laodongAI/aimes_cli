@@ -119,11 +119,16 @@ aimes session bind --id codex --task-id <task-id>
 
 ## 6. MCP 工具
 
-AIMES MCP Server 同步暴露三个项目状态工具，供已连接的 AI 宿主调用：
+AIMES MCP Server 同步暴露项目状态、生命周期评估、任务和会话工具，供已连接的 AI 宿主调用：
 
-- `aimes_project_state`：只读读取当前状态、可用/缺失 Skills 和下一步建议。
+- `aimes_project_state`：只读读取项目快照、可用/缺失 Skills 和下一步建议。
+- `aimes_assess_project_lifecycle`：只读获取生命周期候选、证据和限制，不自动写入。
 - `aimes_detect_engineering_mode`：对宿主传入的任务摘要做确定性候选识别，不持久化。
-- `aimes_set_project_state`：持久化生命周期、模式、任务阶段或任务摘要。设置工程模式时必须提供 `source`；AI 来源的低置信度模式会被拒绝，需先向用户确认。
+- `aimes_set_project_state`：持久化生命周期、模式或兼容性项目快照。设置工程模式时必须提供 `source`；AI 来源的低置信度模式会被拒绝。
+- `aimes_task_start`、`aimes_task_list`、`aimes_task_update`：创建、列出、更新独立任务。
+- `aimes_session_show`、`aimes_session_bind`：读取或切换某个 AI 工具会话的当前任务指针。
+
+MCP 宿主应为每个工具实例/工作会话提供稳定且不与其他工具冲突的 session ID。工具声明不代表宿主已连接或自动调用；必须在目标工具中验证 MCP 连接、工具发现和真实调用证据。
 
 工具声明不代表宿主已连接或自动调用；必须在目标工具中验证 MCP 连接、工具发现和真实调用证据。
 
