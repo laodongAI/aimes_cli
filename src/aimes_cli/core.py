@@ -114,6 +114,17 @@ def proposed_files(root: Path, tools: list[str], scope: str) -> dict[str, str]:
     engineering_suite = template_root / 'software-engineering-quality-suite.yaml'
     if engineering_suite.is_file():
         files['.aimes/skills/software-engineering-quality-suite.yaml'] = engineering_suite.read_text(encoding='utf-8')
+    mode_registry = Path(__file__).resolve().parent / 'templates/project-state/engineering-modes.yaml'
+    if mode_registry.is_file():
+        files['.aimes/project-state/engineering-modes.yaml'] = mode_registry.read_text(encoding='utf-8')
+    initial_state = {
+        'schema_version': 1, 'project_lifecycle': 'new',
+        'engineering_mode': None, 'task_phase': None, 'task': None,
+        'mode_source': 'unset', 'confidence': 'low', 'updated_at': None,
+    }
+    state_path = root / '.aimes/project-state.yaml'
+    if not state_path.exists():
+        files['.aimes/project-state.yaml'] = yaml.safe_dump(initial_state, allow_unicode=True, sort_keys=False)
     old_hashes = previous_manifest(root)
     config = build_config(root, tools, scope)
     existing_config_path = root / CONFIG_REL
