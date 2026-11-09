@@ -30,6 +30,12 @@
 | 工程治理 | task claim/release、范围校验、临时产物审计、工程指标 | 已实现部分本地检查 | 不遵守 AIMES 的外部工具无法被本地声明锁强制阻止 |
 | 发布治理 | release validate、CI 测试、Windows EXE 构建/冒烟工作流 | 已有发布检查和 CI 工作流 | 当前 Release/tag/下载资产必须单独确认；不能将 CI 构建等同于正式发布 |
 
+## 2.1 Host / Harness 分层
+
+工具适配器采用声明式注册表 V2（`src/aimes_cli/data/adapter-registry.yaml`），将宿主平台、Agent Harness 和执行模式分开建模。一个宿主可承载多个 Harness；同一个 Harness 在 IDE 插件和独立 CLI 中仍是不同的执行上下文。能力字段使用 `native`、`template`、`manual`、`unknown`、`unsupported`，其中模板存在不等于运行时生效。
+
+查看注册表：`aimes adapter list --format json`。注册表 Schema：`schemas/adapter-registry.schema.json`。当前各工具的能力状态以该注册表为准，实际加载与行为验证仍以独立证据为准。
+
 ## 3. 工具适配状态
 
 | 工具执行上下文 | 入口/适配方式 | 静态配置状态 | 运行时验证状态 |
