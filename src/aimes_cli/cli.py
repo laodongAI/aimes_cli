@@ -391,6 +391,32 @@ def emit(data, fmt='text', output: Path | None=None):
                     prefix = f"{location}: " if location else ''
                     lines.append(f"  - [{severity}] {finding['code']}: {prefix}{finding['message']}")
             if data.get('message'): lines.append(data['message'])
+            if 'state' in data and 'project' in data and isinstance(data.get('state'), dict):
+                state = data['state']
+                lifecycle_labels = {'unknown':'未识别','new':'新建','planning':'规划','design':'设计','development':'开发','testing':'测试','release':'发布','operation':'运维','paused':'暂停','archived':'归档'}
+                phase_labels = {'analysis':'分析','clarification':'澄清','design':'设计','review':'评审','implementation':'实现','testing':'测试','acceptance':'验收','delivery':'交付'}
+                lines.append('Project state:')
+                lines.append(f"  项目：{data['project']}")
+                lines.append(f"  生命周期：{lifecycle_labels.get(state.get('project_lifecycle'), state.get('project_lifecycle'))}")
+                mode_label = data.get('engineering_mode_label') or state.get('engineering_mode') or '未设置'
+                lines.append(f"  当前工程模式：{mode_label}")
+                lines.append(f"  任务阶段：{phase_labels.get(state.get('task_phase'), state.get('task_phase') or '未设置')}")
+                if state.get('task'): lines.append(f"  当前任务：{state['task']}")
+                lines.append(f"  模式来源/置信度：{state.get('mode_source', 'unknown')} / {state.get('confidence', 'unknown')}")
+                if data.get('routed_skills'): lines.append('  路由 Skills：' + ', '.join(data['routed_skills']))
+                if data.get('missing_skills'): lines.append('  缺失 Skills：' + ', '.join(data['missing_skills']))
+                if data.get('workflow'): lines.append(f"  工作流标识：{data['workflow']}（路由元数据）")
+                if data.get('quality_profile'): lines.append(f"  质量配置标识：{data['quality_profile']}（路由元数据）")
+                if data.get('note'): lines.append('  说明：' + data['note'])
+            if data.get('modes') and isinstance(data['modes'], list):
+                lines.append('Registered engineering modes:')
+                for item in data['modes']:
+                    lines.append(f"  - {item['id']}: {item.get('label', '')} | Skills: {', '.join(item.get('skills', []))}")
+            if 'confidence' in data and 'matches' in data and 'task_text' not in data:
+                lines.append(f"工程模式候选：{data.get('mode') or '需要确认'}；置信度：{data['confidence']}")
+                for item in data.get('matches', []):
+                    lines.append(f"  - {item['mode']}: {item.get('label', item['mode'])}（命中：{', '.join(item.get('matched_triggers', []))}）")
+                if data.get('note'): lines.append(data['note'])
             if 'matches' in data and 'task_text' in data:
                 lines.append(f"Task: {data['task_text']} (registry: {data['registry']})")
                 if not data['matches']:
