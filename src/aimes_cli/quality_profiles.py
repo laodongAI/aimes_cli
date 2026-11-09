@@ -45,16 +45,6 @@ BUILTIN_REGISTRY: dict[str, Any] = {
             }
         },
         "backend": {
-            "description": "FastAPI/Python backend quality baseline using AST-based correctness, maintainability, security heuristics and route-layer checks.",
-            "vue": {},
-            "python": {
-                "max_file_lines": 700,
-                "max_function_lines": 70,
-                "max_cyclomatic_complexity": 10
-            },
-            "general": {"max_source_file_lines": 1000, "min_coverage_percent": 80}
-        },
-        "backend": {
             "description": "FastAPI/Python backend quality baseline with conservative AST-based checks.",
             "vue": {},
             "python": {"max_file_lines": 700, "max_function_lines": 70, "max_cyclomatic_complexity": 10},
@@ -78,10 +68,9 @@ BUILTIN_REGISTRY: dict[str, Any] = {
             }
         },
         "regression": {
-            "description": "regression 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。",
-            "vue": {
-                "disallow_direct_http_calls": True
-            }
+            "description": "Regression profile; requires measured line coverage of at least 80% when selected.",
+            "vue": {"disallow_direct_http_calls": True},
+            "general": {"min_coverage_percent": 80}
         },
         "performance": {
             "description": "performance 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。",
