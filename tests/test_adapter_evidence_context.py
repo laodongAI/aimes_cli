@@ -1,10 +1,13 @@
 import tempfile
 import unittest
+import io
+from contextlib import redirect_stdout
 from pathlib import Path
 
 import yaml
 
 from aimes_cli.v05 import validate_adapter_evidence, adapter_report
+from aimes_cli.cli import emit
 
 
 class AdapterEvidenceContextTests(unittest.TestCase):
@@ -56,6 +59,18 @@ class AdapterEvidenceContextTests(unittest.TestCase):
         self.assertEqual(report["harnesses"]["codex"]["checks"], 2)
         self.assertEqual(report["hosts"]["terminal"]["checks"], 1)
         self.assertEqual(report["hosts"]["vscode"]["checks"], 1)
+
+    def test_text_report_shows_host_and_harness_aggregates(self):
+        report = {
+            "ok": True,
+            "hosts": {"terminal": {"checks": 1, "pass": 0, "fail": 0, "blocked": 0, "not_run": 1, "unknown": 0}},
+            "harnesses": {"codex": {"checks": 1, "pass": 0, "fail": 0, "blocked": 0, "not_run": 1, "unknown": 0}},
+        }
+        output = io.StringIO()
+        with redirect_stdout(output):
+            emit(report)
+        self.assertIn("Host verification summary", output.getvalue())
+        self.assertIn("Harness verification summary", output.getvalue())
 
     def test_legacy_evidence_without_host_harness_remains_compatible(self):
         self.write_record(host_id=None, harness_id=None, adapter_registry_version=None)
