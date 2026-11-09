@@ -161,5 +161,9 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(result["state"]["mode_source"], "ai")
         self.assertEqual(result["state"]["confidence"], "medium")
 
+    def test_empty_state_update_is_rejected(self):
+        with self.assertRaises(ValueError):
+            set_project_state(self.root)
+
 if __name__ == "__main__":
     unittest.main()
