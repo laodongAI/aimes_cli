@@ -65,7 +65,7 @@ def load_adapter_registry(path: Path = REGISTRY_PATH) -> tuple[dict[str, Adapter
             raise RuntimeError(f"{loc}.execution_modes must be a non-empty list of strings")
         if not isinstance(paths, list) or not paths or any(not isinstance(x, str) or not x for x in paths):
             raise RuntimeError(f"{loc}.entry_paths must be a non-empty list of strings")
-        if not isinstance(capabilities, dict) or any(not isinstance(k, str) or v not in VALID_CAPABILITY_STATES for k, v in capabilities.items()):
+        if not isinstance(capabilities, dict) or any(not isinstance(k, str) or not isinstance(v, str) or v not in VALID_CAPABILITY_STATES for k, v in capabilities.items()):
             raise RuntimeError(f"{loc}.capabilities contains an invalid capability state")
         status = item.get("status")
         if status not in {"template", "manual"}:
