@@ -15,7 +15,19 @@ aimes quality inspect --mode frontend-development
 aimes quality inspect --profile frontend --format json
 ```
 
-选择优先级为显式 profile、显式 mode、项目当前模式、默认 baseline。项目 `.aimes/quality-gates.yaml` 中的显式规则覆盖 profile 默认值；全局 `enforce/fail_on` 只由项目门禁配置控制。当前 profile 仅调整已实现的 Vue 静态规则，不代表具备完整安全、性能、后端或需求语义扫描能力。
+选择优先级为显式 profile、显式 mode、项目当前模式、默认 baseline。项目 `.aimes/quality-gates.yaml` 中的显式规则覆盖 profile 默认值；全局 `enforce/fail_on` 只由项目门禁配置控制。Profile 可调整 Vue、Python 和通用规则的已实现阈值；例如 backend profile 对 Python 文件、函数和复杂度使用更严格的阈值。但 profile 名称不代表尚未实现的依赖漏洞、覆盖率或 API 兼容性扫描已存在。
+
+## 本地确定性规则范围（当前实现）
+
+`aimes quality inspect` 现在除 Vue SFC 规模和直接 HTTP 请求外，还执行以下启发式规则：
+
+- Vue：明显 Props/嵌套值修改、style/template 硬编码颜色、响应式状态调用密度。
+- Python/FastAPI：AST 语法、文件/函数行数、估算分支复杂度、可变默认参数、宽泛异常、疑似硬编码凭据、路由函数直接数据访问、API/router 模块直接导入 repository/model/db。
+- 通用：源码文件规模、跨文件完全相同的 Python 函数体。
+
+这些规则只提供定位线索，不会证明组件职责、Composable 抽取合理性、DTO/事务边界、完整依赖方向或业务语义。重复代码规则只识别 AST 完全一致的 Python 函数体，不识别语义相似实现。
+
+**尚未实现**：依赖漏洞数据库/许可证风险扫描、基于真实 coverage.xml/coverage.json 的覆盖率门禁、基于用户指定 Git base ref 的公共 API 兼容性分析。未接入证据时不会给出 PASS 或虚构指标。复杂规则应先 advisory 运行并校准误报，再启用阻断。
 
 ## 命令
 
