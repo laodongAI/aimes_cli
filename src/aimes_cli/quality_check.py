@@ -17,6 +17,7 @@ DEFAULT_CONFIG = {
         "max_sfc_lines": {"warning": 400, "error": 600},
         "max_script_lines": {"warning": 250, "error": 400},
         "max_template_lines": {"warning": 250, "error": 400},
+        "disallow_direct_http_calls": True,
     },
     "exclude": ["node_modules/**", "dist/**", "build/**", ".venv/**", "vendor/**"],
 }
@@ -38,6 +39,8 @@ def _safe_config(root: Path) -> tuple[dict[str, Any], list[dict[str, str]]]:
     if not isinstance(vue, dict):
         return config, [{"severity": "ERROR", "code": "QUALITY_VUE_CONFIG", "message": "vue must be a YAML mapping", "path": ".aimes/quality-gates.yaml"}]
     config["vue"] = {**DEFAULT_CONFIG["vue"], **vue}
+    if type(config["vue"].get("disallow_direct_http_calls")) is not bool:
+        return config, [{"severity": "ERROR", "code": "QUALITY_VUE_CONFIG", "message": "vue.disallow_direct_http_calls must be a boolean", "path": ".aimes/quality-gates.yaml"}]
     for key in ("max_sfc_lines", "max_script_lines", "max_template_lines"):
         limits = config["vue"].get(key)
         if not isinstance(limits, dict):
@@ -100,9 +103,30 @@ def inspect_project_quality(root: Path) -> dict[str, Any]:
             findings.append({"severity": "WARNING", "code": "SFC_READ", "path": relative, "message": f"Unable to read Vue SFC: {exc}"})
             continue
         counts = {"max_sfc_lines": len(content.splitlines())}
+        script_matches = list(re.finditer(r"<script(?:\s[^>]*)?>([\s\S]*?)</script\s*>", content, flags=re.IGNORECASE))
         for block in ("script", "template"):
             matches = re.findall(rf"<{block}(?:\s[^>]*)?>([\s\S]*?)</{block}\s*>", content, flags=re.IGNORECASE)
             counts[f"max_{block}_lines"] = max((len(match.splitlines()) for match in matches), default=0)
+        if vue_config["disallow_direct_http_calls"]:
+            call_pattern = re.compile(r"\b(?:fetch\s*\(|axios\s*\.\s*(?:get|post|put|patch|delete|request)\s*\()", re.IGNORECASE)
+            for script_match in script_matches:
+                script = script_match.group(1)
+                absolute_start = script_match.start(1)
+                for offset, line_text in enumerate(script.splitlines()):
+                    stripped = line_text.strip()
+                    if stripped.startswith(("//", "/*", "*", "*/")):
+                        continue
+                    match = call_pattern.search(line_text)
+                    if match:
+                        line_number = content.count("\n", 0, absolute_start) + offset + 1
+                        findings.append({
+                            "severity": "WARNING",
+                            "code": "VUE_DIRECT_HTTP_CALL",
+                            "path": relative,
+                            "line": line_number,
+                            "evidence": match.group(0).strip(),
+                            "message": "Vue component script performs a direct HTTP request. Move transport and endpoint handling into a reusable API service; keep the component focused on UI state and orchestration.",
+                        })
         for code, key, label, recommendation in rules:
             value = counts[key]
             limits = vue_config[key]
@@ -121,5 +145,5 @@ def inspect_project_quality(root: Path) -> dict[str, Any]:
         "summary": {"files_scanned": len(vue_files), "errors": errors, "warnings": warnings, "findings": len(findings)},
         "policy": {"enforce": enforced, "fail_on": fail_on, "config": ".aimes/quality-gates.yaml"},
         "findings": findings,
-        "limitations": ["This initial deterministic profile checks Vue SFC size only; it does not infer semantic duplication, component reuse, or architecture correctness."],
+        "limitations": ["Static rules detect Vue SFC size and direct fetch/axios calls in script blocks. They do not infer semantic duplication, component reuse, Props/Emits quality, or overall architecture correctness."],
     }
