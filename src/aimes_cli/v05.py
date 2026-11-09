@@ -101,10 +101,12 @@ def adapter_report(path: Path, root: Path | None = None) -> dict:
         # Old evidence remains readable; missing dimensions are inferred only for aggregation.
         host_id = item.get("host_id")
         harness_id = item.get("harness_id")
+        evidence_registry_version = item.get("adapter_registry_version")
+        historical_registry = isinstance(evidence_registry_version, str) and evidence_registry_version != ADAPTER_REGISTRY.get("registry_version")
         if not isinstance(host_id, str) or not host_id.strip():
-            host_id = ADAPTERS[tool_id].host_id
+            host_id = f"unknown@{evidence_registry_version}" if historical_registry else ADAPTERS[tool_id].host_id
         if not isinstance(harness_id, str) or not harness_id.strip():
-            harness_id = ADAPTERS[tool_id].harness_id
+            harness_id = f"unknown@{evidence_registry_version}" if historical_registry else ADAPTERS[tool_id].harness_id
         for grouping, group_id in ((hosts, host_id), (harnesses, harness_id)):
             group = grouping.setdefault(group_id, {"checks":0,"pass":0,"fail":0,"blocked":0,"not_run":0,"unknown":0})
             group["checks"] += 1
