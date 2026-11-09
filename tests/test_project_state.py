@@ -136,5 +136,22 @@ class ProjectStateTests(unittest.TestCase):
             self.assertEqual(result["state"]["project_lifecycle"], "planning")
             self.assertEqual(result["state"]["engineering_mode"], None)
 
+    def test_state_show_text_renders_runtime_feedback_card(self):
+        from aimes_cli.cli import main
+        import io
+        from contextlib import redirect_stdout
+        set_project_state(self.root, lifecycle="development",
+                          mode="frontend-optimization", phase="analysis",
+                          task="优化学习页面体验")
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            code = main(["state", "show", "--root", str(self.root)])
+        self.assertEqual(code, 0)
+        output = buffer.getvalue()
+        self.assertIn("Project state:", output)
+        self.assertIn("当前工程模式：前端体验优化", output)
+        self.assertIn("任务阶段：分析", output)
+        self.assertIn("路由 Skills：", output)
+
 if __name__ == "__main__":
     unittest.main()
