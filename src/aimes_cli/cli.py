@@ -34,6 +34,7 @@ from .quality_check import inspect_project_quality
 from .quality_review import validate_ai_review_report
 from .quality_context import build_review_context
 from .quality_report import build_quality_report
+from .project_state import show_project_state, set_project_state, list_project_modes, detect_mode, load_mode_registry
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -176,6 +177,21 @@ def parser() -> argparse.ArgumentParser:
     reuse_sub = reuse.add_subparsers(dest='reuse_command', required=True)
     reuse_validate = reuse_sub.add_parser('validate', help='Validate a reuse decision YAML/JSON record')
     common(reuse_validate); reuse_validate.add_argument('path', type=Path)
+    state = sub.add_parser('state', help='Project lifecycle, current engineering mode and task phase')
+    state_sub = state.add_subparsers(dest='state_command', required=True)
+    state_show = state_sub.add_parser('show', help='Show persisted project state and routed engineering assets')
+    common(state_show)
+    state_set = state_sub.add_parser('set', help='Explicitly set lifecycle, engineering mode or task phase')
+    common(state_set)
+    state_set.add_argument('--lifecycle', choices=['new','planning','design','development','testing','release','operation','paused','archived'])
+    state_set.add_argument('--mode', help='Engineering mode ID; see aimes state modes')
+    state_set.add_argument('--phase', choices=['analysis','clarification','design','review','implementation','testing','acceptance','delivery'])
+    state_set.add_argument('--task', help='Current task title/summary')
+    state_modes = state_sub.add_parser('modes', help='List supported engineering modes and their Skill/workflow mappings')
+    common(state_modes)
+    state_detect = state_sub.add_parser('detect', help='Suggest a mode from explicit task text using deterministic triggers; does not persist')
+    common(state_detect)
+    state_detect.add_argument('--task-text', required=True, help='Task description to classify; this is not an AI conversation reader')
     skill = sub.add_parser('skill', help='Skill registry operations')
     skill_sub = skill.add_subparsers(dest='skill_command', required=True)
     skill_validate = skill_sub.add_parser('validate', help='Validate a Skill registry and its referenced files')
@@ -803,6 +819,19 @@ def main(argv=None):
                     raise ValueError(f"Unsupported workflow run command: {args.workflow_run_command}")
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
+        if args.command == 'state':
+            if args.state_command == 'show':
+                result = show_project_state(root)
+            elif args.state_command == 'modes':
+                result = list_project_modes(root)
+            elif args.state_command == 'detect':
+                result = detect_mode(args.task_text, load_mode_registry(root))
+                result['ok'] = True
+            else:
+                result = set_project_state(root, lifecycle=args.lifecycle, mode=args.mode,
+                    phase=args.phase, task=args.task, source='user')
+            emit(result, args.format, args.output)
+            return 0 if result.get('ok', True) else 1
         if args.command == 'skill':
             if args.skill_command == 'route':
                 if args.top < 1:
