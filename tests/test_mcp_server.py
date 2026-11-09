@@ -37,7 +37,7 @@ class McpServerTests(unittest.TestCase):
         self.assertFalse(result["isError"])
         payload = json.loads(result["content"][0]["text"])
         self.assertEqual(payload["mode"]["id"], "frontend-optimization")
-        self.assertEqual(payload["route"]["quality"]["profile_status"], "MAPPING_ONLY")
+        self.assertEqual(payload["route"]["quality"]["profile_status"], "AVAILABLE")
         self.assertFalse(payload["execution"]["automatic"])
 
     def test_project_state_and_mode_detection_tools(self):
