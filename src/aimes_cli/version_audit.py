@@ -127,6 +127,10 @@ def audit_project_version(root: Path) -> dict[str, Any]:
             finding("warning", "AIMES_FILE_CUSTOMIZED", f"文件与当前模板不同，且无法由旧 Manifest 证明为未修改；可能包含用户自定义内容：{rel}")
 
     for rel in sorted(managed_paths - expected_paths):
+        # Runtime state is user/project data, not a deployable template asset.
+        # Older manifests may still list the former compatibility snapshot.
+        if rel == ".aimes/project-state.yaml" or rel.startswith((".aimes/tasks/", ".aimes/sessions/")):
+            continue
         target = root / rel
         if not target.is_file():
             missing_files.append(rel)
