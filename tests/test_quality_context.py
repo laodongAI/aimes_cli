@@ -15,6 +15,7 @@ class ReviewContextTests(unittest.TestCase):
         (self.root / "src" / "main.py").write_text("def hello():\n    return 'hello'\n", encoding="utf-8")
         (self.root / "src" / ".env").write_text("API_KEY=do-not-include", encoding="utf-8")
         (self.root / "src" / "secrets" / "config.py").write_text("password = 'nested-secret'", encoding="utf-8")
+        (self.root / "src" / "hardcoded.py").write_text("API_KEY = 'very-long-secret-value'", encoding="utf-8")
         (self.root / ".env").write_text("SECRET=do-not-include", encoding="utf-8")
         (self.root / "README.md").write_text("# Demo project\n", encoding="utf-8")
 
@@ -33,6 +34,8 @@ class ReviewContextTests(unittest.TestCase):
         rendered = str(result)
         self.assertNotIn("do-not-include", rendered)
         self.assertNotIn("nested-secret", rendered)
+        self.assertNotIn("very-long-secret-value", rendered)
+        self.assertNotIn("src/hardcoded.py", {item["path"] for item in result["files"]})
         self.assertNotIn(".env", {item["path"] for item in result["files"]})
 
     def test_applies_per_file_size_limit(self):
