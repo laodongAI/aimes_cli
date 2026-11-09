@@ -11,6 +11,8 @@ class ReleaseCheckTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         (self.root / "src" / "aimes_cli" / "templates" / "core").mkdir(parents=True)
         (self.root / "src" / "aimes_cli" / "templates" / "core" / "AIMES-CORE-V1.2.md").write_text("# Core\n", encoding="utf-8")
+        (self.root / "src" / "aimes_cli" / "data").mkdir(parents=True)
+        (self.root / "src" / "aimes_cli" / "data" / "adapter-registry.yaml").write_text("schema_version: 2\n", encoding="utf-8")
         (self.root / "src" / "aimes_cli" / "__init__.py").write_text(
             '__version__ = "0.7.9"\nSCHEMA_VERSION = 1\nGOVERNANCE_VERSION = "1.2"\n', encoding="utf-8"
         )
