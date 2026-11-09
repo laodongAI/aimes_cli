@@ -122,5 +122,19 @@ class ProjectStateTests(unittest.TestCase):
         result = detect_mode("frontend optimization", registry)
         self.assertEqual(result["mode"], "frontend-optimization")
 
+    def test_state_show_marks_missing_skill_file(self):
+        skill_path = self.root / ".aimes/skills/vue-frontend-engineering/SKILL.md"
+        skill_path.unlink()
+        result = set_project_state(self.root, mode="frontend-optimization")
+        self.assertNotIn("vue-frontend-engineering", result["available_skills"])
+        self.assertIn("vue-frontend-engineering", result["missing_skills"])
+
+    def test_lifecycle_can_be_set_without_initializing_skill_registry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            result = set_project_state(root, lifecycle="planning")
+            self.assertEqual(result["state"]["project_lifecycle"], "planning")
+            self.assertEqual(result["state"]["engineering_mode"], None)
+
 if __name__ == "__main__":
     unittest.main()
