@@ -165,7 +165,7 @@ MCP 宿主应为每个工具实例/工作会话提供稳定且不与其他工具
 - `.aimes/quality-profiles.yaml`：版本化 profile 注册表，定义各模式的规则默认值。
 - `.aimes/quality-gates.yaml`：项目级最终覆盖与全局门禁策略。
 
-合并顺序为内置默认值 → 选定 profile 的 Vue 规则 → 项目 quality-gates 显式配置。项目配置优先于 profile。全局 `enabled`、`enforce`、`fail_on` 只由项目 quality-gates 控制；切换模式/profile 不会自行启用阻断。显式传入 `--mode` 与 `--profile` 同时出现会产生配置错误。
+合并顺序为内置默认值 → 选定 profile 的 Vue/Python/通用规则 → 项目 quality-gates 显式配置。项目配置优先于 profile。全局 `enabled`、`enforce`、`fail_on` 只由项目 quality-gates 控制；切换模式/profile 不会自行启用阻断。显式传入 `--mode` 与 `--profile` 同时出现会产生配置错误。
 
 命令示例：
 
@@ -177,7 +177,7 @@ aimes quality inspect --profile frontend --format json
 
 MCP 工具 `aimes_quality_inspect` 提供相同的只读检查能力。模式路由解释会报告 profile 的 AVAILABLE/INVALID/NOT_MAPPED 状态；AVAILABLE 只代表定义可解析，不代表已经运行检查。
 
-当前 profile 只配置已经实现的 Vue SFC 规模和直接 HTTP 请求规则。requirements、backend、security、performance 等 profile 的名称不意味着 AIMES 已经具备对应领域的完整静态分析器；这些领域需要后续增加可验证的规则实现和证据。AI findings 仍是 advisory，不可阻断门禁。
+当前已实现 Vue 规模、直接 HTTP、明显 Props 修改、硬编码颜色和响应式逻辑密度规则；Python/FastAPI 已实现 AST 语法、文件/函数规模、复杂度、可变默认参数、宽泛异常、疑似凭据、路由直接数据访问及 API 层持久化依赖提示；通用规则包含源文件规模和完全相同 Python 函数体检测。backend profile 已为 backend-development 模式提供更严格阈值。依赖漏洞数据库、真实覆盖率门禁和公共 API 兼容性 Diff 尚未实现；不得将 profile 标签当成这些能力已经存在。AI findings 仍是 advisory，不可阻断门禁。
 
 ## 10. 工程模式路由解释与状态转换守卫
 
