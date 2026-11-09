@@ -129,6 +129,50 @@ class QualityCheckTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(any(item["code"] == "QUALITY_THRESHOLD_CONFIG" for item in result["findings"]))
 
+    def test_frontend_profile_applies_stricter_threshold_than_baseline(self):
+        source = self.root / "Page.vue"
+        source.write_text("line\\n" * 375, encoding="utf-8")
+        baseline = inspect_project_quality(self.root, profile_id="baseline")
+        frontend = inspect_project_quality(self.root, profile_id="frontend")
+        self.assertFalse(any(item["code"] == "SFC_LINES" for item in baseline["findings"]))
+        self.assertTrue(any(item["code"] == "SFC_LINES" and item["severity"] == "WARNING"
+                            for item in frontend["findings"]))
+        self.assertEqual(frontend["policy"]["profile"]["id"], "frontend")
+        self.assertTrue(frontend["ok"])  # advisory policy remains controlled globally
+
+    def test_project_thresholds_override_profile_defaults(self):
+        source = self.root / "Page.vue"
+        source.write_text("line\\n" * 375, encoding="utf-8")
+        self._write_config(enforce=False, vue={
+            "max_sfc_lines": {"warning": 500, "error": 700},
+            "max_script_lines": {"warning": 300, "error": 450},
+            "max_template_lines": {"warning": 300, "error": 450},
+            "disallow_direct_http_calls": True,
+        })
+        result = inspect_project_quality(self.root, profile_id="frontend")
+        self.assertFalse(any(item["code"] == "SFC_LINES" for item in result["findings"]))
+
+    def test_mode_selects_its_mapped_quality_profile(self):
+        modes = self.root / ".aimes" / "project-state" / "engineering-modes.yaml"
+        modes.parent.mkdir(parents=True)
+        modes.write_text(
+            "schema_version: 1\\nmodes:\\n  - id: frontend-development\\n"
+            "    label: Frontend\\n    triggers: []\\n    skills: []\\n"
+            "    workflow: feature-development\\n    quality_profile: frontend\\n",
+            encoding="utf-8",
+        )
+        source = self.root / "Page.vue"
+        source.write_text("line\\n" * 375, encoding="utf-8")
+        result = inspect_project_quality(self.root, mode_id="frontend-development")
+        self.assertEqual(result["policy"]["profile"]["id"], "frontend")
+        self.assertTrue(any(item["code"] == "SFC_LINES" for item in result["findings"]))
+
+    def test_unknown_profile_fails_closed(self):
+        result = inspect_project_quality(self.root, profile_id="does-not-exist")
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], "CONFIG_ERROR")
+        self.assertTrue(any(item["code"] == "QUALITY_PROFILE_CONFIG" for item in result["findings"]))
+
 
 if __name__ == "__main__":
     unittest.main()
