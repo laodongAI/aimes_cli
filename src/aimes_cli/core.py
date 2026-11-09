@@ -108,6 +108,9 @@ def proposed_files(root: Path, tools: list[str], scope: str) -> dict[str, str]:
     ui_suite = template_root / 'ui-quality-governance-suite.yaml'
     if ui_suite.is_file():
         files['.aimes/skills/ui-quality-governance-suite.yaml'] = ui_suite.read_text(encoding='utf-8')
+    engineering_suite = template_root / 'software-engineering-quality-suite.yaml'
+    if engineering_suite.is_file():
+        files['.aimes/skills/software-engineering-quality-suite.yaml'] = engineering_suite.read_text(encoding='utf-8')
     old_hashes = previous_manifest(root)
     config = build_config(root, tools, scope)
     existing_config_path = root / CONFIG_REL
