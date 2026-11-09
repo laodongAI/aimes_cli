@@ -19,6 +19,7 @@
           "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
           "name": {"type": "string", "minLength": 1},
           "status": {"enum": ["template", "manual"]},
+          "detection_commands": {"type": "array", "items": {"type": "string", "minLength": 1}},
           "host": {"type": "object", "required": ["id", "type", "name"], "properties": {"id": {"type": "string"}, "type": {"enum": ["ide", "cli", "hosted_workspace", "desktop_app"]}, "name": {"type": "string"}},"additionalProperties": false},
           "harness": {"type": "object", "required": ["id", "name"], "properties": {"id": {"type": "string"}, "name": {"type": "string"}},"additionalProperties": false},
           "execution_modes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["ide_extension", "cli", "desktop_app", "workspace", "unknown"]}},
