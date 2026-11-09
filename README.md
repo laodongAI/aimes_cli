@@ -4,6 +4,17 @@ AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具
 
 > 当前版本是本地优先的工程治理 CLI。包版本与运行时版本由同一版本源驱动；真实 AI 工具运行时是否加载规则、行为是否改善，必须以独立验证记录为准。CI 中的 Windows EXE 构建/冒烟测试不等于 GitHub Release 或下载资产已经发布。
 
+## 自动化工程质量门禁与 AI 语义审查
+
+`aimes quality inspect` 执行确定性静态检查；`aimes quality review --report <json>` 验证 AI 工具生成的语义审查报告。静态规则可按项目策略参与门禁；AI 审查必须提供可核验的源码行号、摘录和置信度，且默认永远是 advisory，不可单独阻断提交或交付。
+
+```powershell
+aimes quality inspect --root . --format json
+aimes quality review --report .aimes/reviews/engineering-review.json --root . --format json
+```
+
+AI 审查维度包括组件复用、职责边界、重复逻辑、前后端分层、API/DTO 变更影响及需求—设计—代码—测试追踪。当前命令只验证外部报告，不调用模型、不执行修复。报告契约、安全边界和审查维度见 [AI 工程审查指南](docs/AI-ENGINEERING-REVIEW.md)。
+
 ## Skill 实际调用与规则强制（进行中）
 
 为解决"规则文件已部署不等于工具运行时真的调用 Skill、遵守规则"，AIMES 增加了四条强制链（设计见 [Skill 实际调用与规则强制链](docs/SKILL-ROUTING-AND-ENFORCEMENT.md)）：
