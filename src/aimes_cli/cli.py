@@ -350,6 +350,11 @@ def emit(data, fmt='text', output: Path | None=None):
                     else:
                         # Init reports conflicts as strings; upgrade reports structured items.
                         lines.append(f"  - {conflict} (preserved; review proposal)")
+            if data.get('summary') and 'files_scanned' in data.get('summary', {}):
+                summary = data['summary']
+                lines.append(f"Quality scan: files={summary.get('files_scanned', 0)}, errors={summary.get('errors', 0)}, warnings={summary.get('warnings', 0)}, findings={summary.get('findings', 0)}")
+                policy = data.get('policy', {})
+                lines.append(f"Quality gate: enforce={policy.get('enforce', False)}, fail_on={policy.get('fail_on', 'ERROR')}")
             if data.get('findings'):
                 lines.append('Findings:')
                 for finding in data['findings']: lines.append(f"  - [{finding['level']}] {finding['code']}: {finding['message']}")
