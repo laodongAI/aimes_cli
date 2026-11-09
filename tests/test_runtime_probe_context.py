@@ -34,7 +34,10 @@ class RuntimeProbeContextTests(unittest.TestCase):
             )
             outside = root / "outside-response.txt"
             outside.write_text("AIMES_PROBE_" + "A" * 32, encoding="utf-8")
-            (probe_dir / "response.txt").symlink_to(outside)
+            try:
+                (probe_dir / "response.txt").symlink_to(outside)
+            except OSError as exc:
+                self.skipTest(f"Symbolic links are unavailable on this platform: {exc}")
             with self.assertRaisesRegex(ValueError, "symbolic link"):
                 validate_runtime_probe(root, probe_dir)
 
