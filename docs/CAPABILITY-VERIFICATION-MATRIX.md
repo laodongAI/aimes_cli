@@ -47,8 +47,8 @@
 | ZCode | ZCode IDE | ZCode Agent | `unknown` | 手动适配说明 | 人工确认 | `UNKNOWN` |
 | QCode | QCode IDE | QCode Agent | `unknown` | 手动适配说明 | 人工确认 | `UNKNOWN` |
 | Claude Code CLI | Terminal | Claude Code | `cli` | `CLAUDE.md` | 模板 | `UNKNOWN` |
-| Codex CLI | `AGENTS.md` | 模板适配 | `UNKNOWN`，需与 VS Code 执行模式分开记录 |
-| ChatGPT Work | `docs/_governance/adapters/CHATGPT-WORK-ENTRY.md` + 可复制项目指令模板 | 已提供适配模板；自动加载未知 | `UNKNOWN`，需在实际 Work 模式下验证规则读取、Skill 路由、权限与任务验收 |
+| Codex CLI | Terminal | Codex | `cli` | `AGENTS.md` | 模板 | `UNKNOWN` |
+| ChatGPT Work | ChatGPT Work | ChatGPT Work Agent | `workspace` | `docs/_governance/adapters/CHATGPT-WORK-ENTRY.md` + 项目指令模板 | 模板 | `UNKNOWN` |
 
 适配验证记录至少包含：工具 ID、工具版本、执行模式、操作系统、AIMES CLI/治理核心/Skill 版本、验证方法、案例 ID、观察时间、原始输出或证据路径、证据哈希、结果状态及已知限制。PASS 必须有可复核证据；缺少记录只能是 NOT_RUN/UNKNOWN。
 
