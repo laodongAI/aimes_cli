@@ -1516,7 +1516,7 @@ AIMES 项目状态由三个独立维度组成，不得压缩成单一项目状�
 - 可将任务摘要传给 `aimes state detect --task-text "..."` 获取关键词候选，但该命令不读取 AI 对话、不调用模型、不自动保存状态。
 - 多模式命中或置信度低时，必须向用户确认；用户明确指定的模式优先。
 - 模式确认后读取 `.aimes/project-state/engineering-modes.yaml` 映射的 Skills，并执行常规 `aimes skill route`。映射声明不代表 Skill 已读取或执行。
-- 只在用户明确或项目规则允许时更新状态：用户明确选择时使用 `--source user`；AI 根据对话推断时使用 `--source ai --confidence high|medium`；低置信度先询问，不持久化猜测。工程模式变化只更新 engineering_mode，任务步骤变化只更新 task_phase；不得因当前任务变化擅自改写项目生命周期。
+- 只在用户明确或项目规则允许时更新状态：用户明确选择时使用 `--source user`；AI 根据对话推断时使用 `--source ai --confidence high|medium`；低置信度先询问，不持久化猜测。项目生命周期只在有证据和明确决策时更新；当前任务的工程模式、阶段和状态写入独立 task 记录（`aimes task update` / `aimes_task_update`），不要把新任务进度写入兼容性项目快照。
 - 模式映射中的 workflow 与 quality_profile 是路由元数据；未验证对应执行器/策略存在时，不得声称已自动执行。
 
 AI 工具适配层应在运行时反馈中展示：项目生命周期、当前工程模式、任务阶段、路由 Skills、置信度/来源、下一步建议。CLI 无法直接感知当前聊天，宿主工具必须基于实际对话完成语义识别并报告证据。
