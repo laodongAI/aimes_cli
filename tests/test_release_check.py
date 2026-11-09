@@ -41,8 +41,8 @@ class ReleaseCheckTests(unittest.TestCase):
 
     def test_missing_adapter_registry_package_data_fails(self):
         (self.root / "pyproject.toml").write_text(
-            '[project]\\nname = "aimes-governance-cli"\\nversion = "0.7.9"\\n'
-            '[tool.setuptools.package-data]\\naimes_cli = ["templates/**/*.md", "schemas/*.json"]\\n',
+            '[project]\nname = "aimes-governance-cli"\nversion = "0.7.9"\n'
+            '[tool.setuptools.package-data]\naimes_cli = ["templates/**/*.md", "schemas/*.json"]\n',
             encoding="utf-8",
         )
         result = validate_release(self.root)
