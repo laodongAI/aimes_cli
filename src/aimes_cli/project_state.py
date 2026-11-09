@@ -95,26 +95,19 @@ def detect_mode(task_text: str, registry: dict[str, dict[str, Any]]) -> dict[str
         if matched:
             matches.append({"mode": mode_id, "label": item.get("label", mode_id),
                             "matched_triggers": matched, "score": len(matched)})
-    # Suppress a shorter cross-mode hit when it is merely part of a more specific
-    # matched trigger. Independent concepts (for example, "前端优化和代码重构")
-    # remain ambiguous and must still be confirmed.
-    all_triggers = [
-        (item["mode"], trigger)
+    # A unique longest trigger is the most specific signal. Keep equally specific
+    # cross-mode hits ambiguous (for example, two distinct tasks in one request).
+    ranked_triggers = [
+        (len(trigger), item["mode"], trigger)
         for item in matches
         for trigger in item["matched_triggers"]
     ]
-    for item in matches:
-        item["matched_triggers"] = [
-            trigger for trigger in item["matched_triggers"]
-            if not any(
-                other_mode != item["mode"]
-                and len(other_trigger) > len(trigger)
-                and trigger.lower() in other_trigger.lower()
-                for other_mode, other_trigger in all_triggers
-            )
-        ]
-        item["score"] = len(item["matched_triggers"])
-    matches = [item for item in matches if item["matched_triggers"]]
+    if ranked_triggers:
+        max_length = max(item[0] for item in ranked_triggers)
+        strongest_modes = {mode_id for length, mode_id, _ in ranked_triggers if length == max_length}
+        if len(strongest_modes) == 1:
+            winner = next(iter(strongest_modes))
+            matches = [item for item in matches if item["mode"] == winner]
     matches.sort(key=lambda x: (-x["score"], x["mode"]))
     if not matches:
         return {"mode": None, "confidence": "low", "matches": [],
