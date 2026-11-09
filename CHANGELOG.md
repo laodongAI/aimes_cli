@@ -1,3 +1,11 @@
+## Unreleased - AI 工程审查证据契约
+
+- 新增 `aimes quality review --report`，验证外部 AI 工具生成的结构化语义审查报告。
+- AI findings 强制包含唯一 ID、类别、INFO/WARNING 级别、置信度、项目内源码路径、行范围和与源码匹配的摘录；拒绝路径穿越、符号链接越界、错误行号、无效置信度和无证据结论。
+- AI finding 固定标记为 advisory（`blocking=false`），AI 报告不能自行声明 ERROR，也不能单独阻断确定性质量门禁。
+- 明确 AIMES 当前只验证报告，不调用模型、不自动修复、不把模型推理正确性等同于证据格式有效。
+- 新增 `docs/AI-ENGINEERING-REVIEW.md`，定义组件复用、职责边界、重复逻辑、分层、契约影响和需求追踪审查维度。
+
 ## 0.9.0 - Skill 实际调用与规则强制链
 
 - 新增声明式 Adapter Registry V2：以 YAML 注册表管理 Host、Harness、执行模式、入口路径和能力状态；保留既有工具 ID、别名和检测命令兼容性。
