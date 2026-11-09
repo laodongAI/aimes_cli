@@ -20,6 +20,7 @@ class ProjectWorkTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_tasks_are_isolated_by_session_and_can_be_rebound(self):
+        project_state_before = read_project_state(self.root)
         first = start_task(self.root, "优化前端页面", session_id="codex", task_id="task-front")
         second = start_task(self.root, "修复接口缺陷", session_id="claude", task_id="task-api")
         self.assertEqual(first["session"]["current_task_id"], "task-front")
@@ -31,6 +32,7 @@ class ProjectWorkTests(unittest.TestCase):
                          ["task-front"])
         rebound = bind_session_task(self.root, "codex", "task-api")
         self.assertEqual(rebound["session"]["current_task_id"], "task-api")
+        self.assertEqual(read_project_state(self.root), project_state_before)
 
     def test_task_phase_and_status_are_independently_updated(self):
         start_task(self.root, "实现用户资料页", task_id="profile-ui")
