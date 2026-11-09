@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import json
 from fnmatch import fnmatch
 import os
 from pathlib import Path
 import re
+import xml.etree.ElementTree as ET
 from typing import Any
 
 MAX_SOURCE_FILES = 500
@@ -163,9 +165,87 @@ def inspect_general_file(path: str, content: str, config: dict[str, Any]) -> lis
     return findings
 
 
+def _inspect_dependency_manifests(root: Path) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    for manifest in sorted(root.glob("requirements*.txt")):
+        if manifest.is_symlink() or not manifest.is_file():
+            continue
+        try:
+            lines = manifest.read_text(encoding="utf-8-sig").splitlines()
+        except (OSError, UnicodeError):
+            continue
+        for number, raw in enumerate(lines, 1):
+            line = raw.strip()
+            if not line or line.startswith(("#", "-", "http://", "https://")):
+                continue
+            if re.match(r"^[A-Za-z0-9_.-]+$", line):
+                findings.append(_finding("DEPENDENCY_UNPINNED", manifest.name, number,
+                    f"Dependency {line} has no version constraint.",
+                    "Use a reviewed version range or lockfile; this check does not assess known CVEs.",
+                    category="dependency"))
+    package_json = root / "package.json"
+    if package_json.is_file() and not package_json.is_symlink():
+        try:
+            payload = json.loads(package_json.read_text(encoding="utf-8-sig"))
+            if isinstance(payload, dict):
+                for section in ("dependencies", "devDependencies", "optionalDependencies"):
+                    values = payload.get(section, {})
+                    if isinstance(values, dict):
+                        for name, version in values.items():
+                            if version in {"*", "latest"}:
+                                findings.append(_finding("DEPENDENCY_WILDCARD", "package.json", 1,
+                                    f"{section}.{name} uses the floating version specifier {version}.",
+                                    "Pin a reviewed version range and commit the package manager lockfile.",
+                                    category="dependency"))
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            findings.append(_finding("DEPENDENCY_MANIFEST_INVALID", "package.json", 1,
+                "package.json could not be parsed for dependency policy checks.",
+                "Validate the manifest with the project's package manager.", category="dependency"))
+    return findings
+
+
+def _inspect_coverage(root: Path, config: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    threshold = config.get("general", {}).get("min_coverage_percent")
+    report_xml = root / "coverage.xml"
+    report_json = root / "coverage.json"
+    report = report_xml if report_xml.is_file() and not report_xml.is_symlink() else report_json if report_json.is_file() and not report_json.is_symlink() else None
+    metadata: dict[str, Any] = {"status": "NOT_PROVIDED", "percent": None, "threshold": threshold}
+    if report is None:
+        if threshold is not None:
+            return [_finding("COVERAGE_REPORT_MISSING", "coverage.xml", 1,
+                "A coverage threshold is configured but no coverage.xml or coverage.json report was found.",
+                "Run the project's tests with coverage reporting and provide the generated report.",
+                category="testing")], metadata
+        return [], metadata
+    try:
+        if report.suffix == ".xml":
+            payload = ET.parse(report).getroot()
+            percent = float(payload.attrib["line-rate"]) * 100
+        else:
+            payload = json.loads(report.read_text(encoding="utf-8-sig"))
+            percent = float(payload["totals"]["percent_covered"])
+    except (OSError, ValueError, KeyError, TypeError, ET.ParseError, json.JSONDecodeError):
+        metadata["status"] = "INVALID"
+        return [_finding("COVERAGE_REPORT_INVALID", report.name, 1,
+            "Coverage report is malformed or does not contain a valid total line coverage value.",
+            "Regenerate the report using the project's coverage.py XML/JSON format.",
+            category="testing")], metadata
+    metadata.update({"status": "AVAILABLE", "percent": round(percent, 2)})
+    if threshold is not None and percent < threshold:
+        return [_finding("COVERAGE_BELOW_THRESHOLD", report.name, 1,
+            f"Measured line coverage is {percent:.2f}%, below the configured {threshold}% threshold.",
+            "Add focused tests for uncovered behavior and inspect the coverage report before raising the threshold.",
+            category="testing")], metadata
+    return [], metadata
+
+
 def inspect_project_sources(root: Path, config: dict[str, Any], exclude_patterns: list[str] | None = None) -> tuple[list[dict[str, Any]], dict[str, int]]:
     findings: list[dict[str, Any]] = []
     counts = {"python_files_scanned": 0, "vue_files_scanned": 0, "source_files_scanned": 0, "files_skipped": 0}
+    findings.extend(_inspect_dependency_manifests(root))
+    coverage_findings, coverage_metadata = _inspect_coverage(root, config)
+    findings.extend(coverage_findings)
+    counts["coverage"] = coverage_metadata
     candidates: list[tuple[str, Path]] = []
     duplicate_functions: dict[str, list[tuple[str, str, int]]] = {}
     patterns = exclude_patterns or []
