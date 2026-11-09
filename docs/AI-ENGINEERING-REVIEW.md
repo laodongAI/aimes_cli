@@ -10,10 +10,23 @@ AIMES V1 采用“外部 AI 生成报告、AIMES 本地验证报告”：不在 
 
 ```powershell
 aimes quality inspect --root . --format json
+aimes quality review-context --root . --format json --output .aimes/reviews/review-context.json
 aimes quality review --report .aimes/reviews/engineering-review.json --root . --format json
 ```
 
 报告文件和证据源码必须位于项目根目录内。路径解析会处理 `..` 与符号链接；越界路径、缺失文件、超出文件长度的行号、与源码不匹配的 excerpt 均会被拒绝。
+
+## 审查上下文包
+
+`aimes quality review-context` 只读生成供外部 AI 工具使用的上下文包。默认仅从根目录治理入口/项目说明文件及 `src`、`app`、`backend`、`frontend`、`web`、`tests`、`docs/design`、`docs/architecture`、`.aimes/skills` 等受控位置收集文本文件。
+
+默认上限为 80 个文件、单文件 8 KiB、总量 180 KiB。排除常见凭据文件名、密钥/证书扩展名、依赖/构建目录、符号链接和超限文件；输出包含文件清单、SHA-256、审查提示词和跳过统计。命令不会调用模型、上传文件或执行项目代码。
+
+```powershell
+aimes quality review-context --root . --format json --output .aimes/reviews/review-context.json
+```
+
+上下文包可能因扫描目录白名单和大小限制而遗漏相关材料。敏感文件过滤是启发式保护，**分享给外部 AI 服务前必须人工检查上下文包**。
 
 ## JSON 契约
 
@@ -61,4 +74,4 @@ aimes quality review --report .aimes/reviews/engineering-review.json --root . --
 
 ## 当前限制
 
-当前版本只支持本地 JSON 报告验证与证据核验，不自动生成审查报告、不调用模型、不执行修复，也不将 AI 发现合并为静态门禁的阻断项。后续可在此契约上增加受控的上下文包生成、审查提示词和报告合并展示。
+当前版本支持受控上下文包生成和外部 AI JSON 报告验证；仍不自动调用模型、不上传源码、不执行修复，也不将 AI 发现合并为静态门禁的阻断项。上下文包是否完整、敏感信息是否被排除，仍需人工复核。
