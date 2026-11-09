@@ -1,4 +1,5 @@
 from __future__ import annotations
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -70,17 +71,69 @@ def validate_suite(path: Path) -> dict:
     return _report("suite-validation", path, fs, checked_cases=len(data["cases"]), case_ids=sorted(seen), suite_id=data.get("suite_id"), version=data.get("version"))
 
 
+def _validate_evidence_artifacts(item: dict, loc: str, base_dir: Path, findings: list) -> int:
+    """Verify evidence files referenced by a run; hashes prove integrity, not truth."""
+    artifacts = item.get("evidence_artifacts", [])
+    if not isinstance(artifacts, list):
+        _finding(findings, "ERROR", "EVIDENCE_ARTIFACTS_TYPE", f"{loc}.evidence_artifacts must be a list")
+        return 0
+    verified = 0
+    root = base_dir.resolve()
+    for index, artifact in enumerate(artifacts):
+        where = f"{loc}.evidence_artifacts[{index}]"
+        if not isinstance(artifact, dict):
+            _finding(findings, "ERROR", "EVIDENCE_ARTIFACT_TYPE", f"{where} must be an object")
+            continue
+        rel, digest, kind = artifact.get("path"), artifact.get("sha256"), artifact.get("kind")
+        if not isinstance(rel, str) or not rel.strip() or Path(rel).is_absolute() or ".." in Path(rel).parts:
+            _finding(findings, "ERROR", "EVIDENCE_ARTIFACT_PATH", f"{where}.path must be a safe relative path")
+            continue
+        if not isinstance(kind, str) or not kind.strip():
+            _finding(findings, "ERROR", "EVIDENCE_ARTIFACT_KIND", f"{where}.kind is required")
+            continue
+        if not isinstance(digest, str) or len(digest) != 64 or any(c not in "0123456789abcdefABCDEF" for c in digest):
+            _finding(findings, "ERROR", "EVIDENCE_ARTIFACT_HASH", f"{where}.sha256 must be a 64-character hexadecimal SHA-256")
+            continue
+        candidate = base_dir / rel
+        if candidate.is_symlink():
+            _finding(findings, "ERROR", "EVIDENCE_ARTIFACT_SYMLINK", f"{where} must not reference a symbolic link")
+            continue
+        resolved = candidate.resolve()
+        try:
+            resolved.relative_to(root)
+        except ValueError:
+            _finding(findings, "ERROR", "EVIDENCE_ARTIFACT_ESCAPE", f"{where} escapes the run directory")
+            continue
+        if not resolved.is_file():
+            _finding(findings, "ERROR", "EVIDENCE_ARTIFACT_MISSING", f"{where} file does not exist: {rel}")
+            continue
+        if resolved.stat().st_size > 10 * 1024 * 1024:
+            _finding(findings, "ERROR", "EVIDENCE_ARTIFACT_TOO_LARGE", f"{where} exceeds the 10 MiB evidence limit")
+            continue
+        actual = hashlib.sha256(resolved.read_bytes()).hexdigest()
+        if actual.lower() != digest.lower():
+            _finding(findings, "ERROR", "EVIDENCE_ARTIFACT_HASH_MISMATCH", f"{where} SHA-256 does not match")
+            continue
+        verified += 1
+    return verified
+
+
 def validate_run(path: Path) -> dict:
     data = _load(path); fs = []
     if not isinstance(data, dict) or not isinstance(data.get("case_results"), list):
-        _finding(fs, "ERROR", "RUN_SHAPE", "Run record must be an object with a case_results list")
+        _finding(fs, "ERROR", "RUN_SHAPE", "Run record must contain a case_results list")
         return _report("run-validation", path, fs, checked_cases=0)
+    schema_version = data.get("schema_version", 1)
+    if isinstance(schema_version, bool) or schema_version not in {1, 2}:
+        _finding(fs, "ERROR", "RUN_SCHEMA_VERSION", "schema_version must be 1 or 2")
+        schema_version = 1
     metadata = data.get("metadata")
     if not isinstance(metadata, dict): _finding(fs, "ERROR", "RUN_METADATA_REQUIRED", "metadata object is required")
     else:
         for k in ("run_id", "suite_id", "suite_version", "model", "tool_version", "skill_version", "started_at"):
             if not isinstance(metadata.get(k), str) or not metadata[k].strip(): _finding(fs, "WARNING", "RUN_METADATA_MISSING", f"metadata.{k} should be recorded for reproducibility")
     seen = set()
+    verified_artifact_count = 0
     for i, item in enumerate(data["case_results"]):
         loc=f"case_results[{i}]"
         if not isinstance(item, dict): _finding(fs,"ERROR","RESULT_TYPE",f"{loc} must be an object"); continue
@@ -104,8 +157,11 @@ def validate_run(path: Path) -> dict:
             _finding(fs,"ERROR","PASS_WITH_FAILED_GATE",f"{loc} status PASS contradicts a non-PASS hard gate")
         if item.get("status")=="PASS" and not item.get("evidence_refs"):
             _finding(fs,"WARNING","RESULT_EVIDENCE_MISSING",f"{loc} PASS result should reference evidence")
-    return _report("run-validation",path,fs,checked_cases=len(data["case_results"]),case_ids=sorted(seen))
-
+        verified = _validate_evidence_artifacts(item, loc, path.parent, fs)
+        verified_artifact_count += verified
+        if schema_version >= 2 and item.get("status") == "PASS" and verified == 0:
+            _finding(fs, "ERROR", "PASS_WITHOUT_VERIFIED_ARTIFACT", f"{loc} schema_version 2 PASS requires at least one existing, hash-verified evidence_artifact")
+    return _report("run-validation",path,fs,checked_cases=len(data["case_results"]),case_ids=sorted(seen),verified_artifact_count=verified_artifact_count)
 
 
 def validate_run_against_suite(suite_path: Path, run_path: Path) -> dict:
