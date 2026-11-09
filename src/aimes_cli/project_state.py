@@ -78,7 +78,7 @@ def detect_mode(task_text: str, registry: dict[str, dict[str, Any]]) -> dict[str
                 continue
             if trigger.isascii() and all(ord(ch) >= 32 for ch in trigger):
                 import re
-                pattern = r"\\b" + r"\\W+".join(re.escape(part) for part in trigger.split("_") if part) + r"\\b"
+                pattern = r"\b" + r"\W+".join(re.escape(part) for part in trigger.split("_") if part) + r"\\b"
                 if re.search(pattern, normalized):
                     matched.append(raw)
             elif trigger in normalized:
