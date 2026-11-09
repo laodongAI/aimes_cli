@@ -79,13 +79,18 @@ def adapter_report(path: Path, root: Path | None = None) -> dict:
     hosts: dict[str, dict[str, int]] = {}
     harnesses: dict[str, dict[str, int]] = {}
     for item in data.get("checks",[]) if isinstance(data,dict) and isinstance(data.get("checks"),list) else []:
-        if not isinstance(item,dict) or item.get("tool") not in summary: continue
-        tool_id = item["tool"]
+        if not isinstance(item, dict): continue
+        tool_id = item.get("tool")
+        if not isinstance(tool_id, str) or tool_id not in summary: continue
         bucket=summary[tool_id]; bucket["checks"]+=1
         status=item.get("verification","UNKNOWN")
+        if not isinstance(status, str):
+            status = "UNKNOWN"
         key={"PASS":"pass","FAIL":"fail","BLOCKED":"blocked","NOT_RUN":"not_run","UNKNOWN":"unknown"}.get(status,"unknown")
         bucket[key]+=1
-        mode=item.get("execution_mode") or "UNKNOWN"
+        mode=item.get("execution_mode")
+        if not isinstance(mode, str) or not mode.strip():
+            mode = "UNKNOWN"
         mode_bucket=execution_modes.setdefault(mode,{"checks":0,"pass":0,"fail":0,"blocked":0,"not_run":0,"unknown":0})
         mode_bucket["checks"]+=1
         mode_bucket[key]+=1
