@@ -67,7 +67,7 @@ class ProjectWorkTests(unittest.TestCase):
         self.assertTrue(result["route"]["skills"])
         self.assertFalse(result["execution"]["automatic"])
 
-    def test_mode_explanation_validates_configured_workflow_and_rejects_path_escape(self):
+    def test_mode_explanation_reports_invalid_configured_workflow(self):
         workflow_dir = self.root / ".aimes/workflows"
         workflow_dir.mkdir(parents=True, exist_ok=True)
         (workflow_dir / "frontend-optimization.yaml").write_text(
@@ -80,7 +80,7 @@ class ProjectWorkTests(unittest.TestCase):
             "    retry_mode: never\n    max_attempts: 1\n"
             "transitions: []\n", encoding="utf-8")
         result = explain_mode(self.root, "frontend-optimization")
-        self.assertEqual(result["route"]["workflow"]["status"], "AVAILABLE")
+        self.assertEqual(result["route"]["workflow"]["status"], "INVALID")
 
     def test_task_start_rejects_unknown_mode_and_invalid_session(self):
         with self.assertRaises(ValueError):
