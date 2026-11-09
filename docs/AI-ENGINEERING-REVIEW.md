@@ -6,6 +6,17 @@
 
 AIMES V1 采用“外部 AI 生成报告、AIMES 本地验证报告”：不在 CLI 内绑定模型供应商，不暗示 AIMES 已自动调用模型。`aimes quality review` 只验证报告结构和证据，不验证模型推理过程是否正确。
 
+## 模式质量策略
+
+工程模式可映射到 `.aimes/quality-profiles.yaml` 中的 profile：
+
+```bash
+aimes quality inspect --mode frontend-development
+aimes quality inspect --profile frontend --format json
+```
+
+选择优先级为显式 profile、显式 mode、项目当前模式、默认 baseline。项目 `.aimes/quality-gates.yaml` 中的显式规则覆盖 profile 默认值；全局 `enforce/fail_on` 只由项目门禁配置控制。当前 profile 仅调整已实现的 Vue 静态规则，不代表具备完整安全、性能、后端或需求语义扫描能力。
+
 ## 命令
 
 ```powershell
