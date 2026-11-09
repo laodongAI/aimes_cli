@@ -52,6 +52,18 @@ class RuntimeInspectionTests(unittest.TestCase):
         self.assertNotIn("secret-command", rendered)
         self.assertNotIn("example.invalid", rendered)
 
+    def test_unrelated_config_does_not_create_false_feature_positives(self):
+        self.write(".codex/config.toml", 'model = "codex-default"')
+        self.write(".claude/settings.json", '{"hooks": {"PreToolUse": []}}')
+        codex = inspect_adapters(self.root, ["codex-cli"])["adapters"][0]["integrations"]
+        claude = inspect_adapters(self.root, ["claude-code"])["adapters"][0]["integrations"]
+        codex_states = {item["id"]: item["status"] for item in codex}
+        claude_states = {item["id"]: item["status"] for item in claude}
+        self.assertEqual(codex_states["mcp"], "not_present")
+        self.assertEqual(codex_states["agents"], "not_present")
+        self.assertEqual(claude_states["mcp"], "not_present")
+        self.assertEqual(claude_states["hooks"], "configured")
+
     def test_invalid_json_is_reported_as_invalid_not_configured(self):
         self.write(".claude/settings.json", '{"hooks": ')
         result = inspect_adapters(self.root, ["claude-code"])
