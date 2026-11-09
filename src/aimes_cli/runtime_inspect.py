@@ -96,11 +96,33 @@ def _directory_evidence(root: Path, relative: str, required_name: str | None = N
         if not directory.is_dir():
             return {"path": relative, "status": "invalid", "reason": "not_a_directory", "items": []}
         items = []
-        for child in sorted(directory.iterdir(), key=lambda item: item.name.casefold()):
-            if child.is_symlink() or not child.is_dir():
-                continue
-            manifests = sorted(child.glob("*.md")) if required_name == "*.md" else [child / (required_name or "SKILL.md")]
-            for manifest in manifests:
+        children = sorted(directory.iterdir(), key=lambda item: item.name.casefold())
+        if required_name == "*.md":
+            candidates = [item for item in children if item.is_file() and item.suffix.lower() == ".md"]
+            candidates.extend(
+                manifest
+                for child in children if child.is_dir() and not child.is_symlink()
+                for manifest in sorted(child.glob("*.md"))
+            )
+            for manifest in candidates:
+                if manifest.is_symlink() or not manifest.is_file():
+                    continue
+                try:
+                    raw = manifest.read_bytes()
+                    if len(raw) > MAX_CONFIG_BYTES:
+                        continue
+                    items.append({
+                        "name": manifest.stem,
+                        "manifest": manifest.relative_to(root).as_posix(),
+                        "sha256": hashlib.sha256(raw).hexdigest(),
+                    })
+                except OSError:
+                    continue
+        else:
+            for child in children:
+                if child.is_symlink() or not child.is_dir():
+                    continue
+                manifest = child / (required_name or "SKILL.md")
                 if manifest.is_symlink() or not manifest.is_file():
                     continue
                 try:
@@ -112,7 +134,6 @@ def _directory_evidence(root: Path, relative: str, required_name: str | None = N
                         "manifest": manifest.relative_to(root).as_posix(),
                         "sha256": hashlib.sha256(raw).hexdigest(),
                     })
-                    break
                 except OSError:
                     continue
         return {"path": relative, "status": "present", "items": items, "count": len(items)}
