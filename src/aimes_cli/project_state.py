@@ -229,6 +229,8 @@ def set_project_state(
         raise ValueError("--source and --confidence can only be used together with --mode")
     if source not in {"user", "ai", "import"}:
         raise ValueError(f"Invalid mode source: {source}")
+    if source == "ai" and confidence == "low":
+        raise ValueError("Low-confidence AI mode guesses must be confirmed before persistence")
     registry = load_mode_registry(root) if mode is not None else {}
     if lifecycle is not None:
         if lifecycle not in LIFECYCLES:
