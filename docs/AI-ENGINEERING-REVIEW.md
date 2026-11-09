@@ -12,6 +12,9 @@ AIMES V1 采用“外部 AI 生成报告、AIMES 本地验证报告”：不在 
 aimes quality inspect --root . --format json
 aimes quality review-context --root . --format json --output .aimes/reviews/review-context.json
 aimes quality review --report .aimes/reviews/engineering-review.json --root . --format json
+
+# 汇总静态检查与 AI 审查结果（AI 报告可选）
+aimes quality report --ai-report .aimes/reviews/engineering-review.json --root . --format json
 ```
 
 报告文件和证据源码必须位于项目根目录内。路径解析会处理 `..` 与符号链接；越界路径、缺失文件、超出文件长度的行号、与源码不匹配的 excerpt 均会被拒绝。
@@ -75,3 +78,10 @@ aimes quality review-context --root . --format json --output .aimes/reviews/revi
 ## 当前限制
 
 当前版本支持受控上下文包生成和外部 AI JSON 报告验证；仍不自动调用模型、不上传源码、不执行修复，也不将 AI 发现合并为静态门禁的阻断项。上下文包是否完整、敏感信息是否被排除，仍需人工复核。
+
+
+## 统一质量报告
+
+`aimes quality report` 将静态检查和经过证据验证的 AI findings 统一到一个 Finding 结构中，保留 `origin`、`category`、`severity`、`message`、`recommendation`、`evidence`、`confidence` 和 `blocking`。静态检查仍是门禁结果的唯一权威来源；AI finding 永远 advisory，不能让原本通过的静态门禁变成失败。
+
+不提供 `--ai-report` 时只输出静态质量报告。提供 AI 报告但验证失败时，命令返回 `INVALID_AI_REPORT`，不会静默合并不可信数据。统一报告是展示和后续治理集成的基础，不代表已经具备自动修复或变更影响分析能力。
