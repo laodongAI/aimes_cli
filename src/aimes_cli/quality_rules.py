@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 from fnmatch import fnmatch
 import os
 from pathlib import Path
@@ -53,6 +54,9 @@ def inspect_python_file(path: str, content: str, config: dict[str, Any]) -> list
             "Split the module by cohesive responsibility and keep public contracts explicit."))
 
     for match in SECRET_ASSIGNMENT.finditer(content):
+        literal = match.group(1).lower()
+        if any(marker in literal for marker in ("example", "dummy", "test", "fake", "placeholder", "changeme", "your_", "xxx")):
+            continue
         line = content.count("\n", 0, match.start()) + 1
         findings.append(_finding("PYTHON_POSSIBLE_SECRET", path, line,
             "A credential-like assignment contains a hard-coded string literal.",
@@ -67,6 +71,14 @@ def inspect_python_file(path: str, content: str, config: dict[str, Any]) -> list
             "Fix the syntax error before relying on further static findings.", severity="ERROR", category="correctness"))
         return findings
 
+    normalized_path = path.replace("\\", "/").lower()
+    if any(segment in normalized_path.split("/") for segment in ("api", "router", "routers", "routes")):
+        for imported in ast.walk(tree):
+            if isinstance(imported, ast.ImportFrom) and imported.module and re.search(r"(?:^|\.)(?:repositories|repository|models|database|db)(?:\.|$)", imported.module):
+                findings.append(_finding("FASTAPI_LAYER_IMPORT", path, imported.lineno,
+                    "API/router module imports a persistence-layer module directly.",
+                    "Prefer API -> service -> repository dependency direction; document intentional architecture exceptions.",
+                    category="architecture"))
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             end = getattr(node, "end_lineno", node.lineno)
