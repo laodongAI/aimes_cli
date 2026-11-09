@@ -36,6 +36,20 @@
 
 查看注册表：`aimes adapter list --format json`。注册表 Schema：`schemas/adapter-registry.schema.json`。当前各工具的能力状态以该注册表为准，实际加载与行为验证仍以独立证据为准。
 
+
+## 2.2 项目集成静态检查（L2 起点）
+
+`aimes adapter inspect --root <project>` 对 Codex CLI 与 Claude Code CLI 的项目级配置入口进行只读检查。当前识别范围：
+
+| Harness | 指令入口 | Skills | MCP | Hooks | Agent |
+|---|---|---|---|---|---|
+| Codex CLI | `AGENTS.md` | `.agents/skills/*/SKILL.md` | `.codex/config.toml` 的 `mcp_servers` | `.codex/config.toml` 的 `hooks`、`.codex/hooks.json` | `.codex/config.toml` 的 `agents` |
+| Claude Code CLI | `CLAUDE.md` | `.claude/skills/*/SKILL.md` | 根目录 `.mcp.json`、`.claude/settings.json` | `.claude/settings.json` 的 `hooks` | `.claude/agents/*.md` 或子目录 Markdown |
+
+状态 `configured` 只代表发现了可识别的非空配置；`present` 代表入口文件存在；`invalid` 表示结构化配置无法解析；`unknown` 表示无法安全读取或解析器不可用。检查结果只输出路径、大小与 SHA-256，不输出配置值；不读取用户级配置，不执行命令、Hooks 或 Agent。符号链接不跟随，单文件读取上限为 1 MiB。
+
+**重要边界：** L2 静态检查不证明配置已被当前会话加载、项目已获信任、MCP 服务可连接、Hook 可执行或 Agent/Skill 被实际调用。此类结论必须由 L3 真实运行时验证证据支持。
+
 ## 3. 工具适配状态
 
 | 工具执行上下文 | Host | Harness | 执行模式 | 入口/适配方式 | 静态配置状态 | 运行时验证状态 |
