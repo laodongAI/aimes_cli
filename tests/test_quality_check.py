@@ -180,6 +180,17 @@ class QualityCheckTests(unittest.TestCase):
         self.assertEqual(result["policy"]["profile"]["id"], "frontend")
         self.assertTrue(any(item["code"] == "SFC_LINES" for item in result["findings"]))
 
+    def test_bundled_mode_registry_profiles_are_all_declared(self):
+        project_root = Path(__file__).resolve().parents[1]
+        modes_path = project_root / "src" / "aimes_cli" / "templates" / "project-state" / "engineering-modes.yaml"
+        profiles_path = project_root / "src" / "aimes_cli" / "templates" / "skills" / "quality-profiles.yaml"
+        modes = yaml.safe_load(modes_path.read_text(encoding="utf-8"))
+        profiles = yaml.safe_load(profiles_path.read_text(encoding="utf-8"))
+        declared = set(profiles["profiles"])
+        mapped = {item.get("quality_profile") for item in modes["modes"]}
+        self.assertTrue(mapped)
+        self.assertEqual(mapped - declared, set())
+
     def test_unknown_profile_fails_closed(self):
         result = inspect_project_quality(self.root, profile_id="does-not-exist")
         self.assertFalse(result["ok"])
