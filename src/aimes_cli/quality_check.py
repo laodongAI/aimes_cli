@@ -8,6 +8,9 @@ from typing import Any
 
 import yaml
 
+from .quality_profiles import resolve_quality_profile, _merge
+from .project_state import load_mode_registry, read_project_state
+
 DEFAULT_CONFIG = {
     "schema_version": 1,
     "enabled": True,
@@ -24,37 +27,61 @@ DEFAULT_CONFIG = {
 SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "dist", "build", "__pycache__", ".pytest_cache", ".mypy_cache"}
 
 
-def _safe_config(root: Path) -> tuple[dict[str, Any], list[dict[str, str]]]:
+def _safe_config(root: Path, profile_id: str | None = None, mode_id: str | None = None) -> tuple[dict[str, Any], list[dict[str, str]], dict[str, Any]]:
     path = root / ".aimes" / "quality-gates.yaml"
+    if profile_id and mode_id:
+        return dict(DEFAULT_CONFIG), [{"severity": "ERROR", "code": "QUALITY_PROFILE_SELECTION", "message": "Specify either profile_id or mode_id, not both", "path": ".aimes/quality-profiles.yaml"}], {}
+    selected_mode = mode_id
+    if selected_mode is None and profile_id is None:
+        try:
+            selected_mode = read_project_state(root).get("engineering_mode")
+        except (OSError, ValueError) as exc:
+            return dict(DEFAULT_CONFIG), [{"severity": "ERROR", "code": "QUALITY_STATE_READ", "message": f"Cannot read project mode state: {exc}", "path": ".aimes/project-state.yaml"}], {}
+    selected_profile = profile_id
+    if selected_mode:
+        try:
+            mode_item = load_mode_registry(root).get(selected_mode)
+        except (OSError, ValueError) as exc:
+            return dict(DEFAULT_CONFIG), [{"severity": "ERROR", "code": "QUALITY_MODE_REGISTRY", "message": str(exc), "path": ".aimes/project-state/engineering-modes.yaml"}], {}
+        if mode_item is None:
+            return dict(DEFAULT_CONFIG), [{"severity": "ERROR", "code": "QUALITY_UNKNOWN_MODE", "message": f"Unknown engineering mode: {selected_mode}", "path": ".aimes/project-state/engineering-modes.yaml"}], {}
+        selected_profile = mode_item.get("quality_profile")
+        if not isinstance(selected_profile, str) or not selected_profile:
+            return dict(DEFAULT_CONFIG), [{"severity": "ERROR", "code": "QUALITY_PROFILE_MAPPING", "message": f"Engineering mode {selected_mode} has no quality_profile mapping", "path": ".aimes/project-state/engineering-modes.yaml"}], {}
+    try:
+        profile = resolve_quality_profile(root, selected_profile)
+    except (OSError, ValueError) as exc:
+        return dict(DEFAULT_CONFIG), [{"severity": "ERROR", "code": "QUALITY_PROFILE_CONFIG", "message": str(exc), "path": ".aimes/quality-profiles.yaml"}], {}
+    profile_config = _merge(DEFAULT_CONFIG, {"vue": profile["overrides"]})
     if not path.is_file():
-        return dict(DEFAULT_CONFIG), []
+        return profile_config, [], profile
     try:
         raw = yaml.safe_load(path.read_text(encoding="utf-8-sig")) or {}
     except (OSError, yaml.YAMLError) as exc:
-        return dict(DEFAULT_CONFIG), [{"severity": "ERROR", "code": "QUALITY_CONFIG_READ", "message": f"Cannot read {path}: {exc}", "path": ".aimes/quality-gates.yaml"}]
+        return profile_config, [{"severity": "ERROR", "code": "QUALITY_CONFIG_READ", "message": f"Cannot read {path}: {exc}", "path": ".aimes/quality-gates.yaml"}], profile
     if not isinstance(raw, dict):
-        return dict(DEFAULT_CONFIG), [{"severity": "ERROR", "code": "QUALITY_CONFIG_TYPE", "message": "Quality gate config must be a YAML mapping", "path": ".aimes/quality-gates.yaml"}]
-    config = {**DEFAULT_CONFIG, **raw}
+        return profile_config, [{"severity": "ERROR", "code": "QUALITY_CONFIG_TYPE", "message": "Quality gate config must be a YAML mapping", "path": ".aimes/quality-gates.yaml"}], profile
+    config = _merge(profile_config, raw)
     vue = raw.get("vue", {})
     if not isinstance(vue, dict):
-        return config, [{"severity": "ERROR", "code": "QUALITY_VUE_CONFIG", "message": "vue must be a YAML mapping", "path": ".aimes/quality-gates.yaml"}]
+        return config, [{"severity": "ERROR", "code": "QUALITY_VUE_CONFIG", "message": "vue must be a YAML mapping", "path": ".aimes/quality-gates.yaml"}], profile
     config["vue"] = {**DEFAULT_CONFIG["vue"], **vue}
     if type(config["vue"].get("disallow_direct_http_calls")) is not bool:
-        return config, [{"severity": "ERROR", "code": "QUALITY_VUE_CONFIG", "message": "vue.disallow_direct_http_calls must be a boolean", "path": ".aimes/quality-gates.yaml"}]
+        return config, [{"severity": "ERROR", "code": "QUALITY_VUE_CONFIG", "message": "vue.disallow_direct_http_calls must be a boolean", "path": ".aimes/quality-gates.yaml"}], profile
     for key in ("max_sfc_lines", "max_script_lines", "max_template_lines"):
         limits = config["vue"].get(key)
         if not isinstance(limits, dict):
-            return config, [{"severity": "ERROR", "code": "QUALITY_THRESHOLD_CONFIG", "message": f"vue.{key} must define warning and error thresholds", "path": ".aimes/quality-gates.yaml"}]
+            return config, [{"severity": "ERROR", "code": "QUALITY_THRESHOLD_CONFIG", "message": f"vue.{key} must define warning and error thresholds", "path": ".aimes/quality-gates.yaml"}], profile
         warning, error = limits.get("warning"), limits.get("error")
         if type(warning) is not int or type(error) is not int or warning < 1 or error <= warning:
-            return config, [{"severity": "ERROR", "code": "QUALITY_THRESHOLD_CONFIG", "message": f"vue.{key} requires positive integer thresholds and error > warning", "path": ".aimes/quality-gates.yaml"}]
+            return config, [{"severity": "ERROR", "code": "QUALITY_THRESHOLD_CONFIG", "message": f"vue.{key} requires positive integer thresholds and error > warning", "path": ".aimes/quality-gates.yaml"}], profile
     if config.get("fail_on") not in {"WARNING", "ERROR"}:
-        return config, [{"severity": "ERROR", "code": "QUALITY_FAIL_ON", "message": "fail_on must be WARNING or ERROR", "path": ".aimes/quality-gates.yaml"}]
+        return config, [{"severity": "ERROR", "code": "QUALITY_FAIL_ON", "message": "fail_on must be WARNING or ERROR", "path": ".aimes/quality-gates.yaml"}], profile
     if not isinstance(config.get("exclude"), list) or any(not isinstance(x, str) for x in config["exclude"]):
-        return config, [{"severity": "ERROR", "code": "QUALITY_EXCLUDE", "message": "exclude must be a list of glob strings", "path": ".aimes/quality-gates.yaml"}]
+        return config, [{"severity": "ERROR", "code": "QUALITY_EXCLUDE", "message": "exclude must be a list of glob strings", "path": ".aimes/quality-gates.yaml"}], profile
     if type(config.get("enabled")) is not bool or type(config.get("enforce")) is not bool:
-        return config, [{"severity": "ERROR", "code": "QUALITY_POLICY_TYPE", "message": "enabled and enforce must be booleans", "path": ".aimes/quality-gates.yaml"}]
-    return config, []
+        return config, [{"severity": "ERROR", "code": "QUALITY_POLICY_TYPE", "message": "enabled and enforce must be booleans", "path": ".aimes/quality-gates.yaml"}], profile
+    return config, [], profile
 
 
 def _is_excluded(relative: str, patterns: list[str]) -> bool:
@@ -82,13 +109,13 @@ def _iter_vue_files(root: Path, patterns: list[str]):
                     yield relative, path
 
 
-def inspect_project_quality(root: Path) -> dict[str, Any]:
+def inspect_project_quality(root: Path, profile_id: str | None = None, mode_id: str | None = None) -> dict[str, Any]:
     """Read-only, deterministic engineering checks. It never edits project files."""
     root = root.resolve()
-    config, findings = _safe_config(root)
+    config, findings, profile = _safe_config(root, profile_id=profile_id, mode_id=mode_id)
     config_invalid = bool(findings)
     if not config.get("enabled", True):
-        return {"ok": not config_invalid, "status": "CONFIG_ERROR" if config_invalid else "DISABLED", "root": str(root), "summary": {"files_scanned": 0, "findings": len(findings)}, "findings": findings, "policy": {"enforce": False, "fail_on": config.get("fail_on")}}
+        return {"ok": not config_invalid, "status": "CONFIG_ERROR" if config_invalid else "DISABLED", "root": str(root), "summary": {"files_scanned": 0, "findings": len(findings)}, "findings": findings, "policy": {"enforce": False, "fail_on": config.get("fail_on"), "profile": profile}}
     vue_files = list(_iter_vue_files(root, config["exclude"]))
     vue_config = config["vue"]
     rules = (
@@ -143,7 +170,7 @@ def inspect_project_quality(root: Path) -> dict[str, Any]:
         "status": "CONFIG_ERROR" if config_invalid else "FAIL" if enforced and blocking else "PASS_WITH_FINDINGS" if findings else "PASS",
         "root": str(root),
         "summary": {"files_scanned": len(vue_files), "errors": errors, "warnings": warnings, "findings": len(findings)},
-        "policy": {"enforce": enforced, "fail_on": fail_on, "config": ".aimes/quality-gates.yaml"},
+        "policy": {"enforce": enforced, "fail_on": fail_on, "config": ".aimes/quality-gates.yaml", "profile": profile},
         "findings": findings,
         "limitations": ["Static rules detect Vue SFC size and direct fetch/axios calls in script blocks. They do not infer semantic duplication, component reuse, Props/Emits quality, or overall architecture correctness."],
     }
