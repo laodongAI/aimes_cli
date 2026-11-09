@@ -11,8 +11,10 @@ class ReviewContextTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         (self.root / "src").mkdir()
         (self.root / "tests").mkdir()
+        (self.root / "src" / "secrets").mkdir()
         (self.root / "src" / "main.py").write_text("def hello():\n    return 'hello'\n", encoding="utf-8")
         (self.root / "src" / ".env").write_text("API_KEY=do-not-include", encoding="utf-8")
+        (self.root / "src" / "secrets" / "config.py").write_text("password = 'nested-secret'", encoding="utf-8")
         (self.root / ".env").write_text("SECRET=do-not-include", encoding="utf-8")
         (self.root / "README.md").write_text("# Demo project\n", encoding="utf-8")
 
@@ -30,6 +32,7 @@ class ReviewContextTests(unittest.TestCase):
         result = build_review_context(self.root)
         rendered = str(result)
         self.assertNotIn("do-not-include", rendered)
+        self.assertNotIn("nested-secret", rendered)
         self.assertNotIn(".env", {item["path"] for item in result["files"]})
 
     def test_applies_per_file_size_limit(self):
