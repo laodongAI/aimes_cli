@@ -228,7 +228,7 @@ def inspect_adapters(root: Path, tools: Iterable[str] | None = None) -> dict[str
         "project_root": str(root),
         "checked_at": datetime.now(timezone.utc).isoformat(),
         "platform": platform.platform(),
-        "scope": "read-only project files only; no credentials, user-level config, command execution, hook execution, agent launch, or runtime loading verification",
+        "scope": "read-only project files only; configuration values and credentials are not emitted or persisted; no user-level config, command execution, hook execution, agent launch, or runtime loading verification",
         "status_semantics": {
             "configured": "A recognized non-empty integration configuration was found; not proof of runtime activation.",
             "present": "An entry file or directory exists, but configuration could not be confirmed.",
