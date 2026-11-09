@@ -4,7 +4,7 @@ from pathlib import Path
 
 import yaml
 
-from aimes_cli.v05 import validate_adapter_evidence
+from aimes_cli.v05 import validate_adapter_evidence, adapter_report
 
 
 class AdapterEvidenceContextTests(unittest.TestCase):
@@ -45,6 +45,17 @@ class AdapterEvidenceContextTests(unittest.TestCase):
         result = validate_adapter_evidence(self.path, self.root)
         self.assertFalse(result["ok"])
         self.assertTrue(any(item["code"] == "ADAPTER_CONTEXT_MISMATCH" for item in result["findings"]))
+
+    def test_report_aggregates_multiple_hosts_under_same_harness(self):
+        checks = [
+            {"id": "CLI-001", "tool": "codex-cli", "host_id": "terminal", "harness_id": "codex", "verification": "NOT_RUN", "method": "file_inspection"},
+            {"id": "IDE-001", "tool": "vscode-codex", "host_id": "vscode", "harness_id": "codex", "verification": "PASS", "method": "runtime_observation", "evidence_note": "Test fixture evidence."},
+        ]
+        self.path.write_text(yaml.safe_dump({"schema_version": 2, "checks": checks}, sort_keys=False), encoding="utf-8")
+        report = adapter_report(self.path, self.root)
+        self.assertEqual(report["harnesses"]["codex"]["checks"], 2)
+        self.assertEqual(report["hosts"]["terminal"]["checks"], 1)
+        self.assertEqual(report["hosts"]["vscode"]["checks"], 1)
 
     def test_legacy_evidence_without_host_harness_remains_compatible(self):
         self.write_record(host_id=None, harness_id=None, adapter_registry_version=None)
