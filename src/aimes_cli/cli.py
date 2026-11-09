@@ -305,6 +305,11 @@ def emit(data, fmt='text', output: Path | None=None):
                     caps = ', '.join(f"{key}={value}" for key, value in sorted(item.get('capabilities', {}).items()))
                     lines.append(f"  - {item.get('id')}: {host.get('name', '?')} / {harness.get('name', '?')} [{modes}]")
                     lines.append(f"    capabilities: {caps}")
+            for group_key, group_label in [('hosts', 'Host verification summary'), ('harnesses', 'Harness verification summary')]:
+                if data.get(group_key) and isinstance(data[group_key], dict):
+                    lines.append(group_label + ':')
+                    for group_id, counts in sorted(data[group_key].items()):
+                        lines.append(f"  - {group_id}: checks={counts.get('checks', 0)}, pass={counts.get('pass', 0)}, fail={counts.get('fail', 0)}, blocked={counts.get('blocked', 0)}, not_run={counts.get('not_run', 0)}, unknown={counts.get('unknown', 0)}")
             if data.get('written'):
                 lines.append('Files written:')
                 for item in data['written']: lines.append(f"  - {item.get('action', 'write')}: {item['path']}")
