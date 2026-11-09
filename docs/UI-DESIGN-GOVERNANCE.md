@@ -74,3 +74,10 @@ PASS 只用于实际执行且满足预先定义判据的检查。工具不可用
 - WCAG 2.2：可访问性要求的规范性参考。
 
 采用前应检查许可证、版本、来源、重复度和跨工具兼容性。AIMES 自有 Skill 必须包含触发条件、输入、前置条件、步骤、输出契约、权限、安全、失败处理、完成判据和评测案例；不以下载或安装第三方 Skill 代替规则路由集成。
+
+
+## 8. Vue 前端工程实现
+
+Vue 页面/组件/Composable/Pinia/前端重构任务必须同时读取项目级 vue-frontend-engineering Skill；通用代码质量、复用和前后端分层规则见 docs/SOFTWARE-ENGINEERING-STANDARDS.md。UI 设计规范与代码工程规范互补：前者治理视觉/交互，后者治理组件职责、状态、API 和代码质量。
+
+最低要求：Page/View 页面编排、业务组件封装业务概念、Shared UI 组件不耦合业务 API；Props/Emits/Slots 契约清晰；可复用逻辑放 Composable；API 调用集中 service/client；Pinia 仅保存必要共享状态；优先复用项目已有表格、表单、筛选、分页、弹窗和状态组件；共享组件变更检查全部调用点并补回归测试。
