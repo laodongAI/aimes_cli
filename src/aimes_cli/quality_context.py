@@ -14,9 +14,9 @@ SKIP_DIRS = {
     ".pytest_cache", ".mypy_cache", ".tox", ".next", ".nuxt", "coverage",
     "vendor", "target", ".idea", ".vscode",
 }
-SKIP_NAME_PARTS = (
-    ".env", "secret", "credential", "password", "token", "private",
-    "id_rsa", "id_ed25519", "service-account", "keystore",
+SENSITIVE_PATH_PATTERN = re.compile(
+    r"(^|[._-])(\.env|secrets?|credentials?|passwords?|access[_-]?tokens?|api[_-]?keys?|client[_-]?secrets?|private[_-]?keys?|id_rsa|id_ed25519|service-account|keystore)([._-]|$)",
+    re.IGNORECASE,
 )
 TEXT_SUFFIXES = {
     ".py", ".pyi", ".vue", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs",
@@ -47,7 +47,7 @@ def _is_sensitive(relative: str) -> bool:
     if any(part in SKIP_DIRS for part in parts):
         return True
     name = parts[-1]
-    if any(any(marker in part for marker in SKIP_NAME_PARTS) for part in parts):
+    if any(SENSITIVE_PATH_PATTERN.search(part) for part in parts):
         return True
     if name in {".env", ".env.local", ".env.production", "secrets.yaml", "secrets.yml", "local.settings.json"}:
         return True
