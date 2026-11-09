@@ -32,6 +32,19 @@ class AimesCliTests(unittest.TestCase):
         self.assertTrue(result['dry_run'])
         self.assertFalse((self.root/'.aimes/config.yaml').exists())
 
+    def test_init_config_contains_host_harness_adapter_metadata(self):
+        import yaml
+        result = init_project(self.root, ['vscode-codex', 'codex-cli'])
+        self.assertTrue(result['ok'], result)
+        config = yaml.safe_load((self.root/'.aimes/config.yaml').read_text(encoding='utf-8'))
+        self.assertEqual(config['adapter_registry']['schema_version'], 2)
+        tools = {item['id']: item for item in config['tools']}
+        self.assertEqual(tools['vscode-codex']['host']['id'], 'vscode')
+        self.assertEqual(tools['vscode-codex']['harness']['id'], 'codex')
+        self.assertEqual(tools['vscode-codex']['execution_modes'], ['ide_extension'])
+        self.assertEqual(tools['codex-cli']['host']['type'], 'cli')
+        self.assertEqual(tools['codex-cli']['harness']['id'], 'codex')
+
     def test_init_and_validate(self):
         result = init_project(self.root, ['codex-cli','claude-code'], dry_run=False)
         self.assertTrue(result['ok'])
