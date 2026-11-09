@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import ast
-import hashlib
+from fnmatch import fnmatch
+import os
 from pathlib import Path
 import re
 from typing import Any
 
 MAX_SOURCE_FILES = 500
 MAX_SOURCE_BYTES = 1024 * 1024
-PYTHON_SUFFIXES = {".py"}
 SOURCE_SKIP_PARTS = {".git", ".venv", "venv", "node_modules", "dist", "build", "__pycache__", ".pytest_cache", ".mypy_cache", ".tox", ".aimes"}
 
 SECRET_ASSIGNMENT = re.compile(
@@ -140,18 +140,21 @@ def inspect_general_file(path: str, content: str, config: dict[str, Any]) -> lis
     return findings
 
 
-def inspect_project_sources(root: Path, config: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, int]]:
+def inspect_project_sources(root: Path, config: dict[str, Any], exclude_patterns: list[str] | None = None) -> tuple[list[dict[str, Any]], dict[str, int]]:
     findings: list[dict[str, Any]] = []
     counts = {"python_files_scanned": 0, "vue_files_scanned": 0, "source_files_scanned": 0, "files_skipped": 0}
     candidates: list[tuple[str, Path]] = []
-    for current, dirs, files in __import__("os").walk(root, followlinks=False):
+    patterns = exclude_patterns or []
+    for current, dirs, files in os.walk(root, followlinks=False):
         current_path = Path(current)
-        dirs[:] = [name for name in dirs if name not in SOURCE_SKIP_PARTS and not (current_path / name).is_symlink()]
+        dirs[:] = [name for name in dirs if name not in SOURCE_SKIP_PARTS and not (current_path / name).is_symlink() and not any(fnmatch((current_path / name).relative_to(root).as_posix(), pattern) for pattern in patterns)]
         for name in files:
             path = current_path / name
             if path.is_symlink() or path.suffix.lower() not in {".py", ".vue"}:
                 continue
             relative = path.relative_to(root).as_posix()
+            if any(fnmatch(relative, pattern) for pattern in patterns):
+                continue
             candidates.append((relative, path))
             if len(candidates) >= MAX_SOURCE_FILES:
                 break
