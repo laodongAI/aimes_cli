@@ -1,0 +1,106 @@
+schema_version: 1
+registry_version: 1.0.0
+description: "AIMES 工程模式目录；模式路由复用现有 Skills，不为每个模式重复创建规则。"
+modes:
+  - id: project-bootstrap
+    label: 新项目初始化
+    triggers: [new_project, project_bootstrap, initialize_project, 新项目, 项目初始化, 从零开始]
+    skills: [project-onboarding, software-engineering-standards]
+    workflow: project-bootstrap
+    quality_profile: baseline
+  - id: product-discovery
+    label: 产品探索与需求分析
+    triggers: [product_discovery, requirement_analysis, product_analysis, 产品探索, 需求分析, 需求澄清, 产品分析]
+    skills: [product-manager, product-analysis, requirement-cognition]
+    workflow: product-discovery
+    quality_profile: requirements
+  - id: architecture-design
+    label: 架构设计
+    triggers: [architecture_design, system_design, architecture_review, 架构设计, 系统设计, 技术架构]
+    skills: [software-engineering-standards, architecture-contract-review]
+    workflow: architecture-design
+    quality_profile: architecture
+  - id: feature-design
+    label: 功能设计
+    triggers: [feature_design, solution_design, 功能设计, 方案设计, 详细设计]
+    skills: [requirement-cognition, software-engineering-standards]
+    workflow: feature-development
+    quality_profile: requirements
+  - id: feature-development
+    label: 新功能开发
+    triggers: [new_feature, feature_development, implement_feature, 新功能开发, 功能开发, 实现功能]
+    skills: [requirement-cognition, software-engineering-standards]
+    workflow: feature-development
+    quality_profile: implementation
+  - id: backend-development
+    label: 后端开发
+    triggers: [backend_development, api_development, fastapi, 后端开发, 接口开发, 服务端开发]
+    skills: [software-engineering-standards]
+    workflow: feature-development
+    quality_profile: implementation
+  - id: frontend-development
+    label: 前端开发
+    triggers: [frontend_development, vue_development, component_development, 前端开发, Vue开发, 组件开发]
+    skills: [software-engineering-standards, vue-frontend-engineering, design-system-governance]
+    workflow: feature-development
+    quality_profile: frontend
+  - id: frontend-optimization
+    label: 前端体验优化
+    triggers: [frontend_optimization, ui_optimization, ux_optimization, 页面优化, 前端优化, UI优化, 体验优化, 界面优化]
+    skills: [vue-frontend-engineering, ui-quality-review, frontend-design, ui-implementation-validation]
+    workflow: frontend-optimization
+    quality_profile: frontend
+  - id: refactoring
+    label: 代码重构
+    triggers: [refactoring, code_cleanup, restructure, 代码重构, 重构, 代码整理, 模块拆分]
+    skills: [software-engineering-standards, change-impact-analysis]
+    workflow: refactoring
+    quality_profile: implementation
+  - id: bugfix
+    label: 缺陷修复
+    triggers: [bug_fix, debugging, defect_fix, bugfix, 缺陷修复, Bug修复, 排查问题, 修复问题]
+    skills: [software-engineering-standards, change-impact-analysis]
+    workflow: bugfix
+    quality_profile: regression
+  - id: performance-optimization
+    label: 性能优化
+    triggers: [performance_optimization, profiling, 性能优化, 性能分析, 响应速度, 内存优化]
+    skills: [software-engineering-standards]
+    workflow: optimization
+    quality_profile: performance
+  - id: security-hardening
+    label: 安全加固
+    triggers: [security_hardening, security_review, 安全加固, 安全审查, 权限审计, 漏洞修复]
+    skills: [software-engineering-standards]
+    workflow: security-review
+    quality_profile: security
+  - id: integration-development
+    label: 集成开发
+    triggers: [integration_development, third_party_integration, plugin_development, 集成开发, 第三方集成, 插件开发]
+    skills: [software-engineering-standards, architecture-contract-review]
+    workflow: integration
+    quality_profile: implementation
+  - id: testing-validation
+    label: 测试与验收
+    triggers: [testing, validation, acceptance, regression_test, 测试验收, 回归测试, 验收, 质量验证]
+    skills: [ui-implementation-validation, software-engineering-standards]
+    workflow: testing-validation
+    quality_profile: regression
+  - id: release-delivery
+    label: 发布与交付
+    triggers: [release, delivery, deployment, 发布, 交付, 部署, 上线]
+    skills: [software-engineering-standards]
+    workflow: release
+    quality_profile: release
+  - id: documentation
+    label: 文档建设
+    triggers: [documentation, docs_update, technical_writing, 文档编写, 文档更新, 技术文档]
+    skills: [software-engineering-standards]
+    workflow: documentation
+    quality_profile: documentation
+  - id: engineering-audit
+    label: 工程审计
+    triggers: [engineering_audit, code_audit, architecture_audit, 工程审计, 代码审计, 架构审计, 全面检查]
+    skills: [software-engineering-standards, ui-quality-review]
+    workflow: engineering-audit
+    quality_profile: audit
