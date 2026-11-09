@@ -95,6 +95,26 @@ def detect_mode(task_text: str, registry: dict[str, dict[str, Any]]) -> dict[str
         if matched:
             matches.append({"mode": mode_id, "label": item.get("label", mode_id),
                             "matched_triggers": matched, "score": len(matched)})
+    # Suppress a shorter cross-mode hit when it is merely part of a more specific
+    # matched trigger. Independent concepts (for example, "前端优化和代码重构")
+    # remain ambiguous and must still be confirmed.
+    all_triggers = [
+        (item["mode"], trigger)
+        for item in matches
+        for trigger in item["matched_triggers"]
+    ]
+    for item in matches:
+        item["matched_triggers"] = [
+            trigger for trigger in item["matched_triggers"]
+            if not any(
+                other_mode != item["mode"]
+                and len(other_trigger) > len(trigger)
+                and trigger.lower() in other_trigger.lower()
+                for other_mode, other_trigger in all_triggers
+            )
+        ]
+        item["score"] = len(item["matched_triggers"])
+    matches = [item for item in matches if item["matched_triggers"]]
     matches.sort(key=lambda x: (-x["score"], x["mode"]))
     if not matches:
         return {"mode": None, "confidence": "low", "matches": [],
