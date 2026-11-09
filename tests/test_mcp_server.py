@@ -23,7 +23,33 @@ class McpServerTests(unittest.TestCase):
         self.assertIn("instructions", response["result"])
         listed = handle_request(self.root, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
         names = [tool["name"] for tool in listed["result"]["tools"]]
-        self.assertEqual(names, ["aimes_skill_route", "aimes_read_skill", "aimes_validate_delivery"])
+        self.assertEqual(names, ["aimes_project_state", "aimes_detect_engineering_mode", "aimes_set_project_state", "aimes_skill_route", "aimes_read_skill", "aimes_validate_delivery"])
+
+    def test_project_state_and_mode_detection_tools(self):
+        state = call_tool(self.root, "aimes_project_state", {})
+        self.assertFalse(state["isError"])
+        state_payload = json.loads(state["content"][0]["text"])
+        self.assertEqual(state_payload["state"]["project_lifecycle"], "unknown")
+
+        detected = call_tool(self.root, "aimes_detect_engineering_mode",
+                             {"task_text": "Vue组件化开发"})
+        self.assertFalse(detected["isError"])
+        detected_payload = json.loads(detected["content"][0]["text"])
+        self.assertEqual(detected_payload["mode"], "frontend-development")
+        self.assertEqual(detected_payload["confidence"], "medium")
+
+    def test_set_project_state_tool_requires_source_and_blocks_low_confidence_ai(self):
+        missing_source = call_tool(self.root, "aimes_set_project_state",
+                                   {"mode": "frontend-optimization"})
+        self.assertTrue(missing_source["isError"])
+        low_confidence = call_tool(self.root, "aimes_set_project_state",
+                                   {"mode": "frontend-optimization", "source": "ai", "confidence": "low"})
+        self.assertTrue(low_confidence["isError"])
+        approved = call_tool(self.root, "aimes_set_project_state",
+                             {"mode": "frontend-optimization", "source": "ai", "confidence": "medium"})
+        self.assertFalse(approved["isError"])
+        payload = json.loads(approved["content"][0]["text"])
+        self.assertEqual(payload["state"]["mode_source"], "ai")
 
     def test_notification_has_no_response(self):
         self.assertIsNone(handle_request(self.root, {"jsonrpc": "2.0", "method": "notifications/initialized"}))
