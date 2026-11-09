@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class PromptAssetTests(unittest.TestCase):
     def test_all_skills_have_required_sections(self):
         files = sorted((ROOT / "skills").glob("*/SKILL.md"))
-        self.assertEqual(len(files), 13)
+        self.assertGreaterEqual(len(files), 15)
         required = ["## Purpose / 目标与边界", "## Trigger conditions / 触发条件", "## Required inputs / 必需输入", "## Preconditions / 前置条件", "## Workflow / 工作流程", "## Outputs / 输出契约", "## Safety and permissions / 安全与权限", "## Failure handling / 失败处理", "## Completion criteria / 完成判据", "## 通用执行协议（必须遵守）", "## 评测案例"]
         for path in files:
             body = path.read_text(encoding="utf-8")
@@ -71,8 +71,28 @@ class PromptAssetTests(unittest.TestCase):
         self.assertIn(".aimes/skills/prompt-optimization/SKILL.md", deployed)
         self.assertIn("prompt-optimization", deployed[".aimes/skills/registry.yaml"])
 
+
+    def test_engineering_skills_are_registered_and_deployed(self):
+        registry = yaml.safe_load((ROOT / "skills/registry.yaml").read_text(encoding="utf-8"))
+        names = {item["name"] for item in registry["skills"]}
+        self.assertTrue({"software-engineering-standards", "vue-frontend-engineering"} <= names)
+        core = (ROOT / "src/aimes_cli/templates/core/AIMES-CORE-V1.2.md").read_text(encoding="utf-8")
+        self.assertIn(".aimes/skills/software-engineering-standards/SKILL.md", core)
+        self.assertIn(".aimes/skills/vue-frontend-engineering/SKILL.md", core)
+        from aimes_cli.core import proposed_files
+        deployed = proposed_files(ROOT, ["codex-cli"], "project")
+        for name in ["software-engineering-standards", "vue-frontend-engineering"]:
+            self.assertIn(f".aimes/skills/{name}/SKILL.md", deployed)
+        suite = yaml.safe_load((ROOT / "examples/evaluation/software-engineering-quality-suite.yaml").read_text(encoding="utf-8"))
+        self.assertEqual(suite["suite_id"], "AIMES-SOFTWARE-ENGINEERING-QUALITY")
+        ids = [case["case_id"] for case in suite["cases"]]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertGreaterEqual(len(ids), 6)
+        for case in suite["cases"]:
+            self.assertTrue(case["scoring"]["hard_gates"], case["case_id"])
+
     def test_contract_docs_exist(self):
-        for rel in ["docs/PROMPT-SYSTEM-CONTRACT-V1.0.md", "skills/ui-quality-review/SKILL.md", "skills/frontend-design/SKILL.md", "skills/design-system-governance/SKILL.md", "skills/ui-implementation-validation/SKILL.md", "docs/UI-DESIGN-GOVERNANCE.md", "examples/evaluation/ui-quality-governance-suite.yaml", "docs/SKILL-CONTRACT-V2.md", "docs/SKILL-EXECUTION-RECORD-V1.md", "docs/WORKFLOW-STATE-MACHINE-V1.md", "docs/SKILL-ORCHESTRATION-V1.0.md", "docs/PROMPT-AUDIT-AND-OPTIMIZATION-REPORT.md", "docs/PROMPT-OUTPUT-EXAMPLES-V1.0.md", "docs/CONTEXT-BUDGET-AND-FILE-PLAN-V1.0.md", "docs/TOOL-FAILURE-DEGRADATION-PROTOCOL-V1.0.md", "docs/AUDIT-TRAIL-V1.0.md"]:
+        for rel in ["docs/PROMPT-SYSTEM-CONTRACT-V1.0.md", "skills/ui-quality-review/SKILL.md", "skills/frontend-design/SKILL.md", "skills/design-system-governance/SKILL.md", "skills/ui-implementation-validation/SKILL.md", "docs/UI-DESIGN-GOVERNANCE.md", "examples/evaluation/ui-quality-governance-suite.yaml", "docs/SKILL-CONTRACT-V2.md", "docs/SKILL-EXECUTION-RECORD-V1.md", "docs/WORKFLOW-STATE-MACHINE-V1.md", "docs/SKILL-ORCHESTRATION-V1.0.md", "docs/PROMPT-AUDIT-AND-OPTIMIZATION-REPORT.md", "docs/PROMPT-OUTPUT-EXAMPLES-V1.0.md", "docs/CONTEXT-BUDGET-AND-FILE-PLAN-V1.0.md", "docs/TOOL-FAILURE-DEGRADATION-PROTOCOL-V1.0.md", "docs/AUDIT-TRAIL-V1.0.md", "docs/SOFTWARE-ENGINEERING-STANDARDS.md", "skills/software-engineering-standards/SKILL.md", "skills/vue-frontend-engineering/SKILL.md", "examples/evaluation/software-engineering-quality-suite.yaml"]:
             self.assertTrue((ROOT / rel).is_file(), rel)
 
 if __name__ == "__main__":
