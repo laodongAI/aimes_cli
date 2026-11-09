@@ -124,7 +124,7 @@ def create_runtime_probe(
         "response_file": "response.txt",
         "evidence_file": "verification-evidence.yaml",
         "rule_sha256": None,
-        "note": "The expected token is stored in this manifest and the native rule file, never in PROMPT.txt.",
+        "note": "The expected token is stored only in the native rule file, never in PROMPT.txt or the manifest.",
     }
     target.mkdir(parents=True, exist_ok=False)
     try:
