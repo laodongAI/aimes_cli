@@ -136,9 +136,17 @@ def _directory_evidence(root: Path, relative: str, required_name: str | None = N
                     })
                 except OSError:
                     continue
-        return {"path": relative, "status": "present", "items": items, "count": len(items)}
+        return {"path": relative, "status": "present" if items else "not_present", "items": items, "count": len(items)}
     except OSError:
         return {"path": relative, "status": "unknown", "reason": "unreadable", "items": []}
+
+
+def _feature_evidence(evidence: dict[str, Any], configured: bool) -> dict[str, Any]:
+    """Do not treat an unrelated config file as evidence that a feature is configured."""
+    item = dict(evidence)
+    if item.get("status") in {"present", "valid"} and not configured:
+        item["status"] = "not_present"
+    return item
 
 
 def _integration(name: str, evidence: list[dict[str, Any]], configured: bool, note: str) -> dict[str, Any]:
@@ -165,17 +173,18 @@ def _inspect_codex(root: Path) -> list[dict[str, Any]]:
     config = _file_evidence(root, ".codex/config.toml", "toml")
     hooks_file = _file_evidence(root, ".codex/hooks.json", "json")
     config_data = config.get("_parsed", {})
-    hooks_configured = isinstance(config_data, dict) and bool(config_data.get("hooks"))
+    hooks_in_config = isinstance(config_data, dict) and bool(config_data.get("hooks"))
     hooks_json = hooks_file.get("_parsed", {})
-    hooks_configured = hooks_configured or (isinstance(hooks_json, dict) and bool(hooks_json))
+    hooks_in_file = isinstance(hooks_json, dict) and bool(hooks_json)
+    hooks_configured = hooks_in_config or hooks_in_file
     mcp_configured = isinstance(config_data, dict) and bool(config_data.get("mcp_servers"))
     agents_configured = isinstance(config_data, dict) and bool(config_data.get("agents"))
     return [
         _integration("instructions", [instructions], False, "AGENTS.md 的存在不证明当前 Codex 会话已加载。"),
         _integration("skills", [skills], skills.get("count", 0) > 0, "检查项目级 .agents/skills/*/SKILL.md；不验证技能触发或执行。"),
-        _integration("mcp", [config], mcp_configured, "仅识别项目级 config.toml 中的 mcp_servers；不读取或展示服务器参数。"),
-        _integration("hooks", [config, hooks_file], hooks_configured, "只识别 hooks 配置结构；绝不执行 Hook。"),
-        _integration("agents", [config], agents_configured, "仅识别 config.toml 的 agents 表；不启动子 Agent。"),
+        _integration("mcp", [_feature_evidence(config, mcp_configured)], mcp_configured, "仅识别项目级 config.toml 中的 mcp_servers；不读取或展示服务器参数。"),
+        _integration("hooks", [_feature_evidence(config, hooks_in_config), _feature_evidence(hooks_file, hooks_in_file)], hooks_configured, "只识别 hooks 配置结构；绝不执行 Hook。"),
+        _integration("agents", [_feature_evidence(config, agents_configured)], agents_configured, "仅识别 config.toml 的 agents 表；不启动子 Agent。"),
     ]
 
 
@@ -192,8 +201,8 @@ def _inspect_claude(root: Path) -> list[dict[str, Any]]:
     return [
         _integration("instructions", [instructions], False, "CLAUDE.md 的存在不证明当前 Claude Code 会话已加载。"),
         _integration("skills", [skills], skills.get("count", 0) > 0, "检查项目级 .claude/skills/*/SKILL.md；不验证技能触发或执行。"),
-        _integration("mcp", [mcp], mcp_configured, "检查 .mcp.json 与 settings.json 的 MCP 配置结构；不读取或展示服务器参数。"),
-        _integration("hooks", [settings], hooks_configured, "只识别 settings.json 的 hooks 配置；绝不执行 Hook。"),
+        _integration("mcp", [_feature_evidence(mcp, mcp_configured)], mcp_configured, "检查 .mcp.json 与 settings.json 的 MCP 配置结构；不读取或展示服务器参数。"),
+        _integration("hooks", [_feature_evidence(settings, hooks_configured)], hooks_configured, "只识别 settings.json 的 hooks 配置；绝不执行 Hook。"),
         _integration("agents", [agents_dir], agents_dir.get("count", 0) > 0, "检查项目级 .claude/agents/*/AGENT.md；不启动子 Agent。"),
     ]
 
