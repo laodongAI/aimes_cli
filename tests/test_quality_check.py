@@ -81,6 +81,16 @@ class QualityCheckTests(unittest.TestCase):
         self.assertEqual(len(findings), 2)
         self.assertEqual([item["line"] for item in findings], [3, 4])
         self.assertTrue(all(item["severity"] == "WARNING" for item in findings))
+        # Default fail_on=ERROR keeps advisory architecture warnings non-blocking.
+        self.assertTrue(result["ok"])
+
+    def test_warning_can_block_when_project_explicitly_sets_fail_on_warning(self):
+        source = self.root / "Page.vue"
+        source.write_text("<script setup>\\nfetch('/api/users')\\n</script>\\n", encoding="utf-8")
+        self._write_config(fail_on="WARNING")
+        result = inspect_project_quality(self.root)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], "FAIL")
 
     def test_direct_http_call_rule_can_be_disabled_per_project(self):
         source = self.root / "Page.vue"
