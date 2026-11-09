@@ -8,6 +8,7 @@ from aimes_cli.project_work import (
     assess_project_lifecycle, bind_session_task, list_tasks, show_session,
     show_task, start_task, update_task,
 )
+from aimes_cli.mode_route import explain_mode
 
 
 class ProjectWorkTests(unittest.TestCase):
@@ -47,6 +48,39 @@ class ProjectWorkTests(unittest.TestCase):
             update_task(self.root, "safe-task")
         with self.assertRaises(ValueError):
             show_task(self.root, "../outside")
+
+    def test_task_transitions_reject_backwards_and_terminal_mutations(self):
+        start_task(self.root, "状态流转任务", task_id="transition-task")
+        update_task(self.root, "transition-task", phase="implementation")
+        with self.assertRaisesRegex(ValueError, "cannot move backwards"):
+            update_task(self.root, "transition-task", phase="design")
+        update_task(self.root, "transition-task", status="completed")
+        with self.assertRaisesRegex(ValueError, "immutable"):
+            update_task(self.root, "transition-task", status="active")
+
+    def test_mode_explanation_checks_skills_workflow_and_quality_mapping(self):
+        result = explain_mode(self.root, "frontend-optimization")
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["mode"]["id"], "frontend-optimization")
+        self.assertEqual(result["route"]["workflow"]["status"], "NOT_CONFIGURED")
+        self.assertEqual(result["route"]["quality"]["profile_status"], "MAPPING_ONLY")
+        self.assertTrue(result["route"]["skills"])
+        self.assertFalse(result["execution"]["automatic"])
+
+    def test_mode_explanation_validates_configured_workflow_and_rejects_path_escape(self):
+        workflow_dir = self.root / ".aimes/workflows"
+        workflow_dir.mkdir(parents=True, exist_ok=True)
+        (workflow_dir / "frontend-optimization.yaml").write_text(
+            "schema_version: 1\\nworkflow_id: frontend-optimization\\nversion: 1.0.0\\n"
+            "name: Frontend\\npurpose: Review UI changes\\nentry_state: analysis\\n"
+            "states:\\n  - state_id: analysis\\n    name: Analysis\\n"
+            "    entry_conditions: [task selected]\\n    required_artifacts: []\\n"
+            "    completion_criteria: [analysis complete]\\n    failure_recovery: [revise]\\n"
+            "    side_effects: [none]\\n    approval_required: false\\n"
+            "    retry_mode: never\\n    max_attempts: 1\\n"
+            "transitions: []\\n", encoding="utf-8")
+        result = explain_mode(self.root, "frontend-optimization")
+        self.assertEqual(result["route"]["workflow"]["status"], "AVAILABLE")
 
     def test_task_start_rejects_unknown_mode_and_invalid_session(self):
         with self.assertRaises(ValueError):
