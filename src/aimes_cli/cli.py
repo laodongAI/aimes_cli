@@ -2,7 +2,7 @@ from __future__ import annotations
 import argparse, json, sys
 from pathlib import Path
 from . import __version__
-from .adapters import ADAPTERS, normalize_tools
+from .adapters import ADAPTERS, adapter_payload, normalize_tools
 from .core import find_root, init_project, inspect_project, validate_project, doctor, status, render_text
 from .validators import validate_requirement, validate_knowledge, validate_reuse, validate_skill_registry
 from .v03 import validate_trace, validate_evidence, build_context_pack
@@ -217,6 +217,7 @@ def parser() -> argparse.ArgumentParser:
     evaluation_mock.add_argument('--case-id', action='append', dest='case_ids', help='Limit to a case ID; may be repeated')
     adapter = sub.add_parser('adapter', help='Cross-tool runtime verification evidence')
     adapter_sub = adapter.add_subparsers(dest='adapter_command', required=True)
+    adapter_sub.add_parser('list', help='List registered Host/Harness adapters and declared capability states')
     adapter_validate = adapter_sub.add_parser('validate', help='Validate recorded tool rule-loading evidence; does not probe IDE internals')
     common(adapter_validate); adapter_validate.add_argument('path', type=Path)
     adapter_report_cmd = adapter_sub.add_parser('report', help='Summarize tool verification coverage')
@@ -858,16 +859,20 @@ def main(argv=None):
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'adapter':
-            if args.adapter_command == 'probe':
+            if args.adapter_command == 'list':
+                result = {'ok': True, 'registry_version': '2.0.0', 'schema_version': 2, 'adapters': adapter_payload(), 'note': 'Capability states are declarations, not runtime verification. unknown must not be interpreted as supported.'}
+            elif args.adapter_command == 'probe':
                 if args.adapter_probe_command == 'create':
                     output_dir = (root / args.output_dir).resolve() if not args.output_dir.is_absolute() else args.output_dir.resolve()
                     result = create_runtime_probe(root, output_dir, tool=args.tool, product_version=args.product_version, governance_version=args.governance_version, observer=args.observer)
                 else:
                     probe_dir = (root / args.probe_dir).resolve() if not args.probe_dir.is_absolute() else args.probe_dir.resolve()
                     result = validate_runtime_probe(root, probe_dir, observer=args.observer)
-            else:
+            elif args.adapter_command in {'validate', 'report'}:
                 target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
                 result = validate_adapter_evidence(target, root) if args.adapter_command == 'validate' else adapter_report(target, root)
+            else:
+                raise ValueError(f'Unsupported adapter command: {args.adapter_command}')
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'mcp' and args.mcp_command == 'serve':
