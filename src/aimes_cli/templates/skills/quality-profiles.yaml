@@ -4,7 +4,7 @@ default_profile: baseline
 description: "AIMES 模式质量配置注册表。项目 quality-gates.yaml 的显式设置优先于 profile 默认值；enforce/fail_on 始终由项目全局门禁控制。"
 profiles:
   baseline:
-    description: "baseline 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    description: "baseline 工程质量基线；提供对应工程模式的静态检查默认值；未实现的领域不会被宣称为已覆盖。"
     vue: {}
   requirements:
     description: "requirements 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
