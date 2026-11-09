@@ -193,7 +193,7 @@ class QualityCheckTests(unittest.TestCase):
 
     def test_backend_profile_applies_backend_thresholds(self):
         source = self.root / "service.py"
-        source.write_text("def work():\n    return 1\n" * 40, encoding="utf-8")
+        source.write_text("# line\n" * 710, encoding="utf-8")
         result = inspect_project_quality(self.root, profile_id="backend")
         self.assertEqual(result["policy"]["profile"]["id"], "backend")
         self.assertTrue(any(item["code"] == "PYTHON_FILE_LINES" for item in result["findings"]))
