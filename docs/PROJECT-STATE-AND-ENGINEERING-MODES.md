@@ -151,12 +151,37 @@ MCP 宿主应为每个工具实例/工作会话提供稳定且不与其他工具
 
 初始化时生命周期默认 `unknown`，因为对一个已有仓库执行 AIMES init 并不代表它是新项目。只有显式确认后才设置为 `new` 或其他生命周期。
 
-## 9. 当前限制与后续迭代
+## 9. 工程模式路由解释与状态转换守卫
+
+使用 `aimes state explain` 或 `aimes state explain --mode frontend-optimization`，可以读取模式路由并检查本地资产：
+
+- Skills：检查是否在项目 Skill 注册表中登记、对应文件是否存在；AVAILABLE 仅表示文件存在，不代表 Skill 已被 AI 工具加载或执行。
+- Workflow：按模式 workflow ID 检查 `.aimes/workflows/`、`workflows/`、`examples/workflows/` 下同名 YAML/JSON 定义；若找到定义，会调用现有 workflow validator 校验结构。NOT_CONFIGURED 不会阻止人工按阶段执行。
+- Quality：检查全局质量门禁配置文件是否存在，并显示模式 quality_profile 标签。当前标签尚未绑定独立阈值策略，因此状态为 MAPPING_ONLY；不能声称已经执行模式专属质量门禁。
+- 推荐阶段：按模式类别给出建议序列。它是指导性路线，不会自动更新任务阶段、启动工作流或运行测试。
+
+示例：
+
+```bash
+aimes state explain
+aimes state explain --mode frontend-optimization --format json
+```
+
+任务阶段转换守卫：
+
+- analysis → clarification → design → review → implementation → testing → acceptance → delivery，只允许向前推进或保持当前阶段。
+- active 任务可保持 active，或转为 blocked/completed/cancelled；blocked 任务可恢复 active，或进入 completed/cancelled。
+- completed 与 cancelled 是终态，不能原位修改阶段或状态。需要返工时创建新的关联任务，保留原任务的交付历史。
+- 当前不提供任务重开、阶段回退或跨任务依赖自动化；复杂返工应新建任务并在标题/交接记录中关联原任务。
+
+MCP 宿主可调用 `aimes_explain_engineering_mode` 获取相同路由信息。该工具只读，不执行工作流、不运行质量检查、不写任务状态。
+
+## 10. 当前限制与后续迭代
 
 - 项目生命周期仍是项目级共享状态；任务记录与会话指针已分离，但多个进程并发更新同一任务时尚无文件锁/乐观版本冲突检测。
 - 当前关键词识别是确定性辅助，不调用模型、不读取会话、不上传数据。
-- 当前模式映射声明 Skills、workflow ID 和质量配置 ID；尚未将所有 workflow/quality profile 变成自动执行的模式专属策略。
-- 状态变更记录更新时间，但当前还没有完整的状态事件审计、历史回滚和任务完成自动迁移。
+- 当前模式映射声明 Skills、workflow ID 和质量配置 ID；`state explain` 可检查 Skill 文件和工作流定义，但尚未将所有 workflow/quality profile 变成自动执行的模式专属策略。
+- 状态变更记录更新时间，但当前还没有完整的状态事件审计、历史回滚、任务重开/阶段回退和任务完成自动迁移。
 - 后续阶段应增加模式工作流执行、质量配置绑定、状态转换守卫、状态历史审计/回滚、增强运行时反馈卡片和跨工具实测评估。
 
 静态部署与单元测试通过不能证明任一 AI 宿主已自动加载状态或遵循路由。运行时能力必须按具体工具、版本和执行模式单独验证。
