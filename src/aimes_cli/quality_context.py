@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
+import re
 from typing import Any
 
 
@@ -28,6 +29,17 @@ ROOT_FILES = {
     "pytest.ini", "requirements.txt",
 }
 SCAN_ROOTS = ("src", "app", "backend", "frontend", "web", "tests", "docs/design", "docs/architecture", ".aimes/skills")
+SECRET_CONTENT_PATTERNS = (
+    re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
+    re.compile(r"(?i)\b(?:api[_-]?key|access[_-]?token|client[_-]?secret|password)\s*[:=]\s*['\"][^'\"]{8,}['\"]"),
+    re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}\b"),
+    re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+    re.compile(r"\bsk-[A-Za-z0-9_-]{24,}\b"),
+)
+
+
+def _looks_sensitive_content(content: str) -> bool:
+    return any(pattern.search(content) for pattern in SECRET_CONTENT_PATTERNS)
 
 
 def _is_sensitive(relative: str) -> bool:
@@ -97,6 +109,9 @@ def build_review_context(root: Path) -> dict[str, Any]:
         try:
             content = raw.decode("utf-8-sig")
         except UnicodeDecodeError:
+            skipped["sensitive_or_binary"] += 1
+            continue
+        if _looks_sensitive_content(content):
             skipped["sensitive_or_binary"] += 1
             continue
         selected.append({
