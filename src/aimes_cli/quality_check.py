@@ -65,7 +65,7 @@ def _safe_config(root: Path, profile_id: str | None = None, mode_id: str | None 
     vue = raw.get("vue", {})
     if not isinstance(vue, dict):
         return config, [{"severity": "ERROR", "code": "QUALITY_VUE_CONFIG", "message": "vue must be a YAML mapping", "path": ".aimes/quality-gates.yaml"}], profile
-    config["vue"] = {**DEFAULT_CONFIG["vue"], **vue}
+    config["vue"] = _merge(profile_config["vue"], vue)
     if type(config["vue"].get("disallow_direct_http_calls")) is not bool:
         return config, [{"severity": "ERROR", "code": "QUALITY_VUE_CONFIG", "message": "vue.disallow_direct_http_calls must be a boolean", "path": ".aimes/quality-gates.yaml"}], profile
     for key in ("max_sfc_lines", "max_script_lines", "max_template_lines"):
