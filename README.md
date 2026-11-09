@@ -90,6 +90,8 @@ aimes publish --profile my-project --apply --confirm PUBLISH
 # 只读探测本机已安装的工具启动器及其版本输出（不启动 Agent 会话）
 aimes adapter detect
 aimes adapter detect --tool codex-cli --tool claude-code --format json
+aimes adapter inspect --root .
+aimes adapter inspect --root . --tool codex-cli --format json
 
 # 查看当前注册的工具、Host/Harness 关系和能力状态
 aimes adapter list
@@ -97,6 +99,10 @@ aimes adapter list --format json
 ```
 
 运行时探测命令 `aimes adapter detect` 只检查 PATH 中是否存在注册的启动命令，仅对已登记为 CLI 的启动器尝试读取 `--version` 输出；IDE 启动器只做 PATH 发现，绝不尝试启动或传入参数，避免意外打开 GUI。不会启动交互式 Agent 会话。Windows 的 `.cmd/.bat` 启动器只报告可用性，不通过 Shell 执行版本命令。ChatGPT Work 等没有本地启动命令的适配器会标记为 `not_detectable`，而不是误报为未安装。该命令不验证 Skills、MCP、Hooks 或规则实际加载情况；这些仍需专门的运行时证据。
+
+
+
+`aimes adapter inspect --root .` 对 Codex CLI 与 Claude Code CLI 的项目级入口做只读检查，识别指令文件、Skills、MCP、Hooks 和 Agent 配置。结果区分 `configured / present / not_present / invalid / unknown`，仅输出文件路径、大小和 SHA-256，不输出配置值或凭据；不执行命令、Hooks 或 Agent，也不读取用户级配置。检测到配置不等于工具已加载，真实加载仍须通过独立 Runtime Probe 验证。Codex 项目 Skills 检查 `.agents/skills/*/SKILL.md`，Claude Code 检查 `.claude/skills/*/SKILL.md` 与 `.claude/agents/*.md`。
 
 能力状态采用 `native / template / manual / unknown / unsupported`。其中 `template` 只表示 AIMES 有对应配置模板，绝不代表目标工具已经加载或实际支持；`unknown` 也不得按支持处理。注册表结构定义见 `schemas/adapter-registry.schema.json`。新增适配器优先修改声明式注册表，不应为工具差异修改治理核心；运行时能力仍需按产品版本和执行模式单独验证。 `aimes adapter report <evidence.yaml>` 除按工具和执行模式统计外，还按 Host/Harness 汇总验证记录；新生成的运行时探针会记录并校验 Host/Harness 身份，旧证据仍可读取。
 
