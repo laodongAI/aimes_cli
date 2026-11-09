@@ -4,9 +4,19 @@ AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具
 
 > 当前版本是本地优先的工程治理 CLI。包版本与运行时版本由同一版本源驱动；真实 AI 工具运行时是否加载规则、行为是否改善，必须以独立验证记录为准。CI 中的 Windows EXE 构建/冒烟测试不等于 GitHub Release 或下载资产已经发布。
 
+## 当前确定性检查范围
+
+| 领域 | 已实现检查 | 证据与限制 |
+|---|---|---|
+| Vue | SFC/script/template 规模、直接 HTTP 调用、明显 Props 修改、硬编码颜色、响应式逻辑密度 | 不能证明组件职责、复用决策、完整 Props/Emits 契约或视觉一致性 |
+| Python/FastAPI | AST 语法、文件/函数规模、分支复杂度、可变默认参数、宽泛异常、疑似硬编码凭据、路由直接数据访问、API 层直接持久化依赖 | 不证明完整分层架构、DTO 正确性、事务边界或安全性 |
+| 通用 | 源文件规模、跨文件完全相同的 Python 函数体 | 不等于语义重复检测 |
+
+依赖漏洞数据库扫描、真实测试覆盖率门禁、公共 API 兼容性 Diff 分析尚未接入；没有证据输入时不会伪造覆盖率或兼容性结论。静态规则默认 advisory，先审查误报，再按项目策略启用阻断。
+
 ## 自动化工程质量门禁与 AI 语义审查
 
-`aimes quality inspect` 执行确定性静态检查；`aimes quality review-context` 生成受控、只读的 AI 审查上下文包；`aimes quality review --report <json>` 验证 AI 工具生成的语义审查报告。静态规则可按项目策略参与门禁；AI 审查必须提供可核验的源码行号、摘录和置信度，且默认永远是 advisory，不可单独阻断提交或交付。 工程模式通过 `.aimes/project-state/engineering-modes.yaml` 选择 `.aimes/quality-profiles.yaml` 中的 profile；项目 `.aimes/quality-gates.yaml` 中的显式阈值覆盖 profile 默认值。全局 `enforce/fail_on` 仍由项目门禁配置控制，切换模式不会擅自开启阻断。当前已实现的确定性检查仍以 Vue SFC 结构/规模和组件内直接 HTTP 请求提示为主，profile 不代表已有后端、安全或性能专项扫描器。
+`aimes quality inspect` 执行确定性静态检查；`aimes quality review-context` 生成受控、只读的 AI 审查上下文包；`aimes quality review --report <json>` 验证 AI 工具生成的语义审查报告。静态规则可按项目策略参与门禁；AI 审查必须提供可核验的源码行号、摘录和置信度，且默认永远是 advisory，不可单独阻断提交或交付。 工程模式通过 `.aimes/project-state/engineering-modes.yaml` 选择 `.aimes/quality-profiles.yaml` 中的 profile；项目 `.aimes/quality-gates.yaml` 中的显式阈值覆盖 profile 默认值。全局 `enforce/fail_on` 仍由项目门禁配置控制，切换模式不会擅自开启阻断。确定性检查现已覆盖 Vue SFC 规模、组件内直接 HTTP 请求、明显 Props 修改、硬编码颜色、响应式逻辑密度；Python AST 检查覆盖函数/文件规模、复杂度、可变默认参数、宽泛异常、疑似硬编码凭据、FastAPI 路由直接数据访问及 API 层直接依赖持久化模块；通用检查覆盖源文件规模和跨文件完全相同的 Python 函数体。以上均为静态启发式规则，语义组件职责、完整 Props/Emits 契约、事务正确性仍需 AI/测试审查。
 
 ```powershell
 aimes quality inspect --root . --format json
