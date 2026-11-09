@@ -64,6 +64,35 @@ class ProductSkillDeploymentTests(unittest.TestCase):
             profiles = yaml.safe_load(profile_path.read_text(encoding="utf-8"))
             self.assertEqual(profiles["profiles"]["frontend"]["vue"]["max_sfc_lines"]["warning"], 350)
 
+    def test_init_quality_profiles_satisfy_validate_contract(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            init_project(root, ["zcode"], dry_run=False)
+            result = validate_project(root)
+            self.assertFalse(any(item["code"] in {
+                "QUALITY_PROFILE_REGISTRY_INVALID", "QUALITY_PROFILE_UNKNOWN",
+                "ENGINEERING_MODE_REGISTRY_INVALID"
+            } for item in result["findings"]))
+
+    def test_validate_rejects_mode_mapping_to_unknown_quality_profile(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            init_project(root, ["zcode"], dry_run=False)
+            path = root / ".aimes/quality-profiles.yaml"
+            path.write_text(
+                "schema_version: 1\\nregistry_version: 1.0.0\\ndefault_profile: baseline\\n"
+                "profiles:\\n  baseline:\\n    description: Baseline\\n    vue: {}\\n",
+                encoding="utf-8",
+            )
+            result = validate_project(root)
+            self.assertFalse(result["ok"])
+            self.assertTrue(any(item["code"] == "QUALITY_PROFILE_UNKNOWN"
+                                for item in result["findings"]))
+
     def test_init_rerun_preserves_user_modified_skill_registry(self):
         import tempfile
 
