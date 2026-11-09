@@ -16,7 +16,7 @@ class ReleaseCheckTests(unittest.TestCase):
         )
         (self.root / "pyproject.toml").write_text(
             '[project]\nname = "aimes-governance-cli"\nversion = "0.7.9"\n'
-            '[tool.setuptools.package-data]\naimes_cli = ["templates/**/*.md", "schemas/*.json"]\n',
+            '[tool.setuptools.package-data]\naimes_cli = ["templates/**/*.md", "schemas/*.json", "data/*.yaml"]\n',
             encoding="utf-8",
         )
         (self.root / "README.md").write_text("# AIMES local CLI（V0.7.9）\n", encoding="utf-8")
@@ -36,6 +36,16 @@ class ReleaseCheckTests(unittest.TestCase):
         result = validate_release(self.root)
         self.assertFalse(result["ok"])
         self.assertTrue(any(item["code"] == "RELEASE_COMPATIBILITY" and "README version" in item["message"] for item in result["findings"]))
+
+    def test_missing_adapter_registry_package_data_fails(self):
+        (self.root / "pyproject.toml").write_text(
+            '[project]\\nname = "aimes-governance-cli"\\nversion = "0.7.9"\\n'
+            '[tool.setuptools.package-data]\\naimes_cli = ["templates/**/*.md", "schemas/*.json"]\\n',
+            encoding="utf-8",
+        )
+        result = validate_release(self.root)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any(item["name"] == "package_data_adapter_registry_included" and item["status"] == "FAIL" for item in result["checks"]))
 
     def test_missing_package_data_flag_fails(self):
         (self.root / "build_windows_exe.ps1").write_text("pyinstaller --onefile\n", encoding="utf-8")
