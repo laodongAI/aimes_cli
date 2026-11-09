@@ -62,7 +62,7 @@ BUILTIN_REGISTRY: dict[str, Any] = {
         "regression": {
             "description": "regression 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。",
             "vue": {
-                "disallow_direct_http_calls": true
+                "disallow_direct_http_calls": True
             }
         },
         "performance": {
@@ -116,7 +116,7 @@ BUILTIN_REGISTRY: dict[str, Any] = {
                     "warning": 220,
                     "error": 350
                 },
-                "disallow_direct_http_calls": true
+                "disallow_direct_http_calls": True
             }
         }
     }
