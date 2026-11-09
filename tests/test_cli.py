@@ -110,7 +110,7 @@ class AimesCliTests(unittest.TestCase):
             call(self.root, ["trae-code"], "project", True),
             call(self.root, ["trae-code"], "project", False),
         ])
-        self.assertEqual(emit_mock.call_count, 2)
+        self.assertEqual(emit_mock.call_count, 3)  # startup state card + init preview + apply report
 
     def test_interactive_init_preview_cancel_does_not_apply(self):
         from aimes_cli.cli import interactive_wizard
