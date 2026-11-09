@@ -295,6 +295,15 @@ def emit(data, fmt='text', output: Path | None=None):
             if 'ok' in data: lines.append(f"Result: {'PASS' if data['ok'] else 'NEEDS ATTENTION'}")
             if 'dry_run' in data: lines.append(f"Mode: {'dry-run (no files written)' if data['dry_run'] else 'apply'}")
             if data.get('tools') and all(isinstance(item, str) for item in data['tools']): lines.append('Tools: ' + ', '.join(data['tools']))
+            if data.get('adapters') and isinstance(data['adapters'], list):
+                lines.append('Registered Host / Harness adapters:')
+                for item in data['adapters']:
+                    host = item.get('host', {})
+                    harness = item.get('harness', {})
+                    modes = ', '.join(item.get('execution_modes', []))
+                    caps = ', '.join(f"{key}={value}" for key, value in sorted(item.get('capabilities', {}).items()))
+                    lines.append(f"  - {item.get('id')}: {host.get('name', '?')} / {harness.get('name', '?')} [{modes}]")
+                    lines.append(f"    capabilities: {caps}")
             if data.get('written'):
                 lines.append('Files written:')
                 for item in data['written']: lines.append(f"  - {item.get('action', 'write')}: {item['path']}")
