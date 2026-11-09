@@ -53,6 +53,14 @@ class AIReviewReportTests(unittest.TestCase):
         result = validate_ai_review_report(self._report(confidence=1.5), self.root)
         self.assertFalse(result["ok"])
 
+    def test_rejects_non_string_severity_without_crashing(self):
+        result = validate_ai_review_report(self._report(severity=["WARNING"]), self.root)
+        self.assertFalse(result["ok"])
+
+    def test_rejects_boolean_line_numbers(self):
+        result = validate_ai_review_report(self._report(evidence={"path": "src/Page.vue", "line_start": True, "line_end": 3, "excerpt": "<template>"}), self.root)
+        self.assertFalse(result["ok"])
+
     def test_report_must_be_inside_project(self):
         outside = Path(self.tmp.name).parent / "outside-review.json"
         outside.write_text('{"schema_version":1,"findings":[]}', encoding="utf-8")
