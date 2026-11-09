@@ -3,6 +3,7 @@
 - 新增声明式 Adapter Registry V2：以 YAML 注册表管理 Host、Harness、执行模式、入口路径和能力状态；保留既有工具 ID、别名和检测命令兼容性。
 - 新增 `aimes adapter list`，支持文本/JSON 查看工具适配关系；项目初始化配置同步记录 Host/Harness 元数据与注册表版本。
 - 新增注册表 JSON Schema、加载期结构校验和回归测试；发布校验检查 wheel/EXE 所需的注册表资源是否纳入包。
+- 运行时规则探针在证据中记录 Host ID、Harness ID 和适配器注册表版本；证据校验检查维度与注册表是否一致，适配报告按工具、Host、Harness 和执行模式汇总，同时兼容旧证据。
 - 适配能力采用 `native/template/manual/unknown/unsupported` 状态；尚未完成的 Hooks、MCP、Skills、Agent、Session 能力明确保持 UNKNOWN，不宣称运行时支持。
 
 - 全部可部署 Skill 模板 frontmatter 增加原生 `name`/`description`，供 Claude Code 等宿主的原生 Skill 发现机制识别；选择 Claude 系工具初始化时同步部署 `.claude/skills/` AIMES 管理镜像。
