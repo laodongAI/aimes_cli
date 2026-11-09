@@ -83,6 +83,7 @@ class PromptAssetTests(unittest.TestCase):
         deployed = proposed_files(ROOT, ["codex-cli"], "project")
         for name in ["software-engineering-standards", "vue-frontend-engineering"]:
             self.assertIn(f".aimes/skills/{name}/SKILL.md", deployed)
+        self.assertIn(".aimes/skills/software-engineering-quality-suite.yaml", deployed)
         suite = yaml.safe_load((ROOT / "examples/evaluation/software-engineering-quality-suite.yaml").read_text(encoding="utf-8"))
         self.assertEqual(suite["suite_id"], "AIMES-SOFTWARE-ENGINEERING-QUALITY")
         ids = [case["case_id"] for case in suite["cases"]]
