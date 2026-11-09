@@ -32,9 +32,14 @@ def validate_release(root: Path) -> dict[str, Any]:
     readme = root / "README.md"
     changelog = root / "CHANGELOG.md"
     core_dir = root / "src" / "aimes_cli" / "templates" / "core"
+    project_state_template = root / "src" / "aimes_cli" / "templates" / "project-state" / "engineering-modes.yaml"
     build_script = root / "build_windows_exe.ps1"
 
     package_version = runtime_version = readme_version = governance_version = None
+    check("project_state_mode_registry_template_present", project_state_template.is_file(),
+          "Engineering mode registry template must be present in the source package.",
+          "src/aimes_cli/templates/project-state/engineering-modes.yaml")
+
     if pyproject.is_file():
         text = pyproject.read_text(encoding="utf-8-sig")
         project_match = re.search(r"(?ms)^\[project\]\s*(.*?)(?=^\[|\Z)", text)
