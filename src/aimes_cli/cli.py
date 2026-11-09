@@ -16,6 +16,7 @@ from .workflow import validate_workflow_definition
 from .workflow_run import start_workflow_run, transition_workflow_run, validate_workflow_run
 from .runtime_probe import create_runtime_probe, validate_runtime_probe
 from .runtime_detect import detect_adapters
+from .runtime_inspect import inspect_adapters
 from .mock_runner import run_mock
 from .audit import append_event, validate_audit
 from .publish import publish_project
@@ -223,6 +224,9 @@ def parser() -> argparse.ArgumentParser:
     adapter_detect = adapter_sub.add_parser('detect', help='Read-only detection of locally installed tool launchers and reported versions')
     common(adapter_detect)
     adapter_detect.add_argument('--tool', action='append', choices=list(ADAPTERS), help='Limit detection to one adapter; may be repeated')
+    adapter_inspect = adapter_sub.add_parser('inspect', help='Read-only inspection of project-level Codex/Claude integration files')
+    common(adapter_inspect)
+    adapter_inspect.add_argument('--tool', action='append', choices=['codex-cli', 'claude-code'], help='Limit inspection to one adapter; may be repeated')
     adapter_validate = adapter_sub.add_parser('validate', help='Validate recorded tool rule-loading evidence; does not probe IDE internals')
     common(adapter_validate); adapter_validate.add_argument('path', type=Path)
     adapter_report_cmd = adapter_sub.add_parser('report', help='Summarize tool verification coverage')
@@ -883,6 +887,8 @@ def main(argv=None):
                 result = {'ok': True, 'registry_version': ADAPTER_REGISTRY.get('registry_version'), 'schema_version': ADAPTER_REGISTRY.get('schema_version'), 'adapters': adapter_payload(), 'note': 'Capability states are declarations, not runtime verification. unknown must not be interpreted as supported.'}
             elif args.adapter_command == 'detect':
                 result = detect_adapters(args.tool)
+            elif args.adapter_command == 'inspect':
+                result = inspect_adapters(root, args.tool)
             elif args.adapter_command == 'probe':
                 if args.adapter_probe_command == 'create':
                     output_dir = (root / args.output_dir).resolve() if not args.output_dir.is_absolute() else args.output_dir.resolve()
