@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
+import tempfile
 from typing import Any
 
 import yaml
@@ -194,9 +195,19 @@ def set_project_state(
     path = _safe_project_path(root, STATE_REL)
     path.parent.mkdir(parents=True, exist_ok=True)
     serialized = yaml.safe_dump(state, allow_unicode=True, sort_keys=False)
-    temp = path.with_suffix(".yaml.tmp")
-    temp.write_text(serialized, encoding="utf-8")
-    temp.replace(path)
+    temp_name = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=path.parent,
+            prefix=".project-state-", suffix=".tmp", delete=False,
+        ) as handle:
+            temp_name = handle.name
+            handle.write(serialized)
+            handle.flush()
+        Path(temp_name).replace(path)
+    finally:
+        if temp_name:
+            Path(temp_name).unlink(missing_ok=True)
     return show_project_state(root)
 
 
