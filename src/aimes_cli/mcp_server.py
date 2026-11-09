@@ -150,7 +150,7 @@ def handle_request(root: Path, message: dict[str, Any]) -> dict[str, Any] | None
                 "protocolVersion": PROTOCOL_VERSION,
                 "capabilities": {"tools": {}},
                 "serverInfo": {"name": SERVER_NAME, "version": __version__},
-                "instructions": "AIMES governance routing for this project. At task start call aimes_project_state; infer the current engineering mode from the live user request (the CLI/MCP cannot inspect conversation content), use aimes_detect_engineering_mode only as a deterministic hint, ask the user when ambiguous, and persist only approved/high-confidence state with aimes_set_project_state. Then call aimes_skill_route before project-changing work, read routed SKILL.md with aimes_read_skill, and validate delivery reports with aimes_validate_delivery.",
+                "instructions": "AIMES governance routing for this project. At task start call aimes_project_state; infer the current engineering mode from the live user request (the CLI/MCP cannot inspect conversation content), use aimes_detect_engineering_mode only as a deterministic hint, ask the user when ambiguous, and persist only approved or sufficiently confident (medium/high) state with aimes_set_project_state; never persist low-confidence guesses. Then call aimes_skill_route before project-changing work, read routed SKILL.md with aimes_read_skill, and validate delivery reports with aimes_validate_delivery.",
             },
         }
     if method in ("notifications/initialized", "initialized"):
