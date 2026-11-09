@@ -86,7 +86,7 @@ class QualityCheckTests(unittest.TestCase):
 
     def test_warning_can_block_when_project_explicitly_sets_fail_on_warning(self):
         source = self.root / "Page.vue"
-        source.write_text("<script setup>\\nfetch('/api/users')\\n</script>\\n", encoding="utf-8")
+        source.write_text("<script setup>\nfetch('/api/users')\n</script>\n", encoding="utf-8")
         self._write_config(fail_on="WARNING")
         result = inspect_project_quality(self.root)
         self.assertFalse(result["ok"])
