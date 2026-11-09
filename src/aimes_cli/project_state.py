@@ -70,6 +70,7 @@ def load_mode_registry(root: Path) -> dict[str, dict[str, Any]]:
 def detect_mode(task_text: str, registry: dict[str, dict[str, Any]]) -> dict[str, Any]:
     """Deterministic keyword matching only; it never claims to understand a live conversation."""
     normalized = " ".join(task_text.lower().split())
+    compact_normalized = "".join(normalized.split())
     matches: list[dict[str, Any]] = []
     for mode_id, item in registry.items():
         matched = []
@@ -82,7 +83,7 @@ def detect_mode(task_text: str, registry: dict[str, dict[str, Any]]) -> dict[str
                 pattern = r"\b" + r"\W+".join(re.escape(part) for part in trigger.split("_") if part) + r"\b"
                 if re.search(pattern, normalized):
                     matched.append(raw)
-            elif trigger in normalized:
+            elif trigger in compact_normalized:
                 matched.append(raw)
         # A short trigger contained inside a longer matched trigger is not independent evidence.
         deduplicated: list[str] = []
