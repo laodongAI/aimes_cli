@@ -93,7 +93,7 @@ def detect_mode(task_text: str, registry: dict[str, dict[str, Any]]) -> dict[str
     top = matches[0]
     tied = len(matches) > 1 and matches[0]["score"] == matches[1]["score"]
     confidence = "low" if tied else ("high" if top["score"] >= 2 else "medium")
-    return {"mode": None if tied else top["mode"], "confidence": confidence,
+    return {"mode": None if ambiguous else top["mode"], "confidence": confidence,
             "matches": matches[:5],
             "note": "关键词匹配仅提供候选；显式用户选择优先，不能替代对话语义判断。"}
 
