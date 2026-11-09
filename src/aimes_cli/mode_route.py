@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from .project_state import load_mode_registry
-from .workflow import validate_workflow_definition
+from .workflow import validate_workflow_definition\nfrom .quality_profiles import resolve_quality_profile
 
 SKILL_REGISTRY = Path(".aimes/skills/registry.yaml")
 QUALITY_GATE_CANDIDATES = (Path(".aimes/quality-gates.yaml"), Path(".aimes/skills/quality-gates.yaml"))
@@ -98,6 +98,13 @@ def explain_mode(root: Path, mode: str | None = None) -> dict[str, Any]:
     if quality_profile is not None and (not isinstance(quality_profile, str) or not quality_profile.strip()):
         raise ValueError(f"Invalid quality_profile mapping for engineering mode: {mode}")
     quality_gate = next((path for path in QUALITY_GATE_CANDIDATES if _safe(root, path).is_file()), None)
+    try:
+        resolved_profile = resolve_quality_profile(root, quality_profile) if quality_profile else None
+        profile_status = "AVAILABLE" if resolved_profile else "NOT_MAPPED"
+        profile_detail = resolved_profile
+    except (OSError, ValueError) as exc:
+        profile_status = "INVALID"
+        profile_detail = {"error": str(exc)}
     phases = PHASE_PLANS.get(mode, ["analysis", "clarification", "design", "implementation", "testing", "acceptance", "delivery"])
     skills = _skill_inventory(root, skill_names)
     return {
@@ -108,10 +115,10 @@ def explain_mode(root: Path, mode: str | None = None) -> dict[str, Any]:
             "workflow": _workflow_inventory(root, workflow_id),
             "quality": {
                 "profile_id": quality_profile,
-                "profile_status": "MAPPING_ONLY" if quality_profile else "NOT_MAPPED",
+                "profile_status": profile_status,\n                "profile": profile_detail,
                 "global_gate_config": quality_gate.as_posix() if quality_gate else None,
                 "global_gate_status": "AVAILABLE" if quality_gate else "NOT_CONFIGURED",
-                "note": "quality_profile 当前是模式目录中的路由标签，不代表存在独立配置或已执行该策略。",
+                "note": "AVAILABLE 仅表示 profile 定义可解析；不代表质量检查已经执行。项目 quality-gates.yaml 中的显式规则覆盖 profile 默认值。",
             },
             "recommended_phases": phases,
         },
