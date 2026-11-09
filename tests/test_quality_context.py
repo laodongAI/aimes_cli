@@ -14,6 +14,7 @@ class ReviewContextTests(unittest.TestCase):
         (self.root / "tests").mkdir()
         (self.root / "src" / "secrets").mkdir()
         (self.root / "src" / "main.py").write_text("def hello():\n    return 'hello'\n", encoding="utf-8")
+        (self.root / "src" / "tokenizer.py").write_text("def tokenize(text): return text.split()", encoding="utf-8")
         (self.root / "src" / ".env").write_text("API_KEY=do-not-include", encoding="utf-8")
         (self.root / "src" / "secrets" / "config.py").write_text("password = 'nested-secret'", encoding="utf-8")
         (self.root / "src" / "hardcoded.py").write_text("API_KEY = 'very-long-secret-value'", encoding="utf-8")
