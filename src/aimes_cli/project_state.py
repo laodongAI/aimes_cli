@@ -185,6 +185,10 @@ def set_project_state(
 ) -> dict[str, Any]:
     root = root.resolve()
     state = read_project_state(root)
+    if mode is None and (confidence is not None or source != "user"):
+        raise ValueError("--source and --confidence can only be used together with --mode")
+    if source not in {"user", "ai", "import"}:
+        raise ValueError(f"Invalid mode source: {source}")
     registry = load_mode_registry(root) if mode is not None else {}
     if lifecycle is not None:
         if lifecycle not in LIFECYCLES:
