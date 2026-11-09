@@ -35,9 +35,9 @@ def _is_sensitive(relative: str) -> bool:
     if any(part in SKIP_DIRS for part in parts):
         return True
     name = parts[-1]
-    if name in {".env", ".env.local", ".env.production", "secrets.yaml", "secrets.yml"}:
+    if any(any(marker in part for marker in SKIP_NAME_PARTS) for part in parts):
         return True
-    if any(part in name for part in SKIP_NAME_PARTS):
+    if name in {".env", ".env.local", ".env.production", "secrets.yaml", "secrets.yml", "local.settings.json"}:
         return True
     if name.endswith((".pem", ".key", ".p12", ".pfx", ".crt", ".cer", ".der")):
         return True
@@ -75,6 +75,9 @@ def build_review_context(root: Path) -> dict[str, Any]:
         try:
             resolved = path.resolve()
             resolved.relative_to(root)
+            if resolved.stat().st_size > MAX_FILE_BYTES:
+                skipped["per_file_limit"] += 1
+                continue
             raw = resolved.read_bytes()
         except (OSError, ValueError):
             skipped["sensitive_or_binary"] += 1
