@@ -168,5 +168,16 @@ class ProjectStateTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             set_project_state(self.root)
 
+    def test_every_mode_skill_reference_exists_in_deployed_registry(self):
+        mode_registry = load_mode_registry(self.root)
+        skill_registry = yaml.safe_load((self.root / ".aimes/skills/registry.yaml").read_text(encoding="utf-8"))
+        skill_names = {item["name"] for item in skill_registry["skills"]}
+        missing = {
+            mode_id: sorted(set(item.get("skills", [])) - skill_names)
+            for mode_id, item in mode_registry.items()
+            if set(item.get("skills", [])) - skill_names
+        }
+        self.assertEqual(missing, {})
+
 if __name__ == "__main__":
     unittest.main()
