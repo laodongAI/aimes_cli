@@ -139,7 +139,7 @@ def _iter_vue_files(root: Path, patterns: list[str]):
                     yield relative, path
 
 
-def inspect_project_quality(root: Path, profile_id: str | None = None, mode_id: str | None = None) -> dict[str, Any]:
+def inspect_project_quality(root: Path, profile_id: str | None = None, mode_id: str | None = None, base_ref: str | None = None) -> dict[str, Any]:
     """Read-only, deterministic engineering checks. It never edits project files."""
     root = root.resolve()
     config, findings, profile = _safe_config(root, profile_id=profile_id, mode_id=mode_id)
@@ -190,7 +190,7 @@ def inspect_project_quality(root: Path, profile_id: str | None = None, mode_id: 
             severity = "ERROR" if value > limits["error"] else "WARNING" if value > limits["warning"] else None
             if severity:
                 findings.append({"severity": severity, "code": code, "path": relative, "line": 1, "metric": value, "threshold": limits[severity.lower()], "message": f"{label}: {value} lines (threshold {limits[severity.lower()]}). {recommendation}"})
-    source_findings, source_counts = inspect_project_sources(root, config, config.get("exclude", []))
+    source_findings, source_counts = inspect_project_sources(root, config, config.get("exclude", []), base_ref=base_ref)
     findings.extend(source_findings)
     fail_on = config.get("fail_on", "ERROR")
     blocking = any(item.get("severity") == "ERROR" or (fail_on == "WARNING" and item.get("severity") == "WARNING") for item in findings)
