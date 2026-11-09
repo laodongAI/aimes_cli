@@ -96,7 +96,7 @@ aimes adapter list
 aimes adapter list --format json
 ```
 
-运行时探测命令 `aimes adapter detect` 只检查 PATH 中是否存在注册的启动命令，并在安全条件下尝试读取 `--version` 输出；不会启动交互式 Agent 会话。Windows 的 `.cmd/.bat` 启动器只报告可用性，不通过 Shell 执行版本命令。ChatGPT Work 等没有本地启动命令的适配器会标记为 `not_detectable`，而不是误报为未安装。该命令不验证 Skills、MCP、Hooks 或规则实际加载情况；这些仍需专门的运行时证据。
+运行时探测命令 `aimes adapter detect` 只检查 PATH 中是否存在注册的启动命令，仅对已登记为 CLI 的启动器尝试读取 `--version` 输出；IDE 启动器只做 PATH 发现，绝不尝试启动或传入参数，避免意外打开 GUI。不会启动交互式 Agent 会话。Windows 的 `.cmd/.bat` 启动器只报告可用性，不通过 Shell 执行版本命令。ChatGPT Work 等没有本地启动命令的适配器会标记为 `not_detectable`，而不是误报为未安装。该命令不验证 Skills、MCP、Hooks 或规则实际加载情况；这些仍需专门的运行时证据。
 
 能力状态采用 `native / template / manual / unknown / unsupported`。其中 `template` 只表示 AIMES 有对应配置模板，绝不代表目标工具已经加载或实际支持；`unknown` 也不得按支持处理。注册表结构定义见 `schemas/adapter-registry.schema.json`。新增适配器优先修改声明式注册表，不应为工具差异修改治理核心；运行时能力仍需按产品版本和执行模式单独验证。 `aimes adapter report <evidence.yaml>` 除按工具和执行模式统计外，还按 Host/Harness 汇总验证记录；新生成的运行时探针会记录并校验 Host/Harness 身份，旧证据仍可读取。
 
