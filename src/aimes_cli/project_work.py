@@ -222,23 +222,29 @@ def assess_project_lifecycle(root: Path) -> dict[str, Any]:
     for relative, label in candidates:
         path = _safe(root, Path(relative))
         if path.exists():
-            evidence.append({"source": label, "kind": "path_exists"})
+            signal = None
+            weight = 0
             if relative in {"README.md", "pyproject.toml", "package.json", "Cargo.toml", "go.mod", "pom.xml"}:
-                signals["development"] += 1
-            if relative in {"src", "app", "backend", "frontend", "web", "server", "client"}:
-                signals["development"] += 2
-            if relative in {"docs/plan", "docs/requirements", "docs/product"}:
-                signals["planning"] += 2
-            if relative in {"docs/architecture", "docs/design"}:
-                signals["design"] += 2
-            if relative in {"tests", "test", "pytest.ini"}:
-                signals["testing"] += 2
-            if relative in {".github/workflows"}:
-                signals["testing"] += 1
-            if relative in {"CHANGELOG.md", "docs/release"}:
-                signals["release"] += 2
-            if relative in {"deploy", "k8s", "helm"}:
-                signals["operation"] += 2
+                signal, weight = "development", 1
+            elif relative in {"src", "app", "backend", "frontend", "web", "server", "client"}:
+                signal, weight = "development", 2
+            elif relative in {"docs/plan", "docs/requirements", "docs/product"}:
+                signal, weight = "planning", 2
+            elif relative in {"docs/architecture", "docs/design"}:
+                signal, weight = "design", 2
+            elif relative in {"tests", "test", "pytest.ini"}:
+                signal, weight = "testing", 2
+            elif relative == ".github/workflows":
+                signal, weight = "testing", 1
+            elif relative in {"CHANGELOG.md", "docs/release"}:
+                signal, weight = "release", 2
+            elif relative in {"deploy", "k8s", "helm"}:
+                signal, weight = "operation", 2
+            item = {"source": label, "kind": "path_exists"}
+            if signal:
+                signals[signal] += weight
+                item.update({"signal": signal, "weight": weight})
+            evidence.append(item)
     git_dir = root / ".git"
     if git_dir.exists():
         evidence.append({"source": ".git", "kind": "git_repository"})
@@ -247,7 +253,7 @@ def assess_project_lifecycle(root: Path) -> dict[str, Any]:
                                        capture_output=True, text=True, timeout=3, check=False)
             if completed.returncode == 0 and completed.stdout.strip():
                 evidence.append({"source": "git log -1", "kind": "commit_history",
-                                 "detail": completed.stdout.strip()})
+                                 "detail": completed.stdout.strip(), "signal": "development", "weight": 1})
                 signals["development"] += 1
         except (OSError, subprocess.TimeoutExpired):
             evidence.append({"source": "git log -1", "kind": "unavailable"})
@@ -257,7 +263,7 @@ def assess_project_lifecycle(root: Path) -> dict[str, Any]:
             tags = [line for line in completed.stdout.splitlines() if line.strip()]
             if completed.returncode == 0 and tags:
                 evidence.append({"source": "git tags", "kind": "release_tags",
-                                 "detail": ", ".join(tags[:5])})
+                                 "detail": ", ".join(tags[:5]), "signal": "release", "weight": 2})
                 signals["release"] += 2
         except (OSError, subprocess.TimeoutExpired):
             evidence.append({"source": "git tags", "kind": "unavailable"})
