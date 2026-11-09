@@ -35,6 +35,7 @@ from .quality_review import validate_ai_review_report
 from .quality_context import build_review_context
 from .quality_report import build_quality_report
 from .project_state import show_project_state, set_project_state, list_project_modes, detect_mode, load_mode_registry
+from .project_work import assess_project_lifecycle, start_task, update_task, show_task, list_tasks, show_session, bind_session_task
 
 def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(prog='aimes', description='AIMES local-first cross-tool governance CLI')
@@ -194,6 +195,35 @@ def parser() -> argparse.ArgumentParser:
     state_detect = state_sub.add_parser('detect', help='Suggest a mode from explicit task text using deterministic triggers; does not persist')
     common(state_detect)
     state_detect.add_argument('--task-text', required=True, help='Task description to classify; this is not an AI conversation reader')
+    state_assess = state_sub.add_parser('assess-lifecycle', help='Collect read-only project lifecycle evidence; never changes state')
+    common(state_assess)
+
+    task_parser = sub.add_parser('task', help='Manage independent task records within a project')
+    task_sub = task_parser.add_subparsers(dest='task_command', required=True)
+    task_start = task_sub.add_parser('start', help='Create a task and bind it to a session')
+    common(task_start)
+    task_start.add_argument('--title', required=True)
+    task_start.add_argument('--session-id', default='default')
+    task_start.add_argument('--mode')
+    task_start.add_argument('--id')
+    task_list = task_sub.add_parser('list', help='List task records')
+    common(task_list)
+    task_list.add_argument('--session-id')
+    task_show = task_sub.add_parser('show', help='Show one task record')
+    common(task_show); task_show.add_argument('--id', required=True)
+    task_update = task_sub.add_parser('update', help='Update task phase or status')
+    common(task_update); task_update.add_argument('--id', required=True)
+    task_update.add_argument('--phase', choices=['analysis','clarification','design','review','implementation','testing','acceptance','delivery'])
+    task_update.add_argument('--status', choices=['active','blocked','completed','cancelled'])
+
+    session_parser = sub.add_parser('session', help='Manage independent AI tool session pointers')
+    session_sub = session_parser.add_subparsers(dest='session_command', required=True)
+    session_show_parser = session_sub.add_parser('show', help='Show a session and its current task')
+    common(session_show_parser); session_show_parser.add_argument('--id', default='default')
+    session_bind = session_sub.add_parser('bind', help='Bind a session to an existing task')
+    common(session_bind); session_bind.add_argument('--id', default='default')
+    session_bind.add_argument('--task-id', required=True)
+
     skill = sub.add_parser('skill', help='Skill registry operations')
     skill_sub = skill.add_subparsers(dest='skill_command', required=True)
     skill_validate = skill_sub.add_parser('validate', help='Validate a Skill registry and its referenced files')
@@ -860,9 +890,29 @@ def main(argv=None):
             elif args.state_command == 'detect':
                 result = detect_mode(args.task_text, load_mode_registry(root))
                 result['ok'] = True
+            elif args.state_command == 'assess-lifecycle':
+                result = assess_project_lifecycle(root)
             else:
                 result = set_project_state(root, lifecycle=args.lifecycle, mode=args.mode,
                     phase=args.phase, task=args.task, source=args.source, confidence=args.confidence)
+            emit(result, args.format, args.output)
+            return 0 if result.get('ok', True) else 1
+        if args.command == 'task':
+            if args.task_command == 'start':
+                result = start_task(root, args.title, session_id=args.session_id, mode=args.mode, task_id=args.id)
+            elif args.task_command == 'list':
+                result = list_tasks(root, session_id=args.session_id)
+            elif args.task_command == 'show':
+                result = show_task(root, args.id)
+            else:
+                result = update_task(root, args.id, phase=args.phase, status=args.status)
+            emit(result, args.format, args.output)
+            return 0 if result.get('ok', True) else 1
+        if args.command == 'session':
+            if args.session_command == 'show':
+                result = show_session(root, args.id)
+            else:
+                result = bind_session_task(root, args.id, args.task_id)
             emit(result, args.format, args.output)
             return 0 if result.get('ok', True) else 1
         if args.command == 'skill':
