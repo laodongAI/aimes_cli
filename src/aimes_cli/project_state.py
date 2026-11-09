@@ -211,6 +211,8 @@ def set_project_state(
     if lifecycle is None and mode is None and phase is None and task is None:
         raise ValueError("Specify at least one of lifecycle, mode, phase or task")
     state = read_project_state(root)
+    mode_changed = mode is not None and mode != state.get("engineering_mode")
+    task_changed = task is not None and (task.strip() or None) != state.get("task")
     if mode is None and (confidence is not None or source != "user"):
         raise ValueError("--source and --confidence can only be used together with --mode")
     if source not in {"user", "ai", "import"}:
@@ -229,6 +231,8 @@ def set_project_state(
         if phase not in PHASES:
             raise ValueError(f"Invalid task phase '{phase}'. Choose from: {', '.join(sorted(PHASES))}")
         state["task_phase"] = phase
+    elif mode_changed or task_changed:
+        state["task_phase"] = "analysis"
     if task is not None:
         if len(task) > 500:
             raise ValueError("task summary must be 500 characters or fewer")
