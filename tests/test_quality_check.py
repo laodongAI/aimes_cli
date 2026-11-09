@@ -1,9 +1,12 @@
 from pathlib import Path
+import io
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 import yaml
 
 from aimes_cli.quality_check import inspect_project_quality
+from aimes_cli.cli import main
 
 
 class QualityCheckTests(unittest.TestCase):
@@ -172,6 +175,16 @@ class QualityCheckTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["status"], "CONFIG_ERROR")
         self.assertTrue(any(item["code"] == "QUALITY_PROFILE_CONFIG" for item in result["findings"]))
+
+    def test_cli_quality_inspect_accepts_profile_selection(self):
+        source = self.root / "Page.vue"
+        source.write_text("line\\n" * 375, encoding="utf-8")
+        output = io.StringIO()
+        with redirect_stdout(output):
+            code = main(["quality", "inspect", "--root", str(self.root),
+                         "--profile", "frontend", "--format", "json"])
+        self.assertEqual(code, 0)
+        self.assertIn('"id": "frontend"', output.getvalue())
 
 
 if __name__ == "__main__":
