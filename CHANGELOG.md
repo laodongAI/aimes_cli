@@ -44,6 +44,8 @@
 - 新增适配部署与文件过滤回归测试，更新适配矩阵、能力验证矩阵及版本元数据。
 ## Unreleased
 
+- 扩展 `aimes quality inspect`：新增 Vue 组件中直接 `fetch`/`axios` 请求的架构提示，定位到具体行并建议迁移到 API Service；规则可按项目配置，默认 WARNING、不自动阻断。
+
 - 新增 software-engineering-standards 与 vue-frontend-engineering 两个可路由 Skill，覆盖需求到设计、开发实现、复用决策、前后端职责分层和 Vue 3 组件化规范。
 - AIMES Core 增加需求、设计、开发、验证端到端门禁；代码开发默认检查复用、模块边界、复杂度、类型、错误、安全、测试和文档追溯。
 - Vue 专项规则明确 Page/View、业务组件、共享 UI 组件、Composable、API Service、Pinia Store 的职责；禁止巨型 SFC、直接修改 Props、重复 API 处理和万能组件。
