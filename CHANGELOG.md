@@ -234,3 +234,5 @@ No global deployment, automatic uninstall, rollback, three-way merge, automatic 
 - Kept existing argument-based CLI commands for scripts and CI.
 - Added Windows PyInstaller build script and deployment guidance for a standalone EXE that does not require activating a project virtual environment.
 - Windows EXE build/runtime verification is not claimed until the build script is run on Windows.
+
+- Added read-only `aimes adapter inspect` for Codex CLI and Claude Code project integrations (instructions, Skills, MCP, Hooks, and Agents); configuration values and credentials are not emitted, and no commands or hooks are executed.
