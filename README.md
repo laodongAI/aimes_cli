@@ -12,6 +12,7 @@ AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具
 aimes quality inspect --root . --format json
 aimes quality review-context --root . --format json --output .aimes/reviews/review-context.json
 aimes quality review --report .aimes/reviews/engineering-review.json --root . --format json
+aimes quality report --ai-report .aimes/reviews/engineering-review.json --root . --format json
 ```
 
 上下文包默认最多 80 个文件、单文件 8 KiB、总量 180 KiB，排除常见敏感文件和符号链接；不会调用模型或上传源码。分享前仍须人工检查。AI 审查覆盖组件复用、职责边界、重复逻辑、前后端分层、API/DTO 影响及需求—设计—代码—测试追踪。详见 [AI 工程审查指南](docs/AI-ENGINEERING-REVIEW.md)。
