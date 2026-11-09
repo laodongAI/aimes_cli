@@ -142,6 +142,21 @@ def parser() -> argparse.ArgumentParser:
     task_release.add_argument('--tool-id', required=True, choices=list(ADAPTERS))
     task_release.add_argument('--handoff-file', required=True, help='Project-relative handoff file that must already exist')
     task_release.add_argument('--confirm', required=True, help='Must be RELEASE (case-insensitive)')
+    task_start = task_sub.add_parser('start', help='Create an independent task and bind it to a session')
+    common(task_start)
+    task_start.add_argument('--title', required=True)
+    task_start.add_argument('--session-id', default='default')
+    task_start.add_argument('--mode')
+    task_start.add_argument('--id')
+    task_list = task_sub.add_parser('list', help='List independent task records')
+    common(task_list)
+    task_list.add_argument('--session-id')
+    task_show = task_sub.add_parser('show', help='Show one independent task record')
+    common(task_show); task_show.add_argument('--id', required=True)
+    task_update = task_sub.add_parser('update', help='Update an independent task phase or status')
+    common(task_update); task_update.add_argument('--id', required=True)
+    task_update.add_argument('--phase', choices=['analysis','clarification','design','review','implementation','testing','acceptance','delivery'])
+    task_update.add_argument('--status', choices=['active','blocked','completed','cancelled'])
     release = sub.add_parser('release', help='Release metadata and governance compatibility checks')
     release_sub = release.add_subparsers(dest='release_command', required=True)
     release_validate = release_sub.add_parser('validate', help='Validate package/runtime/README/core-template version compatibility')
@@ -197,24 +212,6 @@ def parser() -> argparse.ArgumentParser:
     state_detect.add_argument('--task-text', required=True, help='Task description to classify; this is not an AI conversation reader')
     state_assess = state_sub.add_parser('assess-lifecycle', help='Collect read-only project lifecycle evidence; never changes state')
     common(state_assess)
-
-    task_parser = sub.add_parser('task', help='Manage independent task records within a project')
-    task_sub = task_parser.add_subparsers(dest='task_command', required=True)
-    task_start = task_sub.add_parser('start', help='Create a task and bind it to a session')
-    common(task_start)
-    task_start.add_argument('--title', required=True)
-    task_start.add_argument('--session-id', default='default')
-    task_start.add_argument('--mode')
-    task_start.add_argument('--id')
-    task_list = task_sub.add_parser('list', help='List task records')
-    common(task_list)
-    task_list.add_argument('--session-id')
-    task_show = task_sub.add_parser('show', help='Show one task record')
-    common(task_show); task_show.add_argument('--id', required=True)
-    task_update = task_sub.add_parser('update', help='Update task phase or status')
-    common(task_update); task_update.add_argument('--id', required=True)
-    task_update.add_argument('--phase', choices=['analysis','clarification','design','review','implementation','testing','acceptance','delivery'])
-    task_update.add_argument('--status', choices=['active','blocked','completed','cancelled'])
 
     session_parser = sub.add_parser('session', help='Manage independent AI tool session pointers')
     session_sub = session_parser.add_subparsers(dest='session_command', required=True)
@@ -904,8 +901,20 @@ def main(argv=None):
                 result = list_tasks(root, session_id=args.session_id)
             elif args.task_command == 'show':
                 result = show_task(root, args.id)
-            else:
+            elif args.task_command == 'update':
                 result = update_task(root, args.id, phase=args.phase, status=args.status)
+            elif args.task_command == 'claim':
+                result = claim_task_state(root, task_id=args.task_id, tool_id=args.tool_id, branch=args.branch,
+                    base_commit=args.base_commit, allowed_paths=args.allowed_paths, lease_hours=args.lease_hours,
+                    confirm=args.confirm, takeover=args.takeover)
+            elif args.task_command == 'release':
+                result = release_task_state(root, task_id=args.task_id, tool_id=args.tool_id,
+                    handoff_file=args.handoff_file, confirm=args.confirm)
+            elif args.task_command == 'validate':
+                target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
+                result = validate_task_state(target, root, require_active=args.require_active, check_scope=not args.no_check_scope)
+            else:
+                raise ValueError(f"Unsupported task command: {args.task_command}")
             emit(result, args.format, args.output)
             return 0 if result.get('ok', True) else 1
         if args.command == 'session':
@@ -946,22 +955,6 @@ def main(argv=None):
                 raise ValueError('--max-scan-entries must be greater than zero')
             registry = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
             result = audit_temp_registry(root, registry, max_scan_entries=args.max_scan_entries)
-            emit(result, args.format, args.output)
-            return 0 if result['ok'] else 1
-        if args.command == 'task' and args.task_command == 'claim':
-            result = claim_task_state(root, task_id=args.task_id, tool_id=args.tool_id, branch=args.branch,
-                base_commit=args.base_commit, allowed_paths=args.allowed_paths, lease_hours=args.lease_hours,
-                confirm=args.confirm, takeover=args.takeover)
-            emit(result, args.format, args.output)
-            return 0 if result['ok'] else 1
-        if args.command == 'task' and args.task_command == 'release':
-            result = release_task_state(root, task_id=args.task_id, tool_id=args.tool_id,
-                handoff_file=args.handoff_file, confirm=args.confirm)
-            emit(result, args.format, args.output)
-            return 0 if result['ok'] else 1
-        if args.command == 'task' and args.task_command == 'validate':
-            target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
-            result = validate_task_state(target, root, require_active=args.require_active, check_scope=not args.no_check_scope)
             emit(result, args.format, args.output)
             return 0 if result['ok'] else 1
         if args.command == 'docs' and args.docs_command == 'check':
