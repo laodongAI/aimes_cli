@@ -1,4 +1,4 @@
-import json, tempfile, unittest
+import hashlib, json, tempfile, unittest
 from pathlib import Path
 from aimes_cli.evaluation import validate_suite, validate_run, validate_run_against_suite, build_run_report, compare_runs
 from aimes_cli.cli import main
@@ -94,5 +94,62 @@ class EvaluationTests(unittest.TestCase):
         with contextlib.redirect_stdout(output):
             code = main(["evaluation", "validate-run", str(run_path), "--suite", str(suite_path), "--root", str(self.root), "--format", "json"])
         self.assertEqual(code, 0, output.getvalue())
+
+
+    def test_v2_pass_requires_hash_verified_artifact(self):
+        artifact = self.put("artifacts/response.txt", "observed output")
+        run = self.run_record()
+        run["schema_version"] = 2
+        run["case_results"][0]["evidence_artifacts"] = [{
+            "kind": "raw_response",
+            "path": "artifacts/response.txt",
+            "sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
+        }]
+        result = validate_run(self.put("run-v2.json", run))
+        self.assertTrue(result["ok"], result["findings"])
+        self.assertEqual(result["verified_artifact_count"], 1)
+
+    def test_v2_pass_without_artifact_is_rejected(self):
+        run = self.run_record()
+        run["schema_version"] = 2
+        result = validate_run(self.put("run-v2.json", run))
+        self.assertIn("PASS_WITHOUT_VERIFIED_ARTIFACT", {x["code"] for x in result["findings"]})
+
+    def test_v2_pass_rejects_artifact_hash_mismatch(self):
+        self.put("artifacts/response.txt", "actual output")
+        run = self.run_record()
+        run["schema_version"] = 2
+        run["case_results"][0]["evidence_artifacts"] = [{
+            "kind": "raw_response", "path": "artifacts/response.txt", "sha256": "0" * 64,
+        }]
+        result = validate_run(self.put("run-v2.json", run))
+        codes = {x["code"] for x in result["findings"]}
+        self.assertIn("EVIDENCE_ARTIFACT_HASH_MISMATCH", codes)
+        self.assertIn("PASS_WITHOUT_VERIFIED_ARTIFACT", codes)
+
+    def test_v2_pass_rejects_path_traversal(self):
+        run = self.run_record()
+        run["schema_version"] = 2
+        run["case_results"][0]["evidence_artifacts"] = [{
+            "kind": "raw_response", "path": "../outside.txt", "sha256": "0" * 64,
+        }]
+        result = validate_run(self.put("run-v2.json", run))
+        self.assertIn("EVIDENCE_ARTIFACT_PATH", {x["code"] for x in result["findings"]})
+
+    def test_v2_pass_rejects_symlink_artifact(self):
+        artifact = self.put("artifacts/real.txt", "observed output")
+        link = self.root / "artifacts" / "linked.txt"
+        try:
+            link.symlink_to(artifact)
+        except (OSError, NotImplementedError):
+            self.skipTest("Symlinks are unavailable in this environment")
+        run = self.run_record()
+        run["schema_version"] = 2
+        run["case_results"][0]["evidence_artifacts"] = [{
+            "kind": "raw_response", "path": "artifacts/linked.txt",
+            "sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
+        }]
+        result = validate_run(self.put("run-v2.json", run))
+        self.assertIn("EVIDENCE_ARTIFACT_SYMLINK", {x["code"] for x in result["findings"]})
 
 if __name__=='__main__': unittest.main()
