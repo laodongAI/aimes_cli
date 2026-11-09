@@ -25,7 +25,7 @@ class ProjectStateTests(unittest.TestCase):
 
     def test_init_deploys_mode_registry_and_initial_state(self):
         self.assertTrue((self.root / ".aimes/project-state/engineering-modes.yaml").is_file())
-        self.assertEqual(read_project_state(self.root)["project_lifecycle"], "new")
+        self.assertEqual(read_project_state(self.root)["project_lifecycle"], "unknown")
 
     def test_lifecycle_mode_and_phase_are_independent(self):
         result = set_project_state(self.root, lifecycle="development",
