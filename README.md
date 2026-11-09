@@ -6,10 +6,15 @@ AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具
 
 ## 自动化工程质量门禁与 AI 语义审查
 
-`aimes quality inspect` 执行确定性静态检查；`aimes quality review-context` 生成受控、只读的 AI 审查上下文包；`aimes quality review --report <json>` 验证 AI 工具生成的语义审查报告。静态规则可按项目策略参与门禁；AI 审查必须提供可核验的源码行号、摘录和置信度，且默认永远是 advisory，不可单独阻断提交或交付。
+`aimes quality inspect` 执行确定性静态检查；`aimes quality review-context` 生成受控、只读的 AI 审查上下文包；`aimes quality review --report <json>` 验证 AI 工具生成的语义审查报告。静态规则可按项目策略参与门禁；AI 审查必须提供可核验的源码行号、摘录和置信度，且默认永远是 advisory，不可单独阻断提交或交付。 工程模式通过 `.aimes/project-state/engineering-modes.yaml` 选择 `.aimes/quality-profiles.yaml` 中的 profile；项目 `.aimes/quality-gates.yaml` 中的显式阈值覆盖 profile 默认值。全局 `enforce/fail_on` 仍由项目门禁配置控制，切换模式不会擅自开启阻断。当前已实现的确定性检查仍以 Vue SFC 结构/规模和组件内直接 HTTP 请求提示为主，profile 不代表已有后端、安全或性能专项扫描器。
 
 ```powershell
 aimes quality inspect --root . --format json
+# 按当前已保存工程模式自动选择 profile
+aimes quality inspect --root . --format json
+# 显式指定工程模式或质量 profile
+aimes quality inspect --root . --mode frontend-development --format json
+aimes quality inspect --root . --profile frontend --format json
 aimes quality review-context --root . --format json --output .aimes/reviews/review-context.json
 aimes quality review --report .aimes/reviews/engineering-review.json --root . --format json
 aimes quality report --ai-report .aimes/reviews/engineering-review.json --root . --format json
