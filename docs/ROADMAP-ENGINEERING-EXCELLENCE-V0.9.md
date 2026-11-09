@@ -19,6 +19,18 @@ AIMES 的目标不是单纯安装规则和 Skills，而是帮助 Codex、Claude 
 | W7 插件化适配器 | P1 | 适配器声明执行模式、能力、入口、权限、版本和验证配置 | 新增工具不修改治理核心；适配器契约测试通过 |
 | W8 安全与产品体验 | P1/P2 | 加强路径边界、权限分级、事务日志和简单/高级操作模式 | 安全负向测试、异常恢复测试和可用性试点 |
 
+## 2.1 2026-11-09 实施进展：Adapter Registry V2
+
+- [x] 将适配器元数据从 Python 静态字典迁移到随包分发的 YAML 声明式注册表。
+- [x] 将 Host、Harness、执行模式、规则入口和能力状态独立建模；同一 Harness 在 IDE 与 CLI 中保留不同执行上下文。
+- [x] 增加 `aimes adapter list`，支持文本和 JSON 输出。
+- [x] 初始化项目配置时保存 Host/Harness/执行模式/能力声明和注册表版本，同时保留既有工具 ID、别名和入口路径。
+- [x] 扩展证据执行模式，允许 ChatGPT Work 的 workspace 记录。
+- [x] 增加注册表 Schema 与回归测试。
+- [ ] 在 GitHub Actions 中完成全量单元测试、发布校验和 EXE 资源打包验证；在取得 CI 证据前不标记 AUTOMATED_TESTED。
+
+本轮只完成适配元数据与配置层的第一步，没有声称工具 Hooks、Skills、MCP、Agent、终端或 Session 能力已被运行时验证；未证实的能力均为 `unknown`。
+
 ## 3. 实施顺序
 
 ### 阶段 A：可信基线（当前阶段）
