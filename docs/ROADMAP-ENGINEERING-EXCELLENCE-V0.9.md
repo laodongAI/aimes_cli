@@ -60,6 +60,18 @@ AIMES 的目标不是单纯安装规则和 Skills，而是帮助 Codex、Claude 
 - [x] L3 探针 PASS 增加全新会话操作者确认门禁：token 正确但未确认新会话时记录 BLOCKED，不再默认 PASS。
 - [x] 证据记录 `fresh_session_confirmed`，更新 CLI、回归测试、README 与探针指南。
 
+### 2.4 2026-11-09 实施进展：需求、设计与开发工程规范
+
+- [x] 新增 software-engineering-standards Skill，规范项目技术栈识别、现有实现检索、复用决策、模块职责、依赖方向、类型、异常、安全、测试和文档追溯。
+- [x] 新增 vue-frontend-engineering Skill，明确 Vue 3 Page/View、业务组件、共享组件、Composable、API Service、Pinia Store 和 TypeScript 契约。
+- [x] 将需求澄清、架构/接口设计、工程实现和测试验收纳入 AIMES Core 端到端路由。
+- [x] 初始化时部署两个 Skill、注册表和软件工程质量评测套件。
+- [x] 新增回归案例，覆盖复用、Vue 组件化、避免过度抽象、FastAPI 分层、公共契约兼容和验证真实性。
+- [ ] 在 CI 中运行新增测试、全量测试和 release validate；当前尚无本轮 CI 通过证据。
+- [ ] 在隔离 Vue/FastAPI 项目中使用真实 Codex/Claude 会话执行评测，观察组件复用率、职责违规、重复代码和验证完整性；在取得证据前保持 UNKNOWN。
+
+本轮建立了规范与部署链，不代表 AI 工具已经在真实项目中遵循规范。项目自有编码规范优先；通用规范用于补足缺口，不应触发无必要的全项目重构。
+
 ## 3. 实施顺序
 
 ### 阶段 A：可信基线（当前阶段）
