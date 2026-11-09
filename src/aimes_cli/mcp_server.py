@@ -8,11 +8,41 @@ from typing import Any
 from . import __version__
 from .delivery_report import validate_delivery_text
 from .skill_route import load_skill_body, route_skills
+from .project_state import show_project_state, detect_mode, load_mode_registry, set_project_state
 
 PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "aimes-governance"
 
 TOOLS = [
+    {
+        "name": "aimes_project_state",
+        "description": "Read the persisted AIMES project lifecycle, current engineering mode, task phase, routed Skills and next actions. Read-only; does not inspect the current AI conversation.",
+        "inputSchema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "aimes_detect_engineering_mode",
+        "description": "Suggest engineering mode candidates from explicit task text using deterministic trigger matching. Does not read the AI conversation, call a model, or persist state; ambiguous matches must be confirmed with the user.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"task_text": {"type": "string", "description": "Task summary in Chinese or English"}},
+            "required": ["task_text"],
+        },
+    },
+    {
+        "name": "aimes_set_project_state",
+        "description": "Persist project lifecycle, engineering mode, task phase or task summary. Only call after explicit user selection/approval or when AIMES governance permits a sufficiently confident inference; use source=user for explicit user choices and source=ai for AI inference. Low-confidence guesses must not be persisted.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "lifecycle": {"type": "string", "enum": ["unknown","new","planning","design","development","testing","release","operation","paused","archived"]},
+                "mode": {"type": "string"},
+                "phase": {"type": "string", "enum": ["analysis","clarification","design","review","implementation","testing","acceptance","delivery"]},
+                "task": {"type": "string", "maxLength": 500},
+                "source": {"type": "string", "enum": ["user","ai","import"]},
+                "confidence": {"type": "string", "enum": ["low","medium","high"]},
+            },
+        },
+    },
     {
         "name": "aimes_skill_route",
         "description": "Route a task description to the AIMES project skills that must be read before working. Returns skill id, authoritative file path, matched triggers, required inputs and expected outputs.",
@@ -60,6 +90,32 @@ def _tool_error(message: str) -> dict[str, Any]:
 
 def call_tool(root: Path, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     registry = _registry_path(root)
+    if name == "aimes_project_state":
+        try:
+            return _tool_result(show_project_state(root))
+        except (ValueError, OSError) as exc:
+            return _tool_error(str(exc))
+    if name == "aimes_detect_engineering_mode":
+        task_text = arguments.get("task_text")
+        if not isinstance(task_text, str) or not task_text.strip():
+            return _tool_error("task_text must be a non-empty string.")
+        try:
+            return _tool_result(detect_mode(task_text, load_mode_registry(root)))
+        except (ValueError, OSError) as exc:
+            return _tool_error(str(exc))
+    if name == "aimes_set_project_state":
+        mode = arguments.get("mode")
+        if mode is not None and "source" not in arguments:
+            return _tool_error("source is required when setting an engineering mode; use user, ai or import.")
+        try:
+            return _tool_result(set_project_state(
+                root, lifecycle=arguments.get("lifecycle"), mode=mode,
+                phase=arguments.get("phase"), task=arguments.get("task"),
+                source=arguments.get("source", "user"),
+                confidence=arguments.get("confidence"),
+            ))
+        except (ValueError, OSError) as exc:
+            return _tool_error(str(exc))
     if name == "aimes_skill_route":
         if not registry.is_file():
             return _tool_error(f"Skill registry not found: {registry}. Run `aimes init` in this project first.")
@@ -94,7 +150,7 @@ def handle_request(root: Path, message: dict[str, Any]) -> dict[str, Any] | None
                 "protocolVersion": PROTOCOL_VERSION,
                 "capabilities": {"tools": {}},
                 "serverInfo": {"name": SERVER_NAME, "version": __version__},
-                "instructions": "AIMES governance routing for this project. Call aimes_skill_route before project-changing work, read the routed SKILL.md with aimes_read_skill, and validate delivery reports with aimes_validate_delivery.",
+                "instructions": "AIMES governance routing for this project. At task start call aimes_project_state; infer the current engineering mode from the live user request (the CLI/MCP cannot inspect conversation content), use aimes_detect_engineering_mode only as a deterministic hint, ask the user when ambiguous, and persist only approved/high-confidence state with aimes_set_project_state. Then call aimes_skill_route before project-changing work, read routed SKILL.md with aimes_read_skill, and validate delivery reports with aimes_validate_delivery.",
             },
         }
     if method in ("notifications/initialized", "initialized"):
