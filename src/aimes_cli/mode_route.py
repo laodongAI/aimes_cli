@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Any
 
 from .project_state import load_mode_registry
-from .workflow import validate_workflow_definition\nfrom .quality_profiles import resolve_quality_profile
+from .workflow import validate_workflow_definition
+from .quality_profiles import resolve_quality_profile
 
 SKILL_REGISTRY = Path(".aimes/skills/registry.yaml")
 QUALITY_GATE_CANDIDATES = (Path(".aimes/quality-gates.yaml"), Path(".aimes/skills/quality-gates.yaml"))
