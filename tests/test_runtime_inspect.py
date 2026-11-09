@@ -40,7 +40,7 @@ class RuntimeInspectionTests(unittest.TestCase):
         self.write(".claude/settings.json", '{"hooks": {"PreToolUse": []}, "mcpServers": {"local": {"command": "secret-command"}}}')
         self.write(".mcp.json", '{"mcpServers": {"docs": {"url": "https://example.invalid"}}}')
         self.write(".claude/skills/triage/SKILL.md", "---\nname: triage\ndescription: Triage issues\n---\n")
-        self.write(".claude/agents/reviewer/reviewer.md", "---\nname: reviewer\ndescription: Review\n---\n")
+        self.write(".claude/agents/reviewer.md", "---\nname: reviewer\ndescription: Review\n---\n")
         result = inspect_adapters(self.root, ["claude-code"])
         integrations = {item["id"]: item for item in result["adapters"][0]["integrations"]}
         self.assertEqual(integrations["instructions"]["status"], "present")
