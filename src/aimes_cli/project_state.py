@@ -84,6 +84,14 @@ def detect_mode(task_text: str, registry: dict[str, dict[str, Any]]) -> dict[str
                     matched.append(raw)
             elif trigger in normalized:
                 matched.append(raw)
+        # A short trigger contained inside a longer matched trigger is not independent evidence.
+        deduplicated: list[str] = []
+        for trigger_text in sorted(matched, key=len, reverse=True):
+            lowered = trigger_text.lower()
+            if not any(lowered in existing.lower() or existing.lower() in lowered
+                       for existing in deduplicated):
+                deduplicated.append(trigger_text)
+        matched = deduplicated
         if matched:
             matches.append({"mode": mode_id, "label": item.get("label", mode_id),
                             "matched_triggers": matched, "score": len(matched)})
