@@ -216,6 +216,19 @@ class QualityCheckTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(any(item["code"] == "QUALITY_RULE_CONFIG" for item in result["findings"]))
 
+    def test_regression_profile_requires_real_coverage_report(self):
+        result = inspect_project_quality(self.root, profile_id="regression")
+        self.assertTrue(any(item["code"] == "COVERAGE_REPORT_MISSING" for item in result["findings"]))
+        self.assertEqual(result["summary"]["coverage"]["status"], "NOT_PROVIDED")
+
+    def test_cli_accepts_public_api_base_ref(self):
+        output = io.StringIO()
+        with redirect_stdout(output):
+            code = main(["quality", "inspect", "--root", str(self.root),
+                         "--base-ref", "missing-ref", "--format", "json"])
+        self.assertEqual(code, 0)  # advisory comparison failure does not block by default
+        self.assertIn("API_BASE_REF_UNAVAILABLE", output.getvalue())
+
     def test_unknown_profile_fails_closed(self):
         result = inspect_project_quality(self.root, profile_id="does-not-exist")
         self.assertFalse(result["ok"])
