@@ -84,8 +84,8 @@ class ProductSkillDeploymentTests(unittest.TestCase):
             init_project(root, ["zcode"], dry_run=False)
             path = root / ".aimes/quality-profiles.yaml"
             path.write_text(
-                "schema_version: 1\\nregistry_version: 1.0.0\\ndefault_profile: baseline\\n"
-                "profiles:\\n  baseline:\\n    description: Baseline\\n    vue: {}\\n",
+                "schema_version: 1\nregistry_version: 1.0.0\ndefault_profile: baseline\n"
+                "profiles:\n  baseline:\n    description: Baseline\n    vue: {}\n",
                 encoding="utf-8",
             )
             result = validate_project(root)
