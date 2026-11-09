@@ -58,7 +58,11 @@ class ProductSkillDeploymentTests(unittest.TestCase):
             self.assertTrue(config_path.is_file())
             config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
             self.assertFalse(config["enforce"])
-            self.assertEqual(config["vue"]["max_sfc_lines"]["warning"], 400)
+            self.assertEqual(config["vue"], {})  # Profile defaults must remain selectable by engineering mode.
+            profile_path = root / ".aimes/quality-profiles.yaml"
+            self.assertTrue(profile_path.is_file())
+            profiles = yaml.safe_load(profile_path.read_text(encoding="utf-8"))
+            self.assertEqual(profiles["profiles"]["frontend"]["vue"]["max_sfc_lines"]["warning"], 350)
 
     def test_init_rerun_preserves_user_modified_skill_registry(self):
         import tempfile
