@@ -1,0 +1,179 @@
+from __future__ import annotations
+
+import ast
+import hashlib
+from pathlib import Path
+import re
+from typing import Any
+
+MAX_SOURCE_FILES = 500
+MAX_SOURCE_BYTES = 1024 * 1024
+PYTHON_SUFFIXES = {".py"}
+SOURCE_SKIP_PARTS = {".git", ".venv", "venv", "node_modules", "dist", "build", "__pycache__", ".pytest_cache", ".mypy_cache", ".tox", ".aimes"}
+
+SECRET_ASSIGNMENT = re.compile(
+    r"""(?i)\b(?:api[_-]?key|secret|password|passwd|access[_-]?token)\b\s*[:=]\s*['"]([^'"]{8,})['"]"""
+)
+VUE_PROP_MUTATION = re.compile(
+    r"""\bprops\s*\.\s*[A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*)*\s*(?:=(?!=)|\.(?:push|pop|shift|unshift|splice|sort|reverse)\s*\()"""
+)
+VUE_LITERAL_COLOR = re.compile(r"""(?:#[0-9a-fA-F]{3,8}\b|\brgba?\s*\(|\bhsla?\s*\()""")
+DECISION_NODES = (ast.If, ast.For, ast.AsyncFor, ast.While, ast.IfExp, ast.ExceptHandler, ast.With, ast.AsyncWith, ast.Assert)
+
+
+def _finding(code: str, path: str, line: int, message: str, recommendation: str,
+             severity: str = "WARNING", evidence: str | None = None, category: str = "maintainability") -> dict[str, Any]:
+    item = {
+        "severity": severity, "code": code, "category": category, "path": path,
+        "line": max(1, int(line)), "message": message, "recommendation": recommendation,
+        "origin": "static",
+    }
+    if evidence:
+        item["evidence"] = evidence[:240]
+    return item
+
+
+def _function_complexity(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
+    return 1 + sum(isinstance(child, DECISION_NODES) for child in ast.walk(node))
+
+
+def _is_route_handler(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    return any(isinstance(decorator, ast.Call) and isinstance(decorator.func, ast.Attribute)
+               and decorator.func.attr.lower() in {"get", "post", "put", "patch", "delete"}
+               for decorator in node.decorator_list)
+
+
+def inspect_python_file(path: str, content: str, config: dict[str, Any]) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    lines = content.splitlines()
+    settings = config.get("python", {})
+    if len(lines) > settings.get("max_file_lines", 800):
+        findings.append(_finding("PYTHON_FILE_LINES", path, 1,
+            f"Python file contains {len(lines)} lines (limit {settings.get('max_file_lines', 800)}).",
+            "Split the module by cohesive responsibility and keep public contracts explicit."))
+
+    for match in SECRET_ASSIGNMENT.finditer(content):
+        line = content.count("\n", 0, match.start()) + 1
+        findings.append(_finding("PYTHON_POSSIBLE_SECRET", path, line,
+            "A credential-like assignment contains a hard-coded string literal.",
+            "Load credentials from environment variables or a secret manager; rotate any real exposed credential.",
+            severity="ERROR", evidence=match.group(0), category="security"))
+
+    try:
+        tree = ast.parse(content, filename=path)
+    except SyntaxError as exc:
+        findings.append(_finding("PYTHON_SYNTAX", path, exc.lineno or 1,
+            f"Python source cannot be parsed: {exc.msg}",
+            "Fix the syntax error before relying on further static findings.", severity="ERROR", category="correctness"))
+        return findings
+
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            end = getattr(node, "end_lineno", node.lineno)
+            function_lines = end - node.lineno + 1
+            if function_lines > settings.get("max_function_lines", 80):
+                findings.append(_finding("PYTHON_FUNCTION_LINES", path, node.lineno,
+                    f"Function {node.name} spans {function_lines} lines.",
+                    "Extract cohesive operations and keep orchestration separate from domain logic."))
+            complexity = _function_complexity(node)
+            if complexity > settings.get("max_cyclomatic_complexity", 12):
+                findings.append(_finding("PYTHON_COMPLEXITY", path, node.lineno,
+                    f"Function {node.name} has an estimated decision complexity of {complexity}.",
+                    "Reduce branching with guard clauses, focused helpers, or explicit strategy objects."))
+            defaults = list(node.args.defaults) + [value for value in node.args.kw_defaults if value is not None]
+            for default in defaults:
+                if isinstance(default, (ast.List, ast.Dict, ast.Set)):
+                    findings.append(_finding("PYTHON_MUTABLE_DEFAULT", path, default.lineno,
+                        f"Function {node.name} uses a mutable default argument.",
+                        "Use None as the default and create a new mutable value inside the function.",
+                        severity="ERROR", category="correctness"))
+                    break
+            if _is_route_handler(node):
+                for call in (child for child in ast.walk(node) if isinstance(child, ast.Call)):
+                    func = call.func
+                    if isinstance(func, ast.Attribute) and func.attr in {"execute", "commit", "flush", "add", "delete", "query"}:
+                        findings.append(_finding("FASTAPI_ROUTE_DATA_ACCESS", path, call.lineno,
+                            f"Route handler {node.name} performs direct data-session operation ({func.attr}).",
+                            "Move persistence and transaction boundaries into the project's service/repository layer; preserve existing architecture conventions.",
+                            category="architecture"))
+                        break
+        elif isinstance(node, ast.ExceptHandler) and isinstance(node.type, ast.Name) and node.type.id in {"Exception", "BaseException"}:
+            findings.append(_finding("PYTHON_BROAD_EXCEPTION", path, node.lineno,
+                f"Broad exception handler catches {node.type.id}.",
+                "Catch expected exception types, preserve causal context, and avoid swallowing cancellation or programming errors.",
+                category="reliability"))
+
+    return findings
+
+
+def inspect_vue_file(path: str, content: str, config: dict[str, Any]) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    vue = config.get("vue", {})
+    if vue.get("check_prop_mutation", True):
+        for match in VUE_PROP_MUTATION.finditer(content):
+            line = content.count("\n", 0, match.start()) + 1
+            findings.append(_finding("VUE_PROP_MUTATION", path, line,
+                "Component code appears to mutate a prop or a nested value received through props.",
+                "Treat props as read-only; emit an update event or copy the value into explicitly owned local state.",
+                severity="ERROR", evidence=match.group(0), category="correctness"))
+    if vue.get("check_hardcoded_colors", True):
+        for line_number, line in enumerate(content.splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith(("<!--", "//", "*", "/*")):
+                continue
+            if ("<template" in stripped or "style" in stripped.lower() or "class=" in stripped) and VUE_LITERAL_COLOR.search(line):
+                findings.append(_finding("VUE_HARDCODED_COLOR", path, line_number,
+                    "Vue markup or style contains a literal color value.",
+                    "Prefer the project's approved design tokens or theme variables; retain literals only for documented exceptions.",
+                    evidence=line.strip(), category="ui"))
+    return findings
+
+
+def inspect_general_file(path: str, content: str, config: dict[str, Any]) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    settings = config.get("general", {})
+    lines = content.splitlines()
+    if len(lines) > settings.get("max_source_file_lines", 1000):
+        findings.append(_finding("SOURCE_FILE_LINES", path, 1,
+            f"Source file contains {len(lines)} lines.",
+            "Split by cohesive responsibility and keep modules independently testable."))
+    return findings
+
+
+def inspect_project_sources(root: Path, config: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    findings: list[dict[str, Any]] = []
+    counts = {"python_files_scanned": 0, "vue_files_scanned": 0, "source_files_scanned": 0, "files_skipped": 0}
+    candidates: list[tuple[str, Path]] = []
+    for current, dirs, files in __import__("os").walk(root, followlinks=False):
+        current_path = Path(current)
+        dirs[:] = [name for name in dirs if name not in SOURCE_SKIP_PARTS and not (current_path / name).is_symlink()]
+        for name in files:
+            path = current_path / name
+            if path.is_symlink() or path.suffix.lower() not in {".py", ".vue"}:
+                continue
+            relative = path.relative_to(root).as_posix()
+            candidates.append((relative, path))
+            if len(candidates) >= MAX_SOURCE_FILES:
+                break
+        if len(candidates) >= MAX_SOURCE_FILES:
+            break
+
+    for relative, path in sorted(candidates):
+        try:
+            if path.stat().st_size > MAX_SOURCE_BYTES:
+                counts["files_skipped"] += 1
+                continue
+            content = path.read_text(encoding="utf-8-sig")
+        except (OSError, UnicodeError):
+            counts["files_skipped"] += 1
+            continue
+        counts["source_files_scanned"] += 1
+        findings.extend(inspect_general_file(relative, content, config))
+        if path.suffix.lower() == ".py":
+            counts["python_files_scanned"] += 1
+            findings.extend(inspect_python_file(relative, content, config))
+        elif path.suffix.lower() == ".vue":
+            counts["vue_files_scanned"] += 1
+            findings.extend(inspect_vue_file(relative, content, config))
+
+    return findings, counts
