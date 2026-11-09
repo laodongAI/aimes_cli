@@ -20,6 +20,8 @@
 - Added read-only `aimes adapter inspect` for Codex CLI and Claude Code project integrations (instructions, Skills, MCP, Hooks, and Agents); configuration values and credentials are not emitted, and no commands or hooks are executed.
 - Added conditional `tomli` dependency for Python 3.10 so project TOML inspection remains available across the supported Python range.
 
+- Runtime rule-loading probe now requires an explicit `--confirm-fresh-session` attestation before an exact token match can be recorded as PASS; otherwise the result is BLOCKED.
+
 ## 0.8.7 - 产品经理优先路由与深度引导词
 
 - 新增 product-manager Skill，要求先分析当前项目知识、用户问题/价值、现有能力、复用机会、缺口与方案取舍，再生成可复制的深度引导词。
