@@ -39,7 +39,8 @@ class McpServerTests(unittest.TestCase):
         document = json.loads(read["content"][0]["text"])
         self.assertIn("name: " + name, document["content"])
         self.assertTrue(Path(document["file"]).is_file())
-        self.assertTrue(str(document["file"]).startswith(str(self.root)))
+        document_path = Path(document["file"]).resolve()
+        document_path.relative_to(self.root.resolve())
 
     def test_read_skill_rejects_unknown_name_and_missing_project(self):
         error = call_tool(self.root, "aimes_read_skill", {"skill_name": "does-not-exist"})
