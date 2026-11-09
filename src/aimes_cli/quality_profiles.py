@@ -52,13 +52,13 @@ BUILTIN_REGISTRY: dict[str, Any] = {
                 "max_function_lines": 70,
                 "max_cyclomatic_complexity": 10
             },
-            "general": {"max_source_file_lines": 1000}
+            "general": {"max_source_file_lines": 1000, "min_coverage_percent": 80}
         },
         "backend": {
             "description": "FastAPI/Python backend quality baseline with conservative AST-based checks.",
             "vue": {},
             "python": {"max_file_lines": 700, "max_function_lines": 70, "max_cyclomatic_complexity": 10},
-            "general": {"max_source_file_lines": 1000}
+            "general": {"max_source_file_lines": 1000, "min_coverage_percent": 80}
         },
         "frontend": {
             "description": "frontend 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。",
@@ -197,7 +197,7 @@ def load_quality_profiles(root: Path) -> tuple[dict[str, Any], str | None]:
             raise ValueError(f"Profile {profile_id} contains unsupported Vue rules: {', '.join(sorted(unknown))}")
         for section, allowed in {
             "python": {"max_file_lines", "max_function_lines", "max_cyclomatic_complexity"},
-            "general": {"max_source_file_lines"},
+            "general": {"max_source_file_lines", "min_coverage_percent"},
         }.items():
             values = profile.get(section, {})
             if not isinstance(values, dict):
@@ -206,8 +206,8 @@ def load_quality_profiles(root: Path) -> tuple[dict[str, Any], str | None]:
             if unsupported:
                 raise ValueError(f"Profile {profile_id} contains unsupported {section} rules")
             for key, value in values.items():
-                if type(value) is not int or value < 1:
-                    raise ValueError(f"Profile {profile_id} {section}.{key} must be a positive integer")
+                if type(value) not in (int, float) or (value < 0 if key == "min_coverage_percent" else value < 1) or (key == "min_coverage_percent" and value > 100):
+                    raise ValueError(f"Profile {profile_id} {section}.{key} has an invalid numeric value")
     return raw, None
 
 
