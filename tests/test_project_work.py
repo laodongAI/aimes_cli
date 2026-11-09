@@ -80,6 +80,14 @@ class ProjectWorkTests(unittest.TestCase):
         self.assertIn("candidate", result)
         self.assertIn("limitations", result)
 
+    def test_lifecycle_assessment_uses_multiple_independent_development_signals(self):
+        (self.root / "src").mkdir()
+        (self.root / "pyproject.toml").write_text("[project]\\nname = 'sample'\\n", encoding="utf-8")
+        result = assess_project_lifecycle(self.root)
+        self.assertEqual(result["candidate"], "development")
+        self.assertEqual(result["confidence"], "medium")
+        self.assertGreaterEqual(result["signals"]["development"], 3)
+
     def test_lifecycle_assessment_does_not_infer_new_from_aimes_init(self):
         result = assess_project_lifecycle(self.root)
         self.assertNotEqual(result["candidate"], "new")
