@@ -134,7 +134,12 @@ def _merge(target: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
 
 
 def load_quality_profiles(root: Path) -> tuple[dict[str, Any], str | None]:
-    path = root.resolve() / PROFILE_REGISTRY_PATH
+    base = root.resolve()
+    path = (base / PROFILE_REGISTRY_PATH).resolve()
+    try:
+        path.relative_to(base)
+    except ValueError as exc:
+        raise ValueError("Quality profile registry path escapes project root") from exc
     if not path.is_file():
         return deepcopy(BUILTIN_REGISTRY), "BUILTIN_FALLBACK"
     try:
