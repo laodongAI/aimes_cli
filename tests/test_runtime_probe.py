@@ -120,7 +120,7 @@ class RuntimeProbeTests(unittest.TestCase):
         with contextlib.redirect_stdout(output):
             code = main([
                 "adapter", "probe", "validate", str(target),
-                "--root", str(self.root), "--format", "json"
+                "--root", str(self.root), "--format", "json", "--confirm-fresh-session"
             ])
         self.assertEqual(code, 0, output.getvalue())
         self.assertTrue((target / "verification-evidence.yaml").is_file())
