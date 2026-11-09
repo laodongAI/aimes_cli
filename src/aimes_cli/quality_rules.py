@@ -167,6 +167,7 @@ def inspect_project_sources(root: Path, config: dict[str, Any], exclude_patterns
     findings: list[dict[str, Any]] = []
     counts = {"python_files_scanned": 0, "vue_files_scanned": 0, "source_files_scanned": 0, "files_skipped": 0}
     candidates: list[tuple[str, Path]] = []
+    duplicate_functions: dict[str, list[tuple[str, str, int]]] = {}
     patterns = exclude_patterns or []
     for current, dirs, files in os.walk(root, followlinks=False):
         current_path = Path(current)
@@ -198,8 +199,24 @@ def inspect_project_sources(root: Path, config: dict[str, Any], exclude_patterns
         if path.suffix.lower() == ".py":
             counts["python_files_scanned"] += 1
             findings.extend(inspect_python_file(relative, content, config))
+            try:
+                tree = ast.parse(content, filename=relative)
+                for node in ast.walk(tree):
+                    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and len(node.body) >= 6:
+                        body = ast.Module(body=node.body, type_ignores=[])
+                        fingerprint = hashlib.sha256(ast.dump(body, include_attributes=False).encode("utf-8")).hexdigest()
+                        duplicate_functions.setdefault(fingerprint, []).append((relative, node.name, node.lineno))
+            except SyntaxError:
+                pass
         elif path.suffix.lower() == ".vue":
             counts["vue_files_scanned"] += 1
             findings.extend(inspect_vue_file(relative, content, config))
 
+    for occurrences in duplicate_functions.values():
+        if len({item[0] for item in occurrences}) > 1:
+            for relative, name, line in occurrences:
+                findings.append(_finding("PYTHON_DUPLICATE_FUNCTION", relative, line,
+                    f"Function {name} has an identical AST body in another source file.",
+                    "Review whether this duplication is intentional; extract a shared helper only when responsibility and change reasons are genuinely common.",
+                    category="maintainability"))
     return findings, counts
