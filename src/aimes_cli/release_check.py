@@ -156,6 +156,11 @@ def validate_release(root: Path) -> dict[str, Any]:
               "Package data configuration must include templates/**/*.md.", "pyproject.toml")
         check("package_data_schemas_included", "schemas/*.json" in text,
               "Package data configuration must include schemas/*.json.", "pyproject.toml")
+        check("package_data_adapter_registry_included", "data/*.yaml" in text,
+              "Package data configuration must include data/*.yaml so the declarative adapter registry is available in wheels and EXE builds.", "pyproject.toml")
+        registry_file = root / "src" / "aimes_cli" / "data" / "adapter-registry.yaml"
+        check("adapter_registry_source_present", registry_file.is_file(),
+              "Declarative adapter registry source must be present in the package.", "src/aimes_cli/data/adapter-registry.yaml")
     else:
         check("package_data_templates_included", None, "Package data configuration unavailable.")
         check("package_data_schemas_included", None, "Package data configuration unavailable.")
