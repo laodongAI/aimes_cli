@@ -342,7 +342,7 @@ def validate_project(root: Path) -> dict[str, Any]:
         findings.append({'level': 'warning', 'code': 'QUALITY_PROFILE_REGISTRY_MISSING',
                          'message': 'Project quality profile registry is missing; built-in fallback is used until upgrade.'})
     mode_path = root / '.aimes/project-state/engineering-modes.yaml'
-    if mode_path.exists():
+    if mode_path.exists() and (not profile_path.exists() or profile_ids is not None):
         try:
             from .project_state import load_mode_registry
             modes = load_mode_registry(root)
