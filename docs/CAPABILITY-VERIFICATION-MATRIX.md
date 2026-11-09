@@ -70,6 +70,16 @@
 
 适配证据支持 `schema_version: 1` 与 `schema_version: 2`。V2 的 PASS 记录必须包含产品版本、执行模式、平台版本、规则入口、观察时间、观察者、评测案例 ID、AIMES CLI 版本和治理核心版本。CLI 会按工具和执行模式分别统计覆盖率。V1 旧记录仍可读，但上下文缺失只会提示警告；不应把兼容性理解为证据质量已达标。Schema 定义见 `schemas/adapter-verification-evidence.schema.json`。
 
+## 4.1 评测运行记录 V2：证据文件完整性
+
+评测运行记录支持 V1/V2。V1 保持兼容，但其 `evidence_refs` 仅表示引用关系，不证明证据文件存在或未被修改。V2 的每个 PASS 案例必须至少关联一个 `evidence_artifacts` 条目，条目包含：
+
+- `kind`：证据类型，例如 `raw_response`、`command_log`、`git_diff`、`test_report`；
+- `path`：相对于运行记录所在目录的文件路径；
+- `sha256`：该文件的 SHA-256。
+
+`aimes evaluation validate` 与 `validate-run` 会检查路径边界、符号链接、文件存在性、10 MiB 单文件上限及哈希一致性。V2 PASS 缺少有效证据文件时校验失败。哈希只证明当前文件与记录的摘要一致，不证明文件内容真实、执行者身份可信或行为结论正确；行为语义仍需独立审查。旧 V1 记录不会被自动升级或伪装成 V2。
+
 ## 5. 评测结论要求
 
 1. 静态文件检查不能证明运行时加载。
