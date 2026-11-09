@@ -1,0 +1,88 @@
+import tempfile
+import unittest
+from pathlib import Path
+
+import yaml
+
+from aimes_cli.core import init_project
+from aimes_cli.project_state import (
+    detect_mode, list_project_modes, read_project_state,
+    set_project_state, show_project_state, load_mode_registry,
+)
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+MODE_TEMPLATE = REPO_ROOT / "src/aimes_cli/templates/project-state/engineering-modes.yaml"
+
+
+class ProjectStateTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name).resolve()
+        init_project(self.root, ["codex-cli"])
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_init_deploys_mode_registry_and_initial_state(self):
+        self.assertTrue((self.root / ".aimes/project-state/engineering-modes.yaml").is_file())
+        self.assertEqual(read_project_state(self.root)["project_lifecycle"], "new")
+
+    def test_lifecycle_mode_and_phase_are_independent(self):
+        result = set_project_state(self.root, lifecycle="development",
+                                   mode="frontend-optimization", phase="analysis",
+                                   task="优化学习页面")
+        state = result["state"]
+        self.assertEqual(state["project_lifecycle"], "development")
+        self.assertEqual(state["engineering_mode"], "frontend-optimization")
+        self.assertEqual(state["task_phase"], "analysis")
+        self.assertEqual(result["routed_skills"][0], "vue-frontend-engineering")
+
+    def test_explicit_user_mode_has_high_confidence(self):
+        result = set_project_state(self.root, mode="refactoring", source="user")
+        self.assertEqual(result["state"]["confidence"], "high")
+        self.assertEqual(result["state"]["mode_source"], "user")
+
+    def test_unknown_mode_is_rejected_without_writing(self):
+        with self.assertRaises(ValueError):
+            set_project_state(self.root, mode="invented-mode")
+        self.assertFalse((self.root / ".aimes/project-state.yaml").exists())
+
+    def test_invalid_phase_is_rejected(self):
+        with self.assertRaises(ValueError):
+            set_project_state(self.root, phase="coding")
+
+    def test_detection_is_conservative_when_ambiguous(self):
+        registry = load_mode_registry(self.root)
+        result = detect_mode("前端优化和代码重构", registry)
+        self.assertIsNone(result["mode"])
+        self.assertEqual(result["confidence"], "low")
+
+    def test_detection_returns_candidate_but_does_not_persist(self):
+        registry = load_mode_registry(self.root)
+        result = detect_mode("请做 Vue 组件化开发", registry)
+        self.assertEqual(result["mode"], "frontend-development")
+        self.assertEqual(result["confidence"], "medium")
+        self.assertFalse((self.root / ".aimes/project-state.yaml").exists())
+
+    def test_state_path_symlink_escape_is_rejected(self):
+        outside = self.root.parent / (self.root.name + "-outside")
+        outside.mkdir()
+        try:
+            (self.root / ".aimes").rename(self.root / ".aimes-original")
+            (self.root / ".aimes").symlink_to(outside, target_is_directory=True)
+            with self.assertRaises(ValueError):
+                read_project_state(self.root)
+        finally:
+            (self.root / ".aimes").unlink(missing_ok=True)
+            (self.root / ".aimes-original").rename(self.root / ".aimes")
+            outside.rmdir()
+
+    def test_modes_are_listed(self):
+        result = list_project_modes(self.root)
+        ids = {item["id"] for item in result["modes"]}
+        self.assertIn("frontend-optimization", ids)
+        self.assertIn("engineering-audit", ids)
+
+
+if __name__ == "__main__":
+    unittest.main()
