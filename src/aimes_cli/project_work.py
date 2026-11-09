@@ -136,13 +136,29 @@ def update_task(root: Path, task_id: str, *, phase: str | None = None,
     _validate_task_record(task, task_id)
     if phase is None and status is None:
         raise ValueError("Specify phase or status")
-    if phase is not None:
-        if phase not in TASK_PHASES:
-            raise ValueError(f"Invalid task phase: {phase}")
-        task["phase"] = phase
+    current_status = task["status"]
+    current_phase = task["phase"]
+    if current_status in {"completed", "cancelled"}:
+        raise ValueError(f"Terminal task status '{current_status}' is immutable; create a follow-up task instead")
     if status is not None:
         if status not in TASK_STATUSES:
             raise ValueError(f"Invalid task status: {status}")
+        allowed_status = {
+            "active": {"active", "blocked", "completed", "cancelled"},
+            "blocked": {"active", "blocked", "completed", "cancelled"},
+        }
+        if status not in allowed_status[current_status]:
+            raise ValueError(f"Task status transition is not allowed: {current_status} -> {status}")
+    if phase is not None:
+        if phase not in TASK_PHASES:
+            raise ValueError(f"Invalid task phase: {phase}")
+        phase_order = {name: index for index, name in enumerate(
+            ("analysis", "clarification", "design", "review", "implementation", "testing", "acceptance", "delivery")
+        )}
+        if phase_order[phase] < phase_order[current_phase]:
+            raise ValueError(f"Task phase cannot move backwards: {current_phase} -> {phase}; create a follow-up task for rework")
+        task["phase"] = phase
+    if status is not None:
         task["status"] = status
     task["updated_at"] = _now()
     _write(path, task)
