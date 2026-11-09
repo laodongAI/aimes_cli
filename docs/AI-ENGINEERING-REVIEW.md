@@ -20,7 +20,7 @@ aimes quality review --report .aimes/reviews/engineering-review.json --root . --
 
 `aimes quality review-context` 只读生成供外部 AI 工具使用的上下文包。默认仅从根目录治理入口/项目说明文件及 `src`、`app`、`backend`、`frontend`、`web`、`tests`、`docs/design`、`docs/architecture`、`.aimes/skills` 等受控位置收集文本文件。
 
-默认上限为 80 个文件、单文件 8 KiB、总量 180 KiB。排除常见凭据文件名、密钥/证书扩展名、依赖/构建目录、符号链接和超限文件；输出包含文件清单、SHA-256、审查提示词和跳过统计。命令不会调用模型、上传文件或执行项目代码。
+默认上限为 80 个文件、单文件 8 KiB、总量 180 KiB。排除常见凭据文件名/目录、密钥/证书扩展名、若干常见密钥内容模式、依赖/构建目录、符号链接和超限文件；输出包含文件清单、SHA-256、审查提示词和跳过统计。命令不会调用模型、上传文件或执行项目代码。
 
 ```powershell
 aimes quality review-context --root . --format json --output .aimes/reviews/review-context.json
