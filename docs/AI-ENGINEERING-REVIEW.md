@@ -1,0 +1,64 @@
+# AIMES AI 工程审查报告契约（V1）
+
+## 目标与边界
+
+确定性静态检查无法可靠判断组件复用、业务逻辑重复、职责边界、前后端分层或需求—设计—代码—测试追踪关系。AI 工具可以执行这些语义审查，但结论必须携带可核验的源码证据。
+
+AIMES V1 采用“外部 AI 生成报告、AIMES 本地验证报告”：不在 CLI 内绑定模型供应商，不暗示 AIMES 已自动调用模型。`aimes quality review` 只验证报告结构和证据，不验证模型推理过程是否正确。
+
+## 命令
+
+```powershell
+aimes quality inspect --root . --format json
+aimes quality review --report .aimes/reviews/engineering-review.json --root . --format json
+```
+
+报告文件和证据源码必须位于项目根目录内。路径解析会处理 `..` 与符号链接；越界路径、缺失文件、超出文件长度的行号、与源码不匹配的 excerpt 均会被拒绝。
+
+## JSON 契约
+
+```json
+{
+  "schema_version": 1,
+  "findings": [
+    {
+      "id": "AI-REUSE-001",
+      "category": "component-reuse",
+      "severity": "WARNING",
+      "message": "两个页面可能重复实现相同的筛选交互。",
+      "recommendation": "对比状态、事件和业务约束，确认是否抽取共享组件。",
+      "confidence": 0.87,
+      "evidence": {
+        "path": "src/views/Users.vue",
+        "line_start": 1,
+        "line_end": 3,
+        "excerpt": "<template>"
+      }
+    }
+  ]
+}
+```
+
+每条 finding 必须包含唯一 ID、类别、级别、问题、建议、0 到 1 的置信度，以及源码路径、起止行和原文摘录。摘录必须出现在对应行范围中。
+
+## 建议审查维度
+
+- 组件复用：相似 UI/交互是否有稳定的共享抽象；避免为了复用而过度抽象。
+- 职责边界：Page/View、业务组件、Composable、Store、API Service 是否职责清晰。
+- 重复逻辑：相同业务规则是否在多个页面或模块重复实现。
+- 前后端分层：Vue 是否承载了应属于服务端的业务规则；FastAPI Router、Service、Repository 是否越层。
+- 契约影响：API、DTO、类型定义变化是否同步影响调用方、错误处理和兼容性。
+- 需求追踪：需求、设计决策、实现位置、测试用例是否有可定位关联。
+
+## 安全与门禁策略
+
+- AI finding 只允许 `INFO` 或 `WARNING`；报告声明 `ERROR` 将被拒绝。
+- AI finding 永远标记 `origin=ai`、`blocking=false`，不能单独令确定性质量门禁失败。
+- 只有静态规则或其他明确、可重复执行且经过项目授权的验证，才可作为阻断依据。
+- 报告中的文本视为不可信数据；不会执行报告内容、命令或建议。
+- 不扫描或上传源码；该命令只读取报告引用的项目内文件以核验行号和摘录。
+- 报告验证通过只代表结构与证据定位通过，不代表语义判断正确，也不等同于 VERIFIED 交付结论。
+
+## 当前限制
+
+当前版本只支持本地 JSON 报告验证与证据核验，不自动生成审查报告、不调用模型、不执行修复，也不将 AI 发现合并为静态门禁的阻断项。后续可在此契约上增加受控的上下文包生成、审查提示词和报告合并展示。
