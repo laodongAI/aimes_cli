@@ -10,6 +10,7 @@ from .delivery_report import validate_delivery_text
 from .skill_route import load_skill_body, route_skills
 from .project_state import show_project_state, detect_mode, load_mode_registry, set_project_state
 from .project_work import assess_project_lifecycle, start_task, update_task, list_tasks, show_session, bind_session_task
+from .mode_route import explain_mode
 
 PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "aimes-governance"
@@ -64,6 +65,14 @@ TOOLS = [
             "type": "object",
             "properties": {"session_id": {"type": "string"}, "task_id": {"type": "string"}},
             "required": ["session_id", "task_id"],
+        },
+    },
+    {
+        "name": "aimes_explain_engineering_mode",
+        "description": "Explain the selected engineering mode route, inspect registered Skills and workflow definition availability, and report quality-profile mapping limitations. Read-only; does not execute workflows or quality gates.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"mode": {"type": "string", "description": "Engineering mode ID; omit to use the currently selected mode."}},
         },
     },
     {
@@ -161,6 +170,11 @@ def call_tool(root: Path, name: str, arguments: dict[str, Any]) -> dict[str, Any
                 arguments.get("task_id")))
     except (ValueError, OSError, TypeError) as exc:
         return _tool_error(str(exc))
+    if name == "aimes_explain_engineering_mode":
+        try:
+            return _tool_result(explain_mode(root, arguments.get("mode")))
+        except (ValueError, OSError) as exc:
+            return _tool_error(str(exc))
     if name == "aimes_project_state":
         try:
             return _tool_result(show_project_state(root))
@@ -221,7 +235,7 @@ def handle_request(root: Path, message: dict[str, Any]) -> dict[str, Any] | None
                 "protocolVersion": PROTOCOL_VERSION,
                 "capabilities": {"tools": {}},
                 "serverInfo": {"name": SERVER_NAME, "version": __version__},
-                "instructions": "AIMES governance routing for this project. At task start call aimes_project_state and aimes_session_show with a stable per-tool session_id; use aimes_task_start/update to track each task independently, and call aimes_assess_project_lifecycle when lifecycle is unknown; infer the current engineering mode from the live user request (the CLI/MCP cannot inspect conversation content), use aimes_detect_engineering_mode only as a deterministic hint, ask the user when ambiguous, and persist only approved or sufficiently confident (medium/high) state with aimes_set_project_state; never persist low-confidence guesses. Then call aimes_skill_route before project-changing work, read routed SKILL.md with aimes_read_skill, and validate delivery reports with aimes_validate_delivery.",
+                "instructions": "AIMES governance routing for this project. At task start call aimes_project_state and aimes_session_show with a stable per-tool session_id; after selecting an engineering mode call aimes_explain_engineering_mode to inspect the Skill/workflow/quality route; use aimes_task_start/update to track each task independently, and call aimes_assess_project_lifecycle when lifecycle is unknown; infer the current engineering mode from the live user request (the CLI/MCP cannot inspect conversation content), use aimes_detect_engineering_mode only as a deterministic hint, ask the user when ambiguous, and persist only approved or sufficiently confident (medium/high) state with aimes_set_project_state; never persist low-confidence guesses. Then call aimes_skill_route before project-changing work, read routed SKILL.md with aimes_read_skill, and validate delivery reports with aimes_validate_delivery.",
             },
         }
     if method in ("notifications/initialized", "initialized"):
