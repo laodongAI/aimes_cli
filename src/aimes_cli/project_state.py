@@ -168,7 +168,7 @@ def set_project_state(
 ) -> dict[str, Any]:
     root = root.resolve()
     state = read_project_state(root)
-    registry = load_mode_registry(root)
+    registry = load_mode_registry(root) if mode is not None else {}
     if lifecycle is not None:
         if lifecycle not in LIFECYCLES:
             raise ValueError(f"Invalid lifecycle '{lifecycle}'. Choose from: {', '.join(sorted(LIFECYCLES))}")
