@@ -345,3 +345,39 @@ skills:
     validation_status: UNKNOWN
     evaluation_suite: EVAL-AIMES-PROMPT-BASELINE-V1
     evidence: []
+
+  - id: SKL-CORE-ENG-001
+    name: software-engineering-standards
+    version: 1.0.0
+    file: .aimes/skills/software-engineering-standards/SKILL.md
+    purpose: 统一需求到实现的软件工程质量基线，覆盖模块边界、代码复用、前后端分层、测试、安全和可维护性。
+    triggers: [software_engineering, feature_implementation, bug_fix, refactoring, code_quality, code_reuse, maintainability, technical_design, 软件工程, 功能开发, 缺陷修复, 代码重构, 代码质量, 代码复用, 可维护性, 技术设计, 后端开发, 前端开发]
+    inputs: [task_id, approved_requirements, acceptance_criteria, project_stack, project_architecture, implementation_scope]
+    outputs: [engineering_baseline, reuse_inventory, implementation_design, quality_risks, implementation_review, verification_plan]
+    applies_to: [all]
+    risk_level: high
+    required_capabilities: [read_project_files]
+    forbidden_actions: [overwrite_user_changes, fabricate_verification, bypass_quality_gate, unauthorized_dependency_change]
+    prerequisites: [project_rules_loaded, git_state_checked, requirements_approved]
+    dependencies: [requirement-cognition, project-knowledge-reuse, change-impact-analysis, architecture-contract-review]
+    validation_status: UNKNOWN
+    evaluation_suite: AIMES-SOFTWARE-ENGINEERING-QUALITY
+    evidence: []
+
+  - id: SKL-CORE-VUE-001
+    name: vue-frontend-engineering
+    version: 1.0.0
+    file: .aimes/skills/vue-frontend-engineering/SKILL.md
+    purpose: Vue 3 组件化、Composable、Pinia 状态边界、API 分层、TypeScript 类型、性能和组件测试规范。
+    triggers: [vue, vue3, vue_component, vue_refactoring, frontend_component, component_reuse, composable, pinia, Vue, Vue3, Vue组件, 组件化开发, 组件复用, 前端重构, 公共组件, Composable, Pinia]
+    inputs: [task_id, approved_requirements, project_stack_and_versions, target_pages_or_modules, existing_component_inventory]
+    outputs: [component_map, reuse_decisions, props_emits_contracts, composable_and_store_boundaries, api_dependencies, test_matrix, frontend_review_findings, verification_results]
+    applies_to: [all]
+    risk_level: high
+    required_capabilities: [read_project_files]
+    forbidden_actions: [overwrite_user_changes, fabricate_verification, bypass_quality_gate, duplicate_existing_components]
+    prerequisites: [project_rules_loaded, git_state_checked, requirements_approved]
+    dependencies: [software-engineering-standards, design-system-governance]
+    validation_status: UNKNOWN
+    evaluation_suite: AIMES-SOFTWARE-ENGINEERING-QUALITY
+    evidence: []
