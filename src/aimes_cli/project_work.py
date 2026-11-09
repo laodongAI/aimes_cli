@@ -10,7 +10,7 @@ from typing import Any
 
 import yaml
 
-from .project_state import read_project_state
+from .project_state import read_project_state, load_mode_registry
 
 TASKS_REL = Path(".aimes/tasks")
 SESSIONS_REL = Path(".aimes/sessions")
@@ -72,10 +72,15 @@ def start_task(root: Path, title: str, *, session_id: str = "default",
     task_id = _id(task_id or uuid.uuid4().hex[:12], "task_id")
     task_path = _safe(root, TASKS_REL / f"{task_id}.yaml")
     session_path = _safe(root, SESSIONS_REL / f"{session_id}.yaml")
+    if mode is not None:
+        if not isinstance(mode, str) or mode not in load_mode_registry(root):
+            raise ValueError(f"Unknown engineering mode: {mode}")
     if task_path.exists():
         raise ValueError(f"Task already exists: {task_id}")
     if session_path.exists():
         session = _read(session_path)
+        if session.get("schema_version") != 1 or session.get("session_id") != session_id:
+            raise ValueError(f"Invalid session record: {session_id}")
     else:
         session = {"schema_version": 1, "session_id": session_id, "created_at": _now()}
     task = {
@@ -85,7 +90,11 @@ def start_task(root: Path, title: str, *, session_id: str = "default",
     }
     session.update({"current_task_id": task_id, "updated_at": _now()})
     _write(task_path, task)
-    _write(session_path, session)
+    try:
+        _write(session_path, session)
+    except OSError:
+        task_path.unlink(missing_ok=True)
+        raise
     return {"ok": True, "task": task, "session": session}
 
 
@@ -126,7 +135,8 @@ def list_tasks(root: Path, *, session_id: str | None = None) -> dict[str, Any]:
     if session_id is not None:
         session_id = _id(session_id, "session_id")
     tasks = []
-    for path in sorted(directory.glob("*.yaml")):
+    for item_path in sorted(directory.glob("*.yaml")):
+        path = _safe(root, TASKS_REL / item_path.name)
         task = _read(path)
         if task.get("schema_version") != 1 or not isinstance(task.get("task_id"), str):
             raise ValueError(f"Invalid task record: {path}")
@@ -152,6 +162,8 @@ def bind_session_task(root: Path, session_id: str, task_id: str) -> dict[str, An
     session_path = _safe(root, SESSIONS_REL / f"{session_id}.yaml")
     if session_path.exists():
         session = _read(session_path)
+        if session.get("schema_version") != 1 or session.get("session_id") != session_id:
+            raise ValueError(f"Invalid session record: {session_id}")
     else:
         session = {"schema_version": 1, "session_id": session_id, "created_at": _now()}
     session.update({"current_task_id": task_id, "updated_at": _now()})
