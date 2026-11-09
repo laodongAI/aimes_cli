@@ -82,7 +82,7 @@ class ProjectWorkTests(unittest.TestCase):
 
     def test_lifecycle_assessment_uses_multiple_independent_development_signals(self):
         (self.root / "src").mkdir()
-        (self.root / "pyproject.toml").write_text("[project]\\nname = 'sample'\\n", encoding="utf-8")
+        (self.root / "pyproject.toml").write_text("[project]\nname = 'sample'\n", encoding="utf-8")
         result = assess_project_lifecycle(self.root)
         self.assertEqual(result["candidate"], "development")
         self.assertEqual(result["confidence"], "medium")
