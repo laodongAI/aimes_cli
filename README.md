@@ -214,6 +214,7 @@ aimes context pack examples/traceability/trace-manifest.example.yaml --output-di
 aimes evaluation validate examples/evaluation/rule-following-suite.yaml --root .
 
 # 校验实际运行记录是否覆盖全部案例和硬门禁
+评测运行记录 V2 可为每个 PASS 案例附加 `evidence_artifacts`（相对路径、类型、SHA-256）；校验器会验证文件存在、路径边界、符号链接与哈希。V1 记录保持兼容。哈希校验不替代独立语义审查。
 aimes evaluation validate-run .aimes/evaluation/rule-following-run.json --suite examples/evaluation/rule-following-suite.yaml --root . --format json
 ```
 
