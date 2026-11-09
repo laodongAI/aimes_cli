@@ -179,5 +179,16 @@ class ProjectStateTests(unittest.TestCase):
         }
         self.assertEqual(missing, {})
 
+    def test_phase_resets_to_analysis_when_active_mode_changes(self):
+        set_project_state(self.root, mode="bugfix", phase="testing", task="修复登录错误")
+        result = set_project_state(self.root, mode="frontend-optimization")
+        self.assertEqual(result["state"]["task_phase"], "analysis")
+        self.assertEqual(result["state"]["task"], "修复登录错误")
+
+    def test_phase_resets_when_task_summary_changes(self):
+        set_project_state(self.root, mode="bugfix", phase="testing", task="修复登录错误")
+        result = set_project_state(self.root, task="优化用户资料页面")
+        self.assertEqual(result["state"]["task_phase"], "analysis")
+
 if __name__ == "__main__":
     unittest.main()
