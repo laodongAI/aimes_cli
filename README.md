@@ -264,10 +264,10 @@ aimes context validate .aimes/context-pack/context-pack.json --handoff .aimes/co
     New-Item -ItemType Directory -Force -Path $probeRoot | Out-Null
     aimes adapter probe create --tool codex-cli --product-version "$(codex --version)" --output-dir codex-cli --root $probeRoot
     # 在新会话中从 $probeRoot\codex-cli 启动 Codex，并把原始回复保存为 response.txt
-    aimes adapter probe validate codex-cli --root $probeRoot
+    aimes adapter probe validate codex-cli --root $probeRoot --confirm-fresh-session
     aimes adapter validate codex-cli/verification-evidence.yaml --root $probeRoot
 
-Claude Code CLI 将工具参数改为 --tool claude-code，版本填写实际 claude --version 输出，并使用 $probeRoot 下独立的 claude-code 目录。建议将探针放在业务项目之外，避免父目录规则污染结果。创建后必须在全新 CLI 会话中从探针目录启动对应工具，将 PROMPT.txt 作为用户消息，并把未修改的完整回复保存为 response.txt。AIMES 不会启动 AI 工具。探针结果只证明该工具版本/CLI 模式下的隔离规则加载行为，不代表真实项目全部治理规则有效。完整流程、安全边界和证据解释见 [运行时规则加载探针指南](docs/RUNTIME-RULE-LOADING-PROBE.md)。
+Claude Code CLI 将工具参数改为 --tool claude-code，版本填写实际 claude --version 输出，并使用 $probeRoot 下独立的 claude-code 目录。建议将探针放在业务项目之外，避免父目录规则污染结果。创建后必须在全新 CLI 会话中从探针目录启动对应工具，将 PROMPT.txt 作为用户消息，并把未修改的完整回复保存为 response.txt。AIMES 不会启动 AI 工具。只有确认使用全新 CLI 会话后添加 `--confirm-fresh-session` 才能得到 PASS；未确认时即使 token 匹配也记录 BLOCKED。此确认属于操作者声明，不是会话历史的密码学证明。探针结果只证明该工具版本/CLI 模式下的隔离规则加载行为，不代表真实项目全部治理规则有效。完整流程、安全边界和证据解释见 [运行时规则加载探针指南](docs/RUNTIME-RULE-LOADING-PROBE.md)。
 
 ### 文档完整性与薄入口检查
 
