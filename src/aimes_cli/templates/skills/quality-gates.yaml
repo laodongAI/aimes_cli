@@ -7,6 +7,8 @@ fail_on: ERROR
 # Mode-specific defaults come from .aimes/quality-profiles.yaml.
 # Put only deliberate project overrides here; these values take precedence over profile defaults.
 vue: {}
+python: {}
+general: {}
 exclude:
   - "node_modules/**"
   - "dist/**"
