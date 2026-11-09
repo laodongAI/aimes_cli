@@ -13,6 +13,8 @@ AIMES V1 采用“外部 AI 生成报告、AIMES 本地验证报告”：不在 
 ```bash
 aimes quality inspect --mode frontend-development
 aimes quality inspect --profile frontend --format json
+aimes quality inspect --profile regression --format json
+aimes quality inspect --base-ref origin/main --format json
 ```
 
 选择优先级为显式 profile、显式 mode、项目当前模式、默认 baseline。项目 `.aimes/quality-gates.yaml` 中的显式规则覆盖 profile 默认值；全局 `enforce/fail_on` 只由项目门禁配置控制。Profile 可调整 Vue、Python 和通用规则的已实现阈值；例如 backend profile 对 Python 文件、函数和复杂度使用更严格的阈值。但 profile 名称不代表尚未实现的依赖漏洞、覆盖率或 API 兼容性扫描已存在。
@@ -27,7 +29,7 @@ aimes quality inspect --profile frontend --format json
 
 这些规则只提供定位线索，不会证明组件职责、Composable 抽取合理性、DTO/事务边界、完整依赖方向或业务语义。重复代码规则只识别 AST 完全一致的 Python 函数体，不识别语义相似实现。
 
-**尚未实现**：依赖漏洞数据库/许可证风险扫描、基于真实 coverage.xml/coverage.json 的覆盖率门禁、基于用户指定 Git base ref 的公共 API 兼容性分析。未接入证据时不会给出 PASS 或虚构指标。复杂规则应先 advisory 运行并校准误报，再启用阻断。
+依赖策略目前只识别 requirements.txt 中无版本约束项和 package.json 中 `*`/`latest`，不等于 CVE 或许可证风险扫描。coverage.py 的 coverage.xml/coverage.json 可提供真实行覆盖率；regression profile 默认要求 80%，缺少报告会明确提示而不伪造百分比。`--base-ref` 可比较指定 Git 基线与当前工作树中的 Python 公开函数/类/方法及 FastAPI 路由签名变化；不覆盖 TypeScript/Java 等语言，也不能替代完整 schema/消费者契约测试。复杂规则应先 advisory 运行并校准误报，再启用阻断。
 
 ## 命令
 
