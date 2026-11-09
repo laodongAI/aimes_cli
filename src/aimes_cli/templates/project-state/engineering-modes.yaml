@@ -37,7 +37,7 @@ modes:
     triggers: [backend_development, api_development, fastapi, 后端开发, 接口开发, 服务端开发]
     skills: [software-engineering-standards]
     workflow: feature-development
-    quality_profile: implementation
+    quality_profile: backend
   - id: frontend-development
     label: 前端开发
     triggers: [frontend_development, vue_development, component_development, 前端开发, Vue开发, Vue组件化开发, 组件开发]
