@@ -9,7 +9,7 @@
 - MCP Server 新增项目状态读取、工程模式候选识别和受控状态更新工具；低置信度 AI 模式不允许直接持久化。
 - 增加状态持久化、模式独立性、路径边界、歧义检测和 CLI 回归测试。
 - 新增只读项目生命周期证据评估 `aimes state assess-lifecycle`，输出当前生命周期、候选、置信度、信号、证据和限制，不自动修改生命周期。
-- 新增独立任务记录 `aimes task start/list/show/update` 与会话指针 `aimes session show/bind`，不同 AI 工具会话可维护各自当前任务。
+- 新增独立任务记录 `aimes task start/list/show/update` 与会话指针 `aimes session show/bind`，不同 AI 工具会话可维护各自当前任务。 新任务流程以 task/session 记录为权威，旧项目快照字段仅为兼容保留。
 - MCP Server 新增生命周期评估、任务创建/列表/更新和会话读取/绑定工具；项目级状态快照仍保留以兼容旧版本。
 - Release 校验新增工程模式 YAML 模板源文件与 `templates/**/*.yaml` 包配置检查，防止 wheel/Windows EXE 漏打包状态目录。
 
