@@ -1,7 +1,9 @@
 import unittest
 
 from aimes_cli.adapters import ADAPTERS, adapter_payload, normalize_tools
-from aimes_cli.cli import parser
+from aimes_cli.cli import parser, emit
+import io
+from contextlib import redirect_stdout
 
 
 class AdapterRegistryTests(unittest.TestCase):
@@ -28,6 +30,13 @@ class AdapterRegistryTests(unittest.TestCase):
         self.assertEqual(args.command, "adapter")
         self.assertEqual(args.adapter_command, "list")
         self.assertEqual(args.format, "json")
+
+    def test_text_output_includes_adapter_details(self):
+        output = io.StringIO()
+        with redirect_stdout(output):
+            emit({"ok": True, "adapters": adapter_payload()})
+        self.assertIn("Codex CLI", output.getvalue())
+        self.assertIn("Terminal / OpenAI Codex", output.getvalue())
 
     def test_registry_has_unique_ids_and_known_capability_states(self):
         ids = [item["id"] for item in adapter_payload()]
