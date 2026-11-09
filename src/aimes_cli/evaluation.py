@@ -1,7 +1,7 @@
 from __future__ import annotations
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any
 import yaml
 
@@ -85,7 +85,7 @@ def _validate_evidence_artifacts(item: dict, loc: str, base_dir: Path, findings:
             _finding(findings, "ERROR", "EVIDENCE_ARTIFACT_TYPE", f"{where} must be an object")
             continue
         rel, digest, kind = artifact.get("path"), artifact.get("sha256"), artifact.get("kind")
-        if not isinstance(rel, str) or not rel.strip() or Path(rel).is_absolute() or ".." in Path(rel).parts:
+        if not isinstance(rel, str) or not rel.strip() or Path(rel).is_absolute() or PureWindowsPath(rel).is_absolute() or ".." in Path(rel).parts or ".." in PureWindowsPath(rel).parts:
             _finding(findings, "ERROR", "EVIDENCE_ARTIFACT_PATH", f"{where}.path must be a safe relative path")
             continue
         if not isinstance(kind, str) or not kind.strip():
@@ -124,7 +124,7 @@ def validate_run(path: Path) -> dict:
         _finding(fs, "ERROR", "RUN_SHAPE", "Run record must contain a case_results list")
         return _report("run-validation", path, fs, checked_cases=0)
     schema_version = data.get("schema_version", 1)
-    if isinstance(schema_version, bool) or schema_version not in {1, 2}:
+    if isinstance(schema_version, bool) or not isinstance(schema_version, int) or schema_version not in {1, 2}:
         _finding(fs, "ERROR", "RUN_SCHEMA_VERSION", "schema_version must be 1 or 2")
         schema_version = 1
     metadata = data.get("metadata")
