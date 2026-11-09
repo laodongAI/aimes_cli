@@ -97,7 +97,7 @@ def proposed_files(root: Path, tools: list[str], scope: str) -> dict[str, str]:
     files: dict[str, str] = {}
     effective_tools = list(tools)
     files[CORE_REL.as_posix()] = (Path(__file__).resolve().parent / 'templates/core/AIMES-CORE-V1.2.md').read_text(encoding='utf-8')
-    # Deploy callable UI Skills with the project rules; references must never point to assets that init did not install.
+    # Deploy registered project Skills and evaluation assets; references must never point to assets that init did not install.
     template_root = Path(__file__).resolve().parent / 'templates/skills'
     for skill_file in sorted(template_root.glob('*/SKILL.md')):
         rel = (Path('.aimes/skills') / skill_file.parent.name / 'SKILL.md').as_posix()
