@@ -39,6 +39,12 @@ def load_adapter_registry(path: Path = REGISTRY_PATH) -> tuple[dict[str, Adapter
 
     if not isinstance(raw, dict) or raw.get("schema_version") != 2:
         raise RuntimeError("AIMES adapter registry must be an object with schema_version: 2")
+    for field in ("registry_id", "registry_version"):
+        if not isinstance(raw.get(field), str) or not raw[field].strip():
+            raise RuntimeError(f"Adapter registry {field} must be a non-empty string")
+    declared_states = raw.get("capability_states")
+    if not isinstance(declared_states, list) or set(declared_states) != VALID_CAPABILITY_STATES:
+        raise RuntimeError("Adapter registry capability_states must declare all supported capability states exactly once")
     items = raw.get("adapters")
     if not isinstance(items, list) or not items:
         raise RuntimeError("AIMES adapter registry must contain a non-empty adapters list")
@@ -68,7 +74,7 @@ def load_adapter_registry(path: Path = REGISTRY_PATH) -> tuple[dict[str, Adapter
         if not isinstance(capabilities, dict) or any(not isinstance(k, str) or not isinstance(v, str) or v not in VALID_CAPABILITY_STATES for k, v in capabilities.items()):
             raise RuntimeError(f"{loc}.capabilities contains an invalid capability state")
         status = item.get("status")
-        if status not in {"template", "manual"}:
+        if not isinstance(status, str) or status not in {"template", "manual"}:
             raise RuntimeError(f"{loc}.status must be template or manual")
         label = item.get("name")
         description = item.get("description")
