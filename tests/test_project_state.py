@@ -108,5 +108,15 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn('"mode": "frontend-development"', buffer.getvalue())
 
+    def test_state_show_reports_skill_mapping_health(self):
+        result = set_project_state(self.root, mode="frontend-optimization")
+        self.assertIn("vue-frontend-engineering", result["available_skills"])
+        self.assertEqual(result["missing_skills"], [])
+
+    def test_ascii_task_trigger_detection(self):
+        registry = load_mode_registry(self.root)
+        result = detect_mode("frontend optimization", registry)
+        self.assertEqual(result["mode"], "frontend-optimization")
+
 if __name__ == "__main__":
     unittest.main()
