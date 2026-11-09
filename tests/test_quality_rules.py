@@ -1,8 +1,9 @@
 from pathlib import Path
 import tempfile
 import unittest
+import subprocess
 
-from aimes_cli.quality_rules import inspect_general_file, inspect_project_sources, inspect_python_file, inspect_vue_file
+from aimes_cli.quality_rules import inspect_general_file, inspect_project_sources, inspect_python_file, inspect_public_api_compatibility, inspect_vue_file
 
 
 class QualityRuleTests(unittest.TestCase):
@@ -79,6 +80,35 @@ class QualityRuleTests(unittest.TestCase):
             )
         self.assertFalse(any(item["code"].startswith("COVERAGE_") for item in findings))
         self.assertEqual(counts["coverage"]["status"], "NOT_PROVIDED")
+
+    def test_public_api_removal_is_detected_against_git_base_ref(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            subprocess.run(["git", "-C", str(root), "config", "user.email", "test@example.com"], check=True)
+            subprocess.run(["git", "-C", str(root), "config", "user.name", "AIMES Test"], check=True)
+            module = root / "api.py"
+            module.write_text("def public_api(value, option=None):\\n    return value\\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(root), "add", "api.py"], check=True)
+            subprocess.run(["git", "-C", str(root), "commit", "-qm", "baseline"], check=True)
+            module.write_text("def replacement(value):\\n    return value\\n", encoding="utf-8")
+            findings, metadata = inspect_public_api_compatibility(root, "HEAD")
+        self.assertEqual(metadata["status"], "COMPARED")
+        self.assertTrue(any(item["code"] == "PUBLIC_API_REMOVED" for item in findings))
+
+    def test_public_api_signature_change_is_detected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            subprocess.run(["git", "-C", str(root), "config", "user.email", "test@example.com"], check=True)
+            subprocess.run(["git", "-C", str(root), "config", "user.name", "AIMES Test"], check=True)
+            module = root / "api.py"
+            module.write_text("def public_api(value, option=None):\\n    return value\\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(root), "add", "api.py"], check=True)
+            subprocess.run(["git", "-C", str(root), "commit", "-qm", "baseline"], check=True)
+            module.write_text("def public_api(value, required):\\n    return value\\n", encoding="utf-8")
+            findings, _ = inspect_public_api_compatibility(root, "HEAD")
+        self.assertTrue(any(item["code"] == "PUBLIC_API_SIGNATURE_CHANGED" for item in findings))
 
     def test_identical_python_functions_are_reported_across_files(self):
         body = "def transform(value):\n    first = value + 1\n    second = first * 2\n    third = second - 3\n    fourth = third + 4\n    fifth = fourth * 5\n    return fifth\n"
