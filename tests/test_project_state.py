@@ -43,9 +43,11 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(result["state"]["mode_source"], "user")
 
     def test_unknown_mode_is_rejected_without_writing(self):
+        before = (self.root / ".aimes/project-state.yaml").read_text(encoding="utf-8")
         with self.assertRaises(ValueError):
             set_project_state(self.root, mode="invented-mode")
-        self.assertFalse((self.root / ".aimes/project-state.yaml").exists())
+        after = (self.root / ".aimes/project-state.yaml").read_text(encoding="utf-8")
+        self.assertEqual(after, before)
 
     def test_invalid_phase_is_rejected(self):
         with self.assertRaises(ValueError):
@@ -59,10 +61,12 @@ class ProjectStateTests(unittest.TestCase):
 
     def test_detection_returns_candidate_but_does_not_persist(self):
         registry = load_mode_registry(self.root)
+        before = (self.root / ".aimes/project-state.yaml").read_text(encoding="utf-8")
         result = detect_mode("请做 Vue 组件化开发", registry)
         self.assertEqual(result["mode"], "frontend-development")
         self.assertEqual(result["confidence"], "medium")
-        self.assertFalse((self.root / ".aimes/project-state.yaml").exists())
+        after = (self.root / ".aimes/project-state.yaml").read_text(encoding="utf-8")
+        self.assertEqual(after, before)
 
     def test_state_path_symlink_escape_is_rejected(self):
         outside = self.root.parent / (self.root.name + "-outside")
