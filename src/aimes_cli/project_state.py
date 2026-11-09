@@ -10,7 +10,7 @@ STATE_REL = Path(".aimes/project-state.yaml")
 MODE_REGISTRY_REL = Path(".aimes/project-state/engineering-modes.yaml")
 
 LIFECYCLES = {
-    "new", "planning", "design", "development", "testing",
+    "unknown", "new", "planning", "design", "development", "testing",
     "release", "operation", "paused", "archived",
 }
 PHASES = {
@@ -103,7 +103,7 @@ def read_project_state(root: Path) -> dict[str, Any]:
     if not path.is_file():
         return {
             "schema_version": 1,
-            "project_lifecycle": "new",
+            "project_lifecycle": "unknown",
             "engineering_mode": None,
             "task_phase": None,
             "task": None,
