@@ -193,7 +193,7 @@ class QualityCheckTests(unittest.TestCase):
 
     def test_backend_profile_applies_backend_thresholds(self):
         source = self.root / "service.py"
-        source.write_text("def work():\\n    return 1\\n" * 40, encoding="utf-8")
+        source.write_text("def work():\n    return 1\n" * 40, encoding="utf-8")
         result = inspect_project_quality(self.root, profile_id="backend")
         self.assertEqual(result["policy"]["profile"]["id"], "backend")
         self.assertTrue(any(item["code"] == "PYTHON_FILE_LINES" for item in result["findings"]))
@@ -202,9 +202,9 @@ class QualityCheckTests(unittest.TestCase):
         modes = self.root / ".aimes" / "project-state" / "engineering-modes.yaml"
         modes.parent.mkdir(parents=True)
         modes.write_text(
-            "schema_version: 1\\nmodes:\\n  - id: backend-development\\n"
-            "    label: Backend\\n    triggers: []\\n    skills: []\\n"
-            "    workflow: feature-development\\n    quality_profile: backend\\n",
+            "schema_version: 1\nmodes:\n  - id: backend-development\n"
+            "    label: Backend\n    triggers: []\n    skills: []\n"
+            "    workflow: feature-development\n    quality_profile: backend\n",
             encoding="utf-8",
         )
         result = inspect_project_quality(self.root, mode_id="backend-development")
