@@ -5,7 +5,8 @@
 - Python AST 新增文件/函数规模、估算分支复杂度、可变默认参数、宽泛异常、疑似硬编码凭据、路由直接数据访问和 API 层直接导入持久化模块检查。
 - 通用规则新增源码文件规模和跨文件完全相同 Python 函数体检测；新增 backend quality profile，并将 backend-development 模式映射到该 profile。
 - 项目排除规则同时应用于扩展源码扫描；新增规则单测与 profile/模式路由测试。所有新规则默认 WARNING/ERROR 仅按现有全局门禁策略处理，静态启发式结果不代表语义证明。
-- 当前尚未接入依赖漏洞数据库、真实覆盖率报告门禁和公共 API 兼容性 Diff 分析；报告明确列出这些能力边界。
+- 新增 requirements.txt/package.json 的明显无版本约束或通配符依赖提示；新增 coverage.py XML/JSON 行覆盖率证据读取，regression profile 默认要求 80%（缺少报告时给出 COVERAGE_REPORT_MISSING，不推断覆盖率）。
+- 新增可选 `--base-ref` / MCP `base_ref` Python 公共 API 兼容性比较，检查公开函数/类/方法与 FastAPI 路由的删除和签名变化。仍未接入 CVE/许可证情报数据库，也不覆盖所有语言的 API 契约。
 
 ## Unreleased - 项目状态与工程模式感知
 
