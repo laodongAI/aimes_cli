@@ -239,6 +239,7 @@ def parser() -> argparse.ArgumentParser:
     adapter_probe_create.add_argument('--governance-version', default='1.2'); adapter_probe_create.add_argument('--observer', default='')
     adapter_probe_validate = adapter_probe_sub.add_parser('validate', help='Validate the raw response and write a V2 runtime evidence record')
     common(adapter_probe_validate); adapter_probe_validate.add_argument('probe_dir', type=Path); adapter_probe_validate.add_argument('--observer', default='')
+    adapter_probe_validate.add_argument('--confirm-fresh-session', action='store_true', help='Attest that the probe prompt was run in a newly started CLI session; required for PASS')
     hook = sub.add_parser('hook', help='Install AIMES governance Git hooks (preview first, never overwrite user hooks)')
     hook_sub = hook.add_subparsers(dest='hook_command', required=True)
     hook_install = hook_sub.add_parser('install', help='Preview or install a governance hook that runs read-only AIMES checks')
@@ -895,7 +896,7 @@ def main(argv=None):
                     result = create_runtime_probe(root, output_dir, tool=args.tool, product_version=args.product_version, governance_version=args.governance_version, observer=args.observer)
                 else:
                     probe_dir = (root / args.probe_dir).resolve() if not args.probe_dir.is_absolute() else args.probe_dir.resolve()
-                    result = validate_runtime_probe(root, probe_dir, observer=args.observer)
+                    result = validate_runtime_probe(root, probe_dir, observer=args.observer, confirm_fresh_session=args.confirm_fresh_session)
             elif args.adapter_command in {'validate', 'report'}:
                 target = (root / args.path).resolve() if not args.path.is_absolute() else args.path.resolve()
                 result = validate_adapter_evidence(target, root) if args.adapter_command == 'validate' else adapter_report(target, root)
