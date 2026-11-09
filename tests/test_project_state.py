@@ -155,6 +155,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertIn("当前工程模式：前端体验优化", output)
         self.assertIn("任务阶段：分析", output)
         self.assertIn("路由 Skills：", output)
+        self.assertIn("完成现状分析", output)
 
     def test_ai_selected_mode_records_provenance_and_default_confidence(self):
         result = set_project_state(self.root, mode="refactoring", source="ai")
