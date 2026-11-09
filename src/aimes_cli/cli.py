@@ -797,7 +797,7 @@ def main(argv=None):
     root=(getattr(args, 'root', None) or find_root()).resolve()
     try:
         if args.command == 'quality' and args.quality_command == 'inspect':
-            result = inspect_project_quality(root)
+            result = inspect_project_quality(root, profile_id=args.profile, mode_id=args.mode)
             emit(result, args.format, args.output)
             return 0 if result.get('ok') else 1
         if args.command == 'quality' and args.quality_command == 'review':
