@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 import yaml
-from .adapters import ADAPTERS, adapter_payload, normalize_tools
+from .adapters import ADAPTERS, ADAPTER_REGISTRY, adapter_payload, normalize_tools
 from . import __version__, SCHEMA_VERSION, GOVERNANCE_VERSION
 
 CONFIG_REL = Path('.aimes/config.yaml')
@@ -65,7 +65,7 @@ def build_config(root: Path, tools: list[str], scope: str) -> dict[str, Any]:
         'schema_version': SCHEMA_VERSION,
         'governance': {'name': 'AIMES', 'version': GOVERNANCE_VERSION, 'core': CORE_REL.as_posix()},
         'project': {'root': '.', 'name': root.name, 'scope': scope},
-        'adapter_registry': {'schema_version': 2, 'registry_version': '2.0.0'},
+        'adapter_registry': {'schema_version': ADAPTER_REGISTRY.get('schema_version'), 'registry_version': ADAPTER_REGISTRY.get('registry_version')},
         'tools': [{
             'id': t,
             'name': ADAPTERS[t].label,
