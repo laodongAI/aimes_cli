@@ -23,7 +23,7 @@ class McpServerTests(unittest.TestCase):
         self.assertIn("instructions", response["result"])
         listed = handle_request(self.root, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
         names = [tool["name"] for tool in listed["result"]["tools"]]
-        self.assertEqual(names, ["aimes_project_state", "aimes_detect_engineering_mode", "aimes_set_project_state", "aimes_skill_route", "aimes_read_skill", "aimes_validate_delivery"])
+        self.assertEqual(names, ["aimes_assess_project_lifecycle", "aimes_task_start", "aimes_task_list", "aimes_task_update", "aimes_session_show", "aimes_session_bind", "aimes_project_state", "aimes_detect_engineering_mode", "aimes_set_project_state", "aimes_skill_route", "aimes_read_skill", "aimes_validate_delivery"])
 
     def test_project_state_and_mode_detection_tools(self):
         state = call_tool(self.root, "aimes_project_state", {})
@@ -50,6 +50,32 @@ class McpServerTests(unittest.TestCase):
         self.assertFalse(approved["isError"])
         payload = json.loads(approved["content"][0]["text"])
         self.assertEqual(payload["state"]["mode_source"], "ai")
+
+    def test_lifecycle_assessment_and_session_scoped_tasks(self):
+        assessed = call_tool(self.root, "aimes_assess_project_lifecycle", {})
+        self.assertFalse(assessed["isError"])
+        assessment = json.loads(assessed["content"][0]["text"])
+        self.assertEqual(assessment["current_lifecycle"], "unknown")
+        self.assertIn("evidence", assessment)
+
+        first = call_tool(self.root, "aimes_task_start",
+                          {"title": "前端优化", "session_id": "codex", "task_id": "ui-task"})
+        second = call_tool(self.root, "aimes_task_start",
+                           {"title": "接口修复", "session_id": "claude", "task_id": "api-task"})
+        self.assertFalse(first["isError"])
+        self.assertFalse(second["isError"])
+        session = call_tool(self.root, "aimes_session_show", {"session_id": "codex"})
+        session_payload = json.loads(session["content"][0]["text"])
+        self.assertEqual(session_payload["current_task"]["task_id"], "ui-task")
+        listed = call_tool(self.root, "aimes_task_list", {"session_id": "claude"})
+        listed_payload = json.loads(listed["content"][0]["text"])
+        self.assertEqual([item["task_id"] for item in listed_payload["tasks"]], ["api-task"])
+        updated = call_tool(self.root, "aimes_task_update",
+                            {"task_id": "ui-task", "phase": "testing", "status": "blocked"})
+        self.assertFalse(updated["isError"])
+        payload = json.loads(updated["content"][0]["text"])
+        self.assertEqual(payload["task"]["phase"], "testing")
+        self.assertEqual(payload["task"]["status"], "blocked")
 
     def test_notification_has_no_response(self):
         self.assertIsNone(handle_request(self.root, {"jsonrpc": "2.0", "method": "notifications/initialized"}))
