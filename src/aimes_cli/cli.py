@@ -293,6 +293,7 @@ def emit(data, fmt='text', output: Path | None=None):
                     if len(data[key]) > 50: lines.append(f"  ... another {len(data[key]) - 50} file(s)")
             if data.get('governance_target_version') is not None: lines.append(f"Target governance version: {data['governance_target_version']}")
             if 'ok' in data: lines.append(f"Result: {'PASS' if data['ok'] else 'NEEDS ATTENTION'}")
+            if data.get('registry_version') is not None: lines.append(f"Adapter registry version: {data['registry_version']}")
             if 'dry_run' in data: lines.append(f"Mode: {'dry-run (no files written)' if data['dry_run'] else 'apply'}")
             if data.get('tools') and all(isinstance(item, str) for item in data['tools']): lines.append('Tools: ' + ', '.join(data['tools']))
             if data.get('adapters') and isinstance(data['adapters'], list):
