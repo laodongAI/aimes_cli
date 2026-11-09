@@ -41,7 +41,7 @@ AIMES 将项目整体生命周期、当前任务的工程模式和任务执行�
 - testing-validation：测试与验收
 - release-delivery：发布与交付
 - documentation：文档建设
-- engineering-audit：工程审计
+- technical-debt：技术债治理\n- database-migration：数据库与数据迁移\n- devops-ci：DevOps 与 CI/CD\n- observability：可观测性建设\n- ai-model-evaluation：AI 模型与 Agent 评测\n- incident-response：线上故障与应急响应\n- platform-migration：技术与平台迁移\n- engineering-audit：工程审计
 
 模式映射优先复用已有 Skills。例如前端优化组合 Vue 工程规范、UI 质量审查、前端设计和实现验证；重构组合软件工程规范与变更影响分析。并非每个模式都必须创建一份同名 Skill，只有存在稳定、独立、可评测的方法论时才新增专业 Skill。
 
