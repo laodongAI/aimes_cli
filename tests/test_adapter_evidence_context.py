@@ -49,7 +49,7 @@ class AdapterEvidenceContextTests(unittest.TestCase):
     def test_report_aggregates_multiple_hosts_under_same_harness(self):
         checks = [
             {"id": "CLI-001", "tool": "codex-cli", "host_id": "terminal", "harness_id": "codex", "verification": "NOT_RUN", "method": "file_inspection"},
-            {"id": "IDE-001", "tool": "vscode-codex", "host_id": "vscode", "harness_id": "codex", "verification": "PASS", "method": "runtime_observation", "evidence_note": "Test fixture evidence."},
+            {"id": "IDE-001", "tool": "vscode-codex", "host_id": "vscode", "harness_id": "codex", "verification": "NOT_RUN", "method": "file_inspection"},
         ]
         self.path.write_text(yaml.safe_dump({"schema_version": 2, "checks": checks}, sort_keys=False), encoding="utf-8")
         report = adapter_report(self.path, self.root)
