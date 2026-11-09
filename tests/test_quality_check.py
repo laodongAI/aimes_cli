@@ -191,6 +191,31 @@ class QualityCheckTests(unittest.TestCase):
         self.assertTrue(mapped)
         self.assertEqual(mapped - declared, set())
 
+    def test_backend_profile_applies_backend_thresholds(self):
+        source = self.root / "service.py"
+        source.write_text("def work():\\n    return 1\\n" * 40, encoding="utf-8")
+        result = inspect_project_quality(self.root, profile_id="backend")
+        self.assertEqual(result["policy"]["profile"]["id"], "backend")
+        self.assertTrue(any(item["code"] == "PYTHON_FILE_LINES" for item in result["findings"]))
+
+    def test_backend_mode_selects_backend_profile(self):
+        modes = self.root / ".aimes" / "project-state" / "engineering-modes.yaml"
+        modes.parent.mkdir(parents=True)
+        modes.write_text(
+            "schema_version: 1\\nmodes:\\n  - id: backend-development\\n"
+            "    label: Backend\\n    triggers: []\\n    skills: []\\n"
+            "    workflow: feature-development\\n    quality_profile: backend\\n",
+            encoding="utf-8",
+        )
+        result = inspect_project_quality(self.root, mode_id="backend-development")
+        self.assertEqual(result["policy"]["profile"]["id"], "backend")
+
+    def test_python_rule_config_rejects_invalid_threshold(self):
+        self._write_config(python={"max_function_lines": 0})
+        result = inspect_project_quality(self.root)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any(item["code"] == "QUALITY_RULE_CONFIG" for item in result["findings"]))
+
     def test_unknown_profile_fails_closed(self):
         result = inspect_project_quality(self.root, profile_id="does-not-exist")
         self.assertFalse(result["ok"])
