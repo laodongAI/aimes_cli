@@ -145,10 +145,10 @@ class QualityCheckTests(unittest.TestCase):
 
     def test_empty_project_vue_overrides_preserve_profile_defaults(self):
         source = self.root / "Page.vue"
-        source.write_text("line\\n" * 375, encoding="utf-8")
+        source.write_text("line\n" * 375, encoding="utf-8")
         config = self.root / ".aimes" / "quality-gates.yaml"
         config.parent.mkdir(parents=True)
-        config.write_text("schema_version: 1\\nenabled: true\\nenforce: false\\nfail_on: ERROR\\nvue: {}\\n",
+        config.write_text("schema_version: 1\nenabled: true\nenforce: false\nfail_on: ERROR\nvue: {}\n",
                           encoding="utf-8")
         result = inspect_project_quality(self.root, profile_id="frontend")
         self.assertTrue(any(item["code"] == "SFC_LINES" for item in result["findings"]))
