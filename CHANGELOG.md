@@ -15,6 +15,10 @@
 - 明确区分工作流元数据、实际工作流定义和可执行运行记录；模式级 quality_profile 目前仅为映射标签，全局质量门禁仍需独立运行。
 - 任务阶段禁止回退，已完成/已取消任务不可原位修改；返工通过新任务保留历史。增加 CLI/MCP/路由和状态转换回归测试。
 - Release 校验新增工程模式 YAML 模板源文件与 `templates/**/*.yaml` 包配置检查，防止 wheel/Windows EXE 漏打包状态目录。
+- 新增版本化 `.aimes/quality-profiles.yaml` 质量策略注册表；覆盖 requirements、architecture、frontend、implementation、regression、performance、security、release、documentation、delivery、operations、AI evaluation、reliability、migration、audit 等 profile。
+- `aimes quality inspect` 支持 `--mode` / `--profile`，默认读取当前工程模式并选择其 quality_profile；MCP 新增 `aimes_quality_inspect`。
+- Profile 只提供当前已有 Vue 确定性规则的默认阈值/开关；项目 `quality-gates.yaml` 显式设置优先，`enforce/fail_on` 仍由项目全局配置控制，避免模式切换意外启用阻断。
+- `state explain` 会验证模式映射的 profile 是否存在且有效；新增 profile 选择、项目覆盖优先级、未知 profile fail-closed、CLI/MCP 契约测试及配置路径越界保护。
 
 ## Unreleased - 统一质量 Finding 报告
 
