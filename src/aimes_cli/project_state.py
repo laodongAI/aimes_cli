@@ -220,6 +220,10 @@ def set_project_state(
     root = root.resolve()
     if task is not None and not isinstance(task, str):
         raise ValueError("task must be a string")
+    for field_name, field_value in (("lifecycle", lifecycle), ("mode", mode), ("phase", phase),
+                                    ("confidence", confidence), ("source", source)):
+        if field_value is not None and not isinstance(field_value, str):
+            raise ValueError(f"{field_name} must be a string")
     if lifecycle is None and mode is None and phase is None and task is None:
         raise ValueError("Specify at least one of lifecycle, mode, phase or task")
     state = read_project_state(root)
