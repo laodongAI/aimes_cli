@@ -522,4 +522,14 @@ aimes state set --lifecycle development --mode frontend-optimization --phase ana
 aimes state detect --task-text "请优化 Vue 页面交互和响应式体验"
 ```
 
-MCP Server 同步提供 `aimes_project_state`、`aimes_detect_engineering_mode` 和 `aimes_set_project_state`，便于连接的 AI 宿主读取、识别和更新状态。状态模型与边界见 [项目状态与工程模式感知](docs/PROJECT-STATE-AND-ENGINEERING-MODES.md)。CLI 不读取 AI 对话内容；AI 宿主必须结合当前对话识别模式，低置信度或多模式命中时先确认。工作流与质量配置目前是路由元数据，不代表自动执行。
+项目生命周期证据评估与独立任务/会话管理已加入：`aimes state assess-lifecycle` 只读收集项目结构和 Git 证据，不自动改变生命周期；`aimes task start/list/show/update` 管理独立任务；`aimes session show/bind` 管理不同 AI 工具会话的当前任务指针。
+
+```powershell
+aimes state assess-lifecycle
+aimes task start --title "优化前端体验" --session-id codex --mode frontend-optimization
+aimes task list --session-id codex
+aimes task update --id <task-id> --phase testing --status blocked
+aimes session show --id codex
+```
+
+MCP Server 同步提供 `aimes_project_state`、`aimes_detect_engineering_mode` 和 `aimes_set_project_state`，便于连接的 AI 宿主读取、识别和更新状态。 MCP Server 同步提供 `aimes_assess_project_lifecycle`、`aimes_task_start/list/update`、`aimes_session_show/bind`，以及原有项目状态工具。状态模型与边界见 [项目状态与工程模式感知](docs/PROJECT-STATE-AND-ENGINEERING-MODES.md)。CLI 不读取 AI 对话内容；AI 宿主必须结合当前对话识别模式，低置信度或多模式命中时先确认。工作流与质量配置目前是路由元数据，不代表自动执行。
