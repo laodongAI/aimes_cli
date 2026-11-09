@@ -65,7 +65,17 @@ def build_config(root: Path, tools: list[str], scope: str) -> dict[str, Any]:
         'schema_version': SCHEMA_VERSION,
         'governance': {'name': 'AIMES', 'version': GOVERNANCE_VERSION, 'core': CORE_REL.as_posix()},
         'project': {'root': '.', 'name': root.name, 'scope': scope},
-        'tools': [{'id': t, 'name': ADAPTERS[t].label, 'adapter_status': ADAPTERS[t].status, 'entry_paths': list(ADAPTERS[t].paths)} for t in tools],
+        'adapter_registry': {'schema_version': 2, 'registry_version': '2.0.0'},
+        'tools': [{
+            'id': t,
+            'name': ADAPTERS[t].label,
+            'adapter_status': ADAPTERS[t].status,
+            'entry_paths': list(ADAPTERS[t].paths),
+            'host': {'id': ADAPTERS[t].host_id, 'type': ADAPTERS[t].host_type, 'name': ADAPTERS[t].host_name},
+            'harness': {'id': ADAPTERS[t].harness_id, 'name': ADAPTERS[t].harness_name},
+            'execution_modes': list(ADAPTERS[t].execution_modes),
+            'capabilities': dict(ADAPTERS[t].capabilities),
+        } for t in tools],
         'policy': {'preserve_existing_files': True, 'auto_overwrite': False, 'unknown_capability': 'report-and-stop', 'verified_requires_evidence': True},
         'records': {'tasks': 'project-control/TASKS.md', 'handoff': 'project-control/HANDOFF.md'},
     }
