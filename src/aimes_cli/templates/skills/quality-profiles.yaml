@@ -1,0 +1,82 @@
+schema_version: 1
+registry_version: 1.0.0
+default_profile: baseline
+description: "AIMES 模式质量配置注册表。项目 quality-gates.yaml 的显式设置优先于 profile 默认值；enforce/fail_on 始终由项目全局门禁控制。"
+profiles:
+  baseline:
+    description: "baseline 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    vue: {}
+  requirements:
+    description: "requirements 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    vue: {}
+  architecture:
+    description: "architecture 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    vue: {}
+  implementation:
+    description: "implementation 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    vue:
+      max_sfc_lines:
+        warning: 400
+        error: 600
+      max_script_lines:
+        warning: 250
+        error: 400
+      max_template_lines:
+        warning: 250
+        error: 400
+  frontend:
+    description: "frontend 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    vue:
+      max_sfc_lines:
+        warning: 350
+        error: 500
+      max_script_lines:
+        warning: 220
+        error: 350
+      max_template_lines:
+        warning: 220
+        error: 350
+  regression:
+    description: "regression 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    vue:
+      disallow_direct_http_calls: true
+  performance:
+    description: "performance 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    vue: {}
+  security:
+    description: "security 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    vue: {}
+  release:
+    description: "release 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    vue: {}
+  documentation:
+    description: "documentation 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    vue: {}
+  delivery:
+    description: "delivery 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    vue: {}
+  operations:
+    description: "operations 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    vue: {}
+  ai-evaluation:
+    description: "ai-evaluation 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    vue: {}
+  reliability:
+    description: "reliability 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    vue: {}
+  migration:
+    description: "migration 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    vue: {}
+  audit:
+    description: "audit 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。"
+    vue:
+      max_sfc_lines:
+        warning: 350
+        error: 500
+      max_script_lines:
+        warning: 220
+        error: 350
+      max_template_lines:
+        warning: 220
+        error: 350
+      disallow_direct_http_calls: true
