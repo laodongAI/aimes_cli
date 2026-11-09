@@ -19,6 +19,7 @@ class ProductSkillDeploymentTests(unittest.TestCase):
             core_path = root / "docs/_governance/AIMES-CORE-V1.2.md"
             self.assertTrue(core_path.is_file())
             registry = yaml.safe_load(registry_path.read_text(encoding="utf-8"))
+            self.assertTrue((root / ".aimes/skills/software-engineering-quality-suite.yaml").is_file())
             routes = {item["name"]: item for item in registry["skills"]}
 
             expected = {
