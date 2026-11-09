@@ -2,6 +2,7 @@
 
 - 新增声明式 Adapter Registry V2：以 YAML 注册表管理 Host、Harness、执行模式、入口路径和能力状态；保留既有工具 ID、别名和检测命令兼容性。
 - 新增 `aimes adapter list`，支持文本/JSON 查看工具适配关系；项目初始化配置同步记录 Host/Harness 元数据与注册表版本。
+- 新增只读 `aimes adapter detect`：发现 PATH 中的本地工具启动器，并仅对 CLI 启动器尝试 `--version`；IDE 启动器不执行参数，Windows `.cmd/.bat` 不经 Shell 执行；明确区分 `available / not_found / not_detectable`，不将启动器存在误判为能力已验证。
 - 新增注册表 JSON Schema、加载期结构校验和回归测试；发布校验检查 wheel/EXE 所需的注册表资源是否纳入包。
 - 运行时规则探针在证据中记录 Host ID、Harness ID 和适配器注册表版本；证据校验检查维度与注册表是否一致，适配报告按工具、Host、Harness 和执行模式汇总，同时兼容旧证据。
 - 适配能力采用 `native/template/manual/unknown/unsupported` 状态；尚未完成的 Hooks、MCP、Skills、Agent、Session 能力明确保持 UNKNOWN，不宣称运行时支持。
