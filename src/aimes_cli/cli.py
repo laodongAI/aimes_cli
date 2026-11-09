@@ -52,6 +52,7 @@ def parser() -> argparse.ArgumentParser:
     common(quality_inspect)
     quality_inspect.add_argument('--mode', help='Select the quality profile mapped to an engineering mode; defaults to the persisted current mode')
     quality_inspect.add_argument('--profile', help='Select a named quality profile directly; mutually exclusive with --mode')
+    quality_inspect.add_argument('--base-ref', help='Compare changed Python public contracts against this Git branch, tag, or commit')
     quality_review = quality_sub.add_parser('review', help='Validate an externally generated, evidence-backed AI engineering review report; advisory only')
     common(quality_review)
     quality_review.add_argument('--report', type=Path, required=True, help='JSON report produced by an AI tool; must be inside the project root')
@@ -797,7 +798,7 @@ def main(argv=None):
     root=(getattr(args, 'root', None) or find_root()).resolve()
     try:
         if args.command == 'quality' and args.quality_command == 'inspect':
-            result = inspect_project_quality(root, profile_id=args.profile, mode_id=args.mode)
+            result = inspect_project_quality(root, profile_id=args.profile, mode_id=args.mode, base_ref=args.base_ref)
             emit(result, args.format, args.output)
             return 0 if result.get('ok') else 1
         if args.command == 'quality' and args.quality_command == 'review':
