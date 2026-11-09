@@ -45,6 +45,18 @@ AIMES 的目标不是单纯安装规则和 Skills，而是帮助 Codex、Claude 
 
 本能力只证明本机启动器发现与有限版本读取，不证明工具功能、登录状态、扩展安装、MCP/Skills/Hooks 或规则加载成功。
 
+### 2.3 2026-11-09 实施进展：L2 项目集成只读检查
+
+- [x] 新增 `aimes adapter inspect`，首批支持 Codex CLI 与 Claude Code CLI。
+- [x] 检查项目级 instructions、Skills、MCP、Hooks 与 Agent 定义入口。
+- [x] 结构化 JSON/TOML 仅做解析与非空结构识别，不输出配置值或凭据。
+- [x] 输出文件路径、SHA-256、大小和状态；拒绝跟随符号链接，限制单文件读取大小。
+- [x] 不执行任何命令、Hook 或 Agent，不读取用户级配置。
+- [ ] 在本地与 CI 中运行新增测试、全量单测及发布校验。
+- [ ] 在真实 Codex/Claude 环境中对照产品版本验证配置加载与功能行为，形成 L3 证据。
+
+当前 L2 只提供静态项目配置发现，不证明当前会话已加载、项目已信任、MCP 可连接、Hook 可执行或 Skill/Agent 实际触发。
+
 ## 3. 实施顺序
 
 ### 阶段 A：可信基线（当前阶段）
