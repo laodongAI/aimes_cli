@@ -118,7 +118,7 @@ def proposed_files(root: Path, tools: list[str], scope: str) -> dict[str, str]:
     if mode_registry.is_file():
         files['.aimes/project-state/engineering-modes.yaml'] = mode_registry.read_text(encoding='utf-8')
     initial_state = {
-        'schema_version': 1, 'project_lifecycle': 'new',
+        'schema_version': 1, 'project_lifecycle': 'unknown',
         'engineering_mode': None, 'task_phase': None, 'task': None,
         'mode_source': 'unset', 'confidence': 'low', 'updated_at': None,
     }
