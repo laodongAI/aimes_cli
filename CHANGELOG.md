@@ -252,3 +252,5 @@ No global deployment, automatic uninstall, rollback, three-way merge, automatic 
 - Windows EXE build/runtime verification is not claimed until the build script is run on Windows.
 
 - Added read-only `aimes adapter inspect` for Codex CLI and Claude Code project integrations (instructions, Skills, MCP, Hooks, and Agents); configuration values and credentials are not emitted, and no commands or hooks are executed.
+
+- Add configurable, read-only engineering quality inspection (`aimes quality inspect`) with Vue SFC/script/template size thresholds, advisory-by-default policy, and CI self-check.
