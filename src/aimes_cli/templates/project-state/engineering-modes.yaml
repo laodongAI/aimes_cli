@@ -46,7 +46,7 @@ modes:
     quality_profile: frontend
   - id: frontend-optimization
     label: 前端体验优化
-    triggers: [frontend_optimization, ui_optimization, ux_optimization, 页面优化, 前端优化, UI优化, 体验优化, 界面优化]
+    triggers: [frontend_optimization, ui_optimization, ux_optimization, 页面优化, 前端优化, UI优化, 体验优化, 界面优化, 页面交互, 响应式体验]
     skills: [vue-frontend-engineering, ui-quality-review, frontend-design, ui-implementation-validation]
     workflow: frontend-optimization
     quality_profile: frontend
@@ -98,6 +98,48 @@ modes:
     skills: [software-engineering-standards]
     workflow: documentation
     quality_profile: documentation
+  - id: technical-debt
+    label: 技术债治理
+    triggers: [technical_debt, tech_debt, maintainability, 技术债, 可维护性治理, 依赖治理, 代码治理]
+    skills: [software-engineering-standards, change-impact-analysis]
+    workflow: technical-debt
+    quality_profile: audit
+  - id: database-migration
+    label: 数据库与数据迁移
+    triggers: [database_migration, schema_migration, data_migration, 数据库迁移, 数据迁移, Schema变更]
+    skills: [software-engineering-standards, architecture-contract-review, change-impact-analysis]
+    workflow: migration
+    quality_profile: migration
+  - id: devops-ci
+    label: DevOps 与 CI/CD
+    triggers: [devops, ci_cd, build_pipeline, deployment_pipeline, DevOps, CI/CD, 构建流水线, 发布流水线, 部署流水线]
+    skills: [software-engineering-standards]
+    workflow: devops
+    quality_profile: delivery
+  - id: observability
+    label: 可观测性建设
+    triggers: [observability, logging, monitoring, metrics, 可观测性, 日志监控, 指标体系, 链路追踪]
+    skills: [software-engineering-standards]
+    workflow: observability
+    quality_profile: operations
+  - id: ai-model-evaluation
+    label: AI 模型与 Agent 评测
+    triggers: [model_evaluation, llm_evaluation, agent_evaluation, AI模型评测, 模型评测, LLM评测, Agent评测, 提示词评测]
+    skills: [software-engineering-standards]
+    workflow: ai-evaluation
+    quality_profile: ai-evaluation
+  - id: incident-response
+    label: 线上故障与应急响应
+    triggers: [incident_response, production_incident, outage, 线上故障, 生产事故, 故障应急, 服务不可用]
+    skills: [software-engineering-standards, change-impact-analysis]
+    workflow: incident-response
+    quality_profile: reliability
+  - id: platform-migration
+    label: 技术与平台迁移
+    triggers: [platform_migration, framework_migration, technology_migration, 技术迁移, 框架迁移, 平台迁移, 版本迁移]
+    skills: [software-engineering-standards, architecture-contract-review, change-impact-analysis]
+    workflow: migration
+    quality_profile: migration
   - id: engineering-audit
     label: 工程审计
     triggers: [engineering_audit, code_audit, architecture_audit, 工程审计, 代码审计, 架构审计, 全面检查]
