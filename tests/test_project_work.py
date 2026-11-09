@@ -164,6 +164,13 @@ class ProjectWorkTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn('"evidence"', output.getvalue())
 
+        output = io.StringIO()
+        with redirect_stdout(output):
+            code = main(["state", "explain", "--root", str(self.root),
+                         "--mode", "frontend-optimization", "--format", "json"])
+        self.assertEqual(code, 0)
+        self.assertIn('"profile_status": "MAPPING_ONLY"', output.getvalue())
+
         # The pre-existing task writer/lease validator remains available under the shared task command.
         output = io.StringIO()
         with redirect_stdout(output):
