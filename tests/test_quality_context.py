@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 from aimes_cli.quality_context import build_review_context
+from aimes_cli.cli import parser
 
 
 class ReviewContextTests(unittest.TestCase):
@@ -21,6 +22,12 @@ class ReviewContextTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_cli_parser_exposes_review_context(self):
+        args = parser().parse_args(["quality", "review-context", "--root", str(self.root), "--format", "json"])
+        self.assertEqual(args.command, "quality")
+        self.assertEqual(args.quality_command, "review-context")
+        self.assertEqual(args.format, "json")
 
     def test_includes_source_and_root_guidance(self):
         result = build_review_context(self.root)
