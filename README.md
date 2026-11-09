@@ -137,6 +137,24 @@ AIMES 初始化时会将 UI 专项 Skill 与注册表部署到项目内的 `.aim
 
 部署文件包括 `.aimes/skills/registry.yaml`、四个 Skill 文件和 `.aimes/skills/ui-quality-governance-suite.yaml`。实际运行时是否被某个 IDE/CLI 加载，仍需按工具版本独立验证；初始化成功不等于运行时验证通过。规范见 [UI 设计能力治理与调用规范](docs/UI-DESIGN-GOVERNANCE.md)。
 
+## 软件工程需求、设计与开发治理
+
+AIMES 将需求、设计、开发和验证串成统一质量链，并将规范以项目级 Skill 部署，而不是要求每次任务重新阅读全部规则。
+
+| 阶段 | 默认调用 | 主要约束 |
+|---|---|---|
+| 需求 | requirement-cognition | 目标、范围、验收标准、异常/权限边界、未决问题 |
+| 设计 | project-knowledge-reuse、change-impact-analysis、architecture-contract-review（适用时） | 先检查现有实现；明确模块职责、依赖、API/数据契约、兼容和回滚 |
+| 开发 | software-engineering-standards、controlled-implementation | 代码复用、单一职责、分层、类型、异常、安全、测试和文档同步 |
+| Vue 前端 | vue-frontend-engineering + 适用的 UI Skills | Page/业务组件/共享组件分层，Props/Emits/Slots，Composable，API Service，Pinia 边界 |
+| 验证 | requirement-driven-testing + ui-implementation-validation（适用时） | 单元、组件、契约、集成、E2E、构建和浏览器验证按实际能力执行 |
+
+详细规则见 [软件工程需求、设计与开发规范](docs/SOFTWARE-ENGINEERING-STANDARDS.md)。新增两个可路由 Skill：
+- .aimes/skills/software-engineering-standards/SKILL.md：通用工程设计与实现规范，含前后端分层、代码复用和质量审查。
+- .aimes/skills/vue-frontend-engineering/SKILL.md：Vue 3 组件化、Composable、Pinia、API 分层、TypeScript 和组件测试。
+
+初始化项目会部署两个 Skill、注册表和工程质量评测套件。评测定义位于 examples/evaluation/software-engineering-quality-suite.yaml，部署副本位于 .aimes/skills/software-engineering-quality-suite.yaml。案例定义和静态测试不代表真实 AI 工具已通过行为评测；运行时状态保持 UNKNOWN，直到有真实会话与独立证据。
+
 ## 3. 安装（Windows PowerShell）
 
 需要 Python 3.10+。推荐从仓库源码安装，避免复制历史版本的 wheel 文件名：
