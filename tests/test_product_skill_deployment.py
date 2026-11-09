@@ -47,6 +47,19 @@ class ProductSkillDeploymentTests(unittest.TestCase):
             self.assertIn("强制路由", core)
             self.assertIn("宿主级 Skill", core)
 
+    def test_init_deploys_default_quality_gate_config(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result = init_project(root, ["zcode"], dry_run=False)
+            self.assertTrue(result["ok"])
+            config_path = root / ".aimes/quality-gates.yaml"
+            self.assertTrue(config_path.is_file())
+            config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+            self.assertFalse(config["enforce"])
+            self.assertEqual(config["vue"]["max_sfc_lines"]["warning"], 400)
+
     def test_init_rerun_preserves_user_modified_skill_registry(self):
         import tempfile
 
