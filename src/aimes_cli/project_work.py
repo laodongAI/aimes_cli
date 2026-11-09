@@ -10,6 +10,8 @@ from typing import Any
 
 import yaml
 
+from .project_state import read_project_state
+
 TASKS_REL = Path(".aimes/tasks")
 SESSIONS_REL = Path(".aimes/sessions")
 TASK_STATUSES = {"active", "blocked", "completed", "cancelled"}
@@ -225,7 +227,7 @@ def assess_project_lifecycle(root: Path) -> dict[str, Any]:
     elif len(top) > 1 or (top and top_score < 3):
         confidence = "low"
     return {
-        "ok": True, "project_root": str(root), "current_lifecycle": "not_read",
+        "ok": True, "project_root": str(root), "current_lifecycle": read_project_state(root).get("project_lifecycle", "unknown"),
         "candidate": candidate, "confidence": confidence,
         "signals": signals, "evidence": evidence,
         "limitations": [
