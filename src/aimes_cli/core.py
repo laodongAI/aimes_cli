@@ -326,6 +326,38 @@ def validate_project(root: Path) -> dict[str, Any]:
                             findings.append({'level': 'warning', 'code': 'SKILL_DEPENDENCY_UNKNOWN', 'message': f"Skill {skill.get('name', '<unnamed>')} references unknown dependency: {dependency}"})
         except Exception as e:
             findings.append({'level': 'error', 'code': 'SKILL_REGISTRY_INVALID', 'message': f'Unable to parse Skill registry: {e}'})
+    # Validate the mode -> quality profile contract. Older projects may use
+    # the built-in profile fallback until they are upgraded.
+    profile_path = root / '.aimes/quality-profiles.yaml'
+    profile_ids = None
+    if profile_path.exists():
+        try:
+            from .quality_profiles import load_quality_profiles
+            profile_registry, _ = load_quality_profiles(root)
+            profile_ids = set(profile_registry['profiles'])
+        except Exception as e:
+            findings.append({'level': 'error', 'code': 'QUALITY_PROFILE_REGISTRY_INVALID',
+                             'message': f'Invalid quality profile registry: {e}'})
+    else:
+        findings.append({'level': 'warning', 'code': 'QUALITY_PROFILE_REGISTRY_MISSING',
+                         'message': 'Project quality profile registry is missing; built-in fallback is used until upgrade.'})
+    mode_path = root / '.aimes/project-state/engineering-modes.yaml'
+    if mode_path.exists():
+        try:
+            from .project_state import load_mode_registry
+            modes = load_mode_registry(root)
+            if profile_ids is None:
+                from .quality_profiles import load_quality_profiles
+                profile_registry, _ = load_quality_profiles(root)
+                profile_ids = set(profile_registry['profiles'])
+            for mode_id, mode_item in modes.items():
+                profile_id = mode_item.get('quality_profile')
+                if not isinstance(profile_id, str) or profile_id not in profile_ids:
+                    findings.append({'level': 'error', 'code': 'QUALITY_PROFILE_UNKNOWN',
+                                     'message': f'Engineering mode {mode_id} references an unknown quality profile: {profile_id}'})
+        except Exception as e:
+            findings.append({'level': 'error', 'code': 'ENGINEERING_MODE_REGISTRY_INVALID',
+                             'message': f'Invalid engineering mode registry: {e}'})
     manifest_path=root/MANIFEST_REL
     if not manifest_path.exists(): findings.append({'level':'warning','code':'MANIFEST_MISSING','message':'Managed-file manifest is missing.'})
     else:
