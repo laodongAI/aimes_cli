@@ -9,11 +9,63 @@ from . import __version__
 from .delivery_report import validate_delivery_text
 from .skill_route import load_skill_body, route_skills
 from .project_state import show_project_state, detect_mode, load_mode_registry, set_project_state
+from .project_work import assess_project_lifecycle, start_task, update_task, list_tasks, show_session, bind_session_task
 
 PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "aimes-governance"
 
 TOOLS = [
+    {
+        "name": "aimes_assess_project_lifecycle",
+        "description": "Collect bounded, read-only project structure and Git evidence to suggest lifecycle candidates. Never changes project state and never treats AIMES initialization as proof of a new project.",
+        "inputSchema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "aimes_task_start",
+        "description": "Create an independent task record and bind it to the calling AI tool session ID. Task progress is stored separately from project lifecycle state.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "title": {"type": "string", "minLength": 1, "maxLength": 500},
+                "session_id": {"type": "string", "default": "default"},
+                "task_id": {"type": "string"},
+                "mode": {"type": "string"},
+            },
+            "required": ["title", "session_id"],
+        },
+    },
+    {
+        "name": "aimes_task_list",
+        "description": "List project task records, optionally filtered by AI tool session ID.",
+        "inputSchema": {"type": "object", "properties": {"session_id": {"type": "string"}}},
+    },
+    {
+        "name": "aimes_task_update",
+        "description": "Update an existing task's phase or status without changing project lifecycle or another session's task.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "task_id": {"type": "string"},
+                "phase": {"type": "string", "enum": ["analysis","clarification","design","review","implementation","testing","acceptance","delivery"]},
+                "status": {"type": "string", "enum": ["active","blocked","completed","cancelled"]},
+            },
+            "required": ["task_id"],
+        },
+    },
+    {
+        "name": "aimes_session_show",
+        "description": "Read one AI tool session's current task pointer and task record.",
+        "inputSchema": {"type": "object", "properties": {"session_id": {"type": "string", "default": "default"}}},
+    },
+    {
+        "name": "aimes_session_bind",
+        "description": "Bind one AI tool session to an existing task record.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"session_id": {"type": "string"}, "task_id": {"type": "string"}},
+            "required": ["session_id", "task_id"],
+        },
+    },
     {
         "name": "aimes_project_state",
         "description": "Read the persisted AIMES project lifecycle, current engineering mode, task phase, routed Skills and next actions. Read-only; does not inspect the current AI conversation.",
@@ -90,6 +142,25 @@ def _tool_error(message: str) -> dict[str, Any]:
 
 def call_tool(root: Path, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     registry = _registry_path(root)
+    try:
+        if name == "aimes_assess_project_lifecycle":
+            return _tool_result(assess_project_lifecycle(root))
+        if name == "aimes_task_start":
+            return _tool_result(start_task(root, arguments.get("title"),
+                session_id=arguments.get("session_id", "default"),
+                mode=arguments.get("mode"), task_id=arguments.get("task_id")))
+        if name == "aimes_task_list":
+            return _tool_result(list_tasks(root, session_id=arguments.get("session_id")))
+        if name == "aimes_task_update":
+            return _tool_result(update_task(root, arguments.get("task_id"),
+                phase=arguments.get("phase"), status=arguments.get("status")))
+        if name == "aimes_session_show":
+            return _tool_result(show_session(root, arguments.get("session_id", "default")))
+        if name == "aimes_session_bind":
+            return _tool_result(bind_session_task(root, arguments.get("session_id"),
+                arguments.get("task_id")))
+    except (ValueError, OSError, TypeError) as exc:
+        return _tool_error(str(exc))
     if name == "aimes_project_state":
         try:
             return _tool_result(show_project_state(root))
@@ -150,7 +221,7 @@ def handle_request(root: Path, message: dict[str, Any]) -> dict[str, Any] | None
                 "protocolVersion": PROTOCOL_VERSION,
                 "capabilities": {"tools": {}},
                 "serverInfo": {"name": SERVER_NAME, "version": __version__},
-                "instructions": "AIMES governance routing for this project. At task start call aimes_project_state; infer the current engineering mode from the live user request (the CLI/MCP cannot inspect conversation content), use aimes_detect_engineering_mode only as a deterministic hint, ask the user when ambiguous, and persist only approved or sufficiently confident (medium/high) state with aimes_set_project_state; never persist low-confidence guesses. Then call aimes_skill_route before project-changing work, read routed SKILL.md with aimes_read_skill, and validate delivery reports with aimes_validate_delivery.",
+                "instructions": "AIMES governance routing for this project. At task start call aimes_project_state and aimes_session_show with a stable per-tool session_id; use aimes_task_start/update to track each task independently, and call aimes_assess_project_lifecycle when lifecycle is unknown; infer the current engineering mode from the live user request (the CLI/MCP cannot inspect conversation content), use aimes_detect_engineering_mode only as a deterministic hint, ask the user when ambiguous, and persist only approved or sufficiently confident (medium/high) state with aimes_set_project_state; never persist low-confidence guesses. Then call aimes_skill_route before project-changing work, read routed SKILL.md with aimes_read_skill, and validate delivery reports with aimes_validate_delivery.",
             },
         }
     if method in ("notifications/initialized", "initialized"):
