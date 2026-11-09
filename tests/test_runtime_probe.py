@@ -49,7 +49,7 @@ class RuntimeProbeTests(unittest.TestCase):
         self.assertIn("method: runtime_observation", text)
 
     def test_exact_token_without_fresh_session_attestation_is_blocked(self):
-        (self.probe / "response.txt").write_text(self.token_from_rule() + "\\n", encoding="utf-8")
+        (self.probe / "response.txt").write_text(self.token_from_rule() + "\n", encoding="utf-8")
         result = validate_runtime_probe(self.root, self.probe, observer="tester")
         self.assertFalse(result["ok"])
         self.assertEqual(result["status"], "BLOCKED")
