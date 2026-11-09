@@ -49,3 +49,14 @@ git config core.hooksPath hooks        # 由用户执行以激活
 - `.claude/skills/` 镜像与 `.aimes/skills/` 权威文件的同步靠 manifest 哈希与 `aimes upgrade`/`version-audit` 检查，不代表宿主已加载。
 - 中文 trigger 别名覆盖常见任务词，但自然语言表达多样；未命中时应按 Core 路由表人工匹配并反馈补强别名。
 - 交付报告校验是结构检查：字段缺失、状态词表和证据绑定可以机检，证据内容是否真实仍需人审或 `aimes evidence validate`。
+
+
+## 6. 需求、设计与开发工程规范路由
+
+- 新功能/需求变更：先调用 requirement-cognition，形成范围、验收标准和开放问题。
+- 实施前：调用 project-knowledge-reuse 与 change-impact-analysis；公共 API、数据模型、跨模块边界或共享组件契约变化时调用 architecture-contract-review。
+- 代码开发、缺陷修复、重构：必须调用 software-engineering-standards，输出工程基线、复用清单、实现设计、质量风险和验证计划。
+- Vue 页面/组件/Composable/Pinia/前端重构：额外调用 vue-frontend-engineering；涉及视觉交互时叠加 UI 专项 Skill。
+- 完成后调用 requirement-driven-testing，并按实际情况调用 ui-implementation-validation。
+
+工程规范的唯一详细文档为 docs/SOFTWARE-ENGINEERING-STANDARDS.md；Vue 组件化专项同时见 docs/UI-DESIGN-GOVERNANCE.md。Skill 文件是任务流程契约，项目已批准编码规范和真实技术栈优先。初始化会部署工程 Skill 与评测套件；真实工具是否加载和遵循仍需独立试点评估，状态保持 UNKNOWN，直到证据满足要求。
