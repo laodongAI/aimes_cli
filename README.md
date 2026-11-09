@@ -12,7 +12,7 @@ AIMES CLI 是本地优先的跨 AI 开发工具工程治理配置与验证工具
 | Python/FastAPI | AST 语法、文件/函数规模、分支复杂度、可变默认参数、宽泛异常、疑似硬编码凭据、路由直接数据访问、API 层直接持久化依赖 | 不证明完整分层架构、DTO 正确性、事务边界或安全性 |
 | 通用 | 源文件规模、跨文件完全相同的 Python 函数体 | 不等于语义重复检测 |
 
-依赖漏洞数据库扫描、真实测试覆盖率门禁、公共 API 兼容性 Diff 分析尚未接入；没有证据输入时不会伪造覆盖率或兼容性结论。静态规则默认 advisory，先审查误报，再按项目策略启用阻断。
+已实现依赖通配符/无版本约束提示、coverage.py XML/JSON 行覆盖率阈值（仅有报告时计算）和可选 Python 公共 API Git Diff 对比；尚未接入 CVE/许可证情报数据库，也不覆盖 TypeScript/Java 等语言的完整 API 契约。没有证据输入时不会伪造覆盖率或兼容性结论。静态规则默认 advisory，先审查误报，再按项目策略启用阻断。
 
 ## 自动化工程质量门禁与 AI 语义审查
 
@@ -25,6 +25,10 @@ aimes quality inspect --root . --format json
 # 显式指定工程模式或质量 profile
 aimes quality inspect --root . --mode frontend-development --format json
 aimes quality inspect --root . --profile frontend --format json
+# 回归模式：存在 coverage.xml / coverage.json 时按 profile 阈值检查
+ aimes quality inspect --root . --profile regression --format json
+# 比较当前工作树与指定基线之间 Python 公共 API 变更
+aimes quality inspect --root . --base-ref origin/main --format json
 aimes quality review-context --root . --format json --output .aimes/reviews/review-context.json
 aimes quality review --report .aimes/reviews/engineering-review.json --root . --format json
 aimes quality report --ai-report .aimes/reviews/engineering-review.json --root . --format json
