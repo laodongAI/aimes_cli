@@ -15,8 +15,10 @@ PRE_COMMIT_TEMPLATE = """#!/bin/sh
 if [ -f .aimes/config.yaml ]; then
     if command -v aimes >/dev/null 2>&1; then
         aimes validate --root . || {{ echo "AIMES validate failed"; exit 1; }}
+        aimes quality inspect --root . || {{ echo "AIMES quality gate failed"; exit 1; }}
     elif command -v python >/dev/null 2>&1 && python -c "import aimes_cli" 2>/dev/null; then
         python -m aimes_cli.cli validate --root . || {{ echo "AIMES validate failed"; exit 1; }}
+        python -m aimes_cli.cli quality inspect --root . || {{ echo "AIMES quality gate failed"; exit 1; }}
     else
         echo "AIMES CLI not found; install it or remove this hook to keep commits unblocked." >&2
         exit 1
