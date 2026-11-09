@@ -40,7 +40,7 @@ def validate_ai_review_report(report_path: Path, root: Path) -> dict[str, Any]:
             errors.append(f"{prefix}.id must be a unique non-empty string.")
             continue
         seen_ids.add(finding_id)
-        if item["severity"] not in SEVERITIES:
+        if not isinstance(item["severity"], str) or item["severity"] not in SEVERITIES:
             errors.append(f"{prefix}.severity must be INFO or WARNING; AI findings cannot declare blocking ERROR.")
             continue
         if not isinstance(item["category"], str) or not item["category"].strip():
@@ -54,7 +54,7 @@ def validate_ai_review_report(report_path: Path, root: Path) -> dict[str, Any]:
             errors.append(f"{prefix}.confidence must be a number from 0 to 1.")
             continue
         evidence = item["evidence"]
-        if not isinstance(evidence, dict) or not isinstance(evidence.get("path"), str) or not isinstance(evidence.get("line_start"), int) or not isinstance(evidence.get("line_end"), int) or not isinstance(evidence.get("excerpt"), str) or not evidence["excerpt"].strip():
+        if not isinstance(evidence, dict) or not isinstance(evidence.get("path"), str) or type(evidence.get("line_start")) is not int or type(evidence.get("line_end")) is not int or not isinstance(evidence.get("excerpt"), str) or not evidence["excerpt"].strip():
             errors.append(f"{prefix}.evidence requires path, integer line_start/line_end, and non-empty excerpt.")
             continue
         if evidence["line_start"] < 1 or evidence["line_end"] < evidence["line_start"]:
