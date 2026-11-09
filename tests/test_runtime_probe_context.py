@@ -24,6 +24,20 @@ class RuntimeProbeContextTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Unsupported tool ID"):
                 validate_runtime_probe(root, probe_dir)
 
+    def test_symlinked_response_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp).resolve()
+            probe_dir = root / "probe"
+            create_runtime_probe(
+                root, probe_dir, tool="codex-cli", product_version="codex-test-version",
+                governance_version="1.2", observer="unit-test",
+            )
+            outside = root / "outside-response.txt"
+            outside.write_text("AIMES_PROBE_" + "A" * 32, encoding="utf-8")
+            (probe_dir / "response.txt").symlink_to(outside)
+            with self.assertRaisesRegex(ValueError, "symbolic link"):
+                validate_runtime_probe(root, probe_dir)
+
     def test_malformed_optional_context_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp).resolve()
