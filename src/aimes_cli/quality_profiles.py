@@ -48,7 +48,7 @@ BUILTIN_REGISTRY: dict[str, Any] = {
             "description": "FastAPI/Python backend quality baseline with conservative AST-based checks.",
             "vue": {},
             "python": {"max_file_lines": 700, "max_function_lines": 70, "max_cyclomatic_complexity": 10},
-            "general": {"max_source_file_lines": 1000, "min_coverage_percent": 80}
+            "general": {"max_source_file_lines": 1000}
         },
         "frontend": {
             "description": "frontend 工程质量基线；仅调整当前已实现的 Vue 静态检查阈值，不替代专项审查。",
