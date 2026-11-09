@@ -45,9 +45,13 @@
               "zcode",
               "qcode",
               "claude-code",
-              "codex-cli"
+              "codex-cli",
+              "chatgpt-work"
             ]
           },
+          "host_id": {"type": "string", "minLength": 1},
+          "harness_id": {"type": "string", "minLength": 1},
+          "adapter_registry_version": {"type": "string", "minLength": 1},
           "product_version": {
             "type": "string",
             "minLength": 1
@@ -58,6 +62,7 @@
               "ide_extension",
               "cli",
               "desktop_app",
+              "workspace",
               "other"
             ]
           },
