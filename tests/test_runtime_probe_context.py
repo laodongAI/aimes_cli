@@ -74,7 +74,7 @@ class RuntimeProbeContextTests(unittest.TestCase):
             token = rule_text.split(marker, 1)[1].splitlines()[0].strip()
             (probe_dir / "response.txt").write_text(token, encoding="utf-8")
 
-            result = validate_runtime_probe(root, probe_dir, observer="unit-test")
+            result = validate_runtime_probe(root, probe_dir, observer="unit-test", confirm_fresh_session=True)
             self.assertTrue(result["ok"], result)
             evidence = yaml.safe_load((probe_dir / "verification-evidence.yaml").read_text(encoding="utf-8"))
             check = evidence["checks"][0]
