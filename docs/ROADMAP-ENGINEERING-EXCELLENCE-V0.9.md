@@ -57,6 +57,9 @@ AIMES 的目标不是单纯安装规则和 Skills，而是帮助 Codex、Claude 
 
 当前 L2 只提供静态项目配置发现，不证明当前会话已加载、项目已信任、MCP 可连接、Hook 可执行或 Skill/Agent 实际触发。
 
+- [x] L3 探针 PASS 增加全新会话操作者确认门禁：token 正确但未确认新会话时记录 BLOCKED，不再默认 PASS。
+- [x] 证据记录 `fresh_session_confirmed`，更新 CLI、回归测试、README 与探针指南。
+
 ## 3. 实施顺序
 
 ### 阶段 A：可信基线（当前阶段）
