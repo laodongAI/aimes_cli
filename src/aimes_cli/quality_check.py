@@ -30,7 +30,7 @@ DEFAULT_CONFIG = {
         "max_function_lines": 80,
         "max_cyclomatic_complexity": 12,
     },
-    "general": {"max_source_file_lines": 1000},
+    "general": {"max_source_file_lines": 1000, "min_coverage_percent": None},
     "exclude": ["node_modules/**", "dist/**", "build/**", ".venv/**", "vendor/**"],
 }
 SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "dist", "build", "__pycache__", ".pytest_cache", ".mypy_cache"}
@@ -99,6 +99,9 @@ def _safe_config(root: Path, profile_id: str | None = None, mode_id: str | None 
             value = values.get(key)
             if type(value) is not int or value < 1 or value > maximum:
                 return config, [{"severity": "ERROR", "code": "QUALITY_RULE_CONFIG", "message": f"{section}.{key} must be an integer between 1 and {maximum}", "path": ".aimes/quality-gates.yaml"}], profile
+    coverage_threshold = config["general"].get("min_coverage_percent")
+    if coverage_threshold is not None and (type(coverage_threshold) not in (int, float) or not 0 <= coverage_threshold <= 100):
+        return config, [{"severity": "ERROR", "code": "QUALITY_RULE_CONFIG", "message": "general.min_coverage_percent must be between 0 and 100 or null", "path": ".aimes/quality-gates.yaml"}], profile
     for key in ("check_prop_mutation", "check_hardcoded_colors"):
         if type(config["vue"].get(key, True)) is not bool:
             return config, [{"severity": "ERROR", "code": "QUALITY_VUE_CONFIG", "message": f"vue.{key} must be a boolean", "path": ".aimes/quality-gates.yaml"}], profile
