@@ -37,6 +37,9 @@
           },
           "tool": {
             "type": "string",
+          "host_id": {"type": "string", "minLength": 1},
+          "harness_id": {"type": "string", "minLength": 1},
+          "adapter_registry_version": {"type": "string", "minLength": 1},
             "enum": [
               "trae-code",
               "vscode-codex",
