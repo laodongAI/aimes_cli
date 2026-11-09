@@ -27,6 +27,7 @@ AIMES 的目标不是单纯安装规则和 Skills，而是帮助 Codex、Claude 
 - [x] 初始化项目配置时保存 Host/Harness/执行模式/能力声明和注册表版本，同时保留既有工具 ID、别名和入口路径。
 - [x] 扩展证据执行模式，允许 ChatGPT Work 的 workspace 记录。
 - [x] 增加注册表 Schema 与回归测试。
+- [x] 运行时探针证据记录 Host/Harness/注册表版本；校验维度一致性，并按 Host/Harness 汇总证据，保留旧记录兼容。
 - [ ] 在 GitHub Actions 中完成全量单元测试、发布校验和 EXE 资源打包验证；在取得 CI 证据前不标记 AUTOMATED_TESTED。
 
 本轮只完成适配元数据与配置层的第一步，没有声称工具 Hooks、Skills、MCP、Agent、终端或 Session 能力已被运行时验证；未证实的能力均为 `unknown`。
