@@ -183,11 +183,25 @@ def load_quality_profiles(root: Path) -> tuple[dict[str, Any], str | None]:
             warning, error = limits["warning"], limits["error"]
             if type(warning) is not int or type(error) is not int or warning < 1 or error <= warning:
                 raise ValueError(f"Profile {profile_id} vue.{key} requires positive integer thresholds and error > warning")
-        if "disallow_direct_http_calls" in vue and type(vue["disallow_direct_http_calls"]) is not bool:
-            raise ValueError(f"Profile {profile_id} vue.disallow_direct_http_calls must be a boolean")
-        unknown = set(vue) - {"max_sfc_lines", "max_script_lines", "max_template_lines", "disallow_direct_http_calls"}
+        for boolean_rule in ("disallow_direct_http_calls", "check_prop_mutation", "check_hardcoded_colors"):
+            if boolean_rule in vue and type(vue[boolean_rule]) is not bool:
+                raise ValueError(f"Profile {profile_id} vue.{boolean_rule} must be a boolean")
+        unknown = set(vue) - {"max_sfc_lines", "max_script_lines", "max_template_lines", "disallow_direct_http_calls", "check_prop_mutation", "check_hardcoded_colors"}
         if unknown:
             raise ValueError(f"Profile {profile_id} contains unsupported Vue rules: {', '.join(sorted(unknown))}")
+        for section, allowed in {
+            "python": {"max_file_lines", "max_function_lines", "max_cyclomatic_complexity"},
+            "general": {"max_source_file_lines"},
+        }.items():
+            values = profile.get(section, {})
+            if not isinstance(values, dict):
+                raise ValueError(f"Profile {profile_id} {section} settings must be a mapping")
+            unsupported = set(values) - allowed
+            if unsupported:
+                raise ValueError(f"Profile {profile_id} contains unsupported {section} rules")
+            for key, value in values.items():
+                if type(value) is not int or value < 1:
+                    raise ValueError(f"Profile {profile_id} {section}.{key} must be a positive integer")
     return raw, None
 
 
@@ -201,7 +215,7 @@ def resolve_quality_profile(root: Path, profile_id: str | None = None) -> dict[s
     return {
         "id": selected,
         "description": profile.get("description", ""),
-        "overrides": deepcopy(profile.get("vue", {})),
+        "overrides": {key: deepcopy(profile.get(key, {})) for key in ("vue", "python", "general")},
         "registry_status": source_status or "PROJECT_CONFIGURED",
         "registry_path": PROFILE_REGISTRY_PATH.as_posix() if source_status is None else None,
     }
