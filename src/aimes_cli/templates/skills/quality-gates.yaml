@@ -1,0 +1,22 @@
+schema_version: 1
+enabled: true
+# Advisory by default. Set enforce: true after reviewing baseline findings.
+enforce: false
+# WARNING or ERROR. Only used when enforce is true.
+fail_on: ERROR
+vue:
+  max_sfc_lines:
+    warning: 400
+    error: 600
+  max_script_lines:
+    warning: 250
+    error: 400
+  max_template_lines:
+    warning: 250
+    error: 400
+exclude:
+  - "node_modules/**"
+  - "dist/**"
+  - "build/**"
+  - ".venv/**"
+  - "vendor/**"
