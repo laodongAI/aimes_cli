@@ -129,15 +129,26 @@ def inspect_vue_file(path: str, content: str, config: dict[str, Any]) -> list[di
                 "Treat props as read-only; emit an update event or copy the value into explicitly owned local state.",
                 severity="ERROR", evidence=match.group(0), category="correctness"))
     if vue.get("check_hardcoded_colors", True):
+        in_style = False
         for line_number, line in enumerate(content.splitlines(), 1):
+            lower = line.lower()
+            if "<style" in lower:
+                in_style = True
             stripped = line.strip()
-            if stripped.startswith(("<!--", "//", "*", "/*")):
-                continue
-            if ("<template" in stripped or "style" in stripped.lower() or "class=" in stripped) and VUE_LITERAL_COLOR.search(line):
+            if not stripped.startswith(("<!--", "//", "*", "/*")) and (in_style or "<template" in stripped or "style" in lower or "class=" in stripped) and VUE_LITERAL_COLOR.search(line):
                 findings.append(_finding("VUE_HARDCODED_COLOR", path, line_number,
                     "Vue markup or style contains a literal color value.",
                     "Prefer the project's approved design tokens or theme variables; retain literals only for documented exceptions.",
                     evidence=line.strip(), category="ui"))
+            if "</style" in lower:
+                in_style = False
+    script_blocks = re.findall(r"<script(?:\s[^>]*)?>([\s\S]*?)</script\s*>", content, flags=re.IGNORECASE)
+    stateful_calls = sum(len(re.findall(r"\b(?:ref|reactive|computed|watch|watchEffect)\s*\(", block)) for block in script_blocks)
+    if stateful_calls > 12:
+        findings.append(_finding("VUE_STATEFUL_LOGIC_DENSITY", path, 1,
+            f"Vue component contains {stateful_calls} state/reactivity calls.",
+            "Review whether cohesive stateful logic belongs in a focused Composable; this heuristic is advisory and does not require extraction by itself.",
+            category="architecture"))
     return findings
 
 
