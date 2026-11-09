@@ -10,6 +10,7 @@ import yaml
 
 from .quality_profiles import resolve_quality_profile, _merge
 from .project_state import load_mode_registry, read_project_state
+from .quality_rules import inspect_project_sources
 
 DEFAULT_CONFIG = {
     "schema_version": 1,
@@ -21,7 +22,15 @@ DEFAULT_CONFIG = {
         "max_script_lines": {"warning": 250, "error": 400},
         "max_template_lines": {"warning": 250, "error": 400},
         "disallow_direct_http_calls": True,
+        "check_prop_mutation": True,
+        "check_hardcoded_colors": True,
     },
+    "python": {
+        "max_file_lines": 800,
+        "max_function_lines": 80,
+        "max_cyclomatic_complexity": 12,
+    },
+    "general": {"max_source_file_lines": 1000},
     "exclude": ["node_modules/**", "dist/**", "build/**", ".venv/**", "vendor/**"],
 }
 SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "dist", "build", "__pycache__", ".pytest_cache", ".mypy_cache"}
@@ -79,6 +88,20 @@ def _safe_config(root: Path, profile_id: str | None = None, mode_id: str | None 
         warning, error = limits.get("warning"), limits.get("error")
         if type(warning) is not int or type(error) is not int or warning < 1 or error <= warning:
             return config, [{"severity": "ERROR", "code": "QUALITY_THRESHOLD_CONFIG", "message": f"vue.{key} requires positive integer thresholds and error > warning", "path": ".aimes/quality-gates.yaml"}], profile
+    for section, limits in {
+        "python": {"max_file_lines": 10000, "max_function_lines": 1000, "max_cyclomatic_complexity": 100},
+        "general": {"max_source_file_lines": 20000},
+    }.items():
+        values = config.get(section)
+        if not isinstance(values, dict):
+            return config, [{"severity": "ERROR", "code": "QUALITY_RULE_CONFIG", "message": f"{section} must be a YAML mapping", "path": ".aimes/quality-gates.yaml"}], profile
+        for key, maximum in limits.items():
+            value = values.get(key)
+            if type(value) is not int or value < 1 or value > maximum:
+                return config, [{"severity": "ERROR", "code": "QUALITY_RULE_CONFIG", "message": f"{section}.{key} must be an integer between 1 and {maximum}", "path": ".aimes/quality-gates.yaml"}], profile
+    for key in ("check_prop_mutation", "check_hardcoded_colors"):
+        if type(config["vue"].get(key, True)) is not bool:
+            return config, [{"severity": "ERROR", "code": "QUALITY_VUE_CONFIG", "message": f"vue.{key} must be a boolean", "path": ".aimes/quality-gates.yaml"}], profile
     if config.get("fail_on") not in {"WARNING", "ERROR"}:
         return config, [{"severity": "ERROR", "code": "QUALITY_FAIL_ON", "message": "fail_on must be WARNING or ERROR", "path": ".aimes/quality-gates.yaml"}], profile
     if not isinstance(config.get("exclude"), list) or any(not isinstance(x, str) for x in config["exclude"]):
@@ -164,6 +187,8 @@ def inspect_project_quality(root: Path, profile_id: str | None = None, mode_id: 
             severity = "ERROR" if value > limits["error"] else "WARNING" if value > limits["warning"] else None
             if severity:
                 findings.append({"severity": severity, "code": code, "path": relative, "line": 1, "metric": value, "threshold": limits[severity.lower()], "message": f"{label}: {value} lines (threshold {limits[severity.lower()]}). {recommendation}"})
+    source_findings, source_counts = inspect_project_sources(root, config)
+    findings.extend(source_findings)
     fail_on = config.get("fail_on", "ERROR")
     blocking = any(item.get("severity") == "ERROR" or (fail_on == "WARNING" and item.get("severity") == "WARNING") for item in findings)
     errors = sum(item.get("severity") == "ERROR" for item in findings)
@@ -173,8 +198,13 @@ def inspect_project_quality(root: Path, profile_id: str | None = None, mode_id: 
         "ok": not config_invalid and not (enforced and blocking),
         "status": "CONFIG_ERROR" if config_invalid else "FAIL" if enforced and blocking else "PASS_WITH_FINDINGS" if findings else "PASS",
         "root": str(root),
-        "summary": {"files_scanned": len(vue_files), "errors": errors, "warnings": warnings, "findings": len(findings)},
+        "summary": {"files_scanned": len(vue_files), **source_counts, "errors": errors, "warnings": warnings, "findings": len(findings)},
         "policy": {"enforce": enforced, "fail_on": fail_on, "config": ".aimes/quality-gates.yaml", "profile": profile},
         "findings": findings,
-        "limitations": ["Static rules detect Vue SFC size and direct fetch/axios calls in script blocks. They do not infer semantic duplication, component reuse, Props/Emits quality, or overall architecture correctness."],
+        "limitations": [
+            "Vue checks detect SFC size, direct HTTP calls, obvious prop mutation, and literal colors; they cannot prove component responsibility, semantic reuse, complete Props/Emits contracts, Composable suitability, or visual conformance.",
+            "Python AST checks detect selected complexity, mutable defaults, broad exception handling, hard-coded credential-like literals, and direct persistence calls in decorated route handlers; they do not prove the full dependency graph or transaction correctness.",
+            "General checks currently provide source-size metrics. Dependency vulnerability databases, measured test coverage, semantic duplication, and public API compatibility require dedicated evidence providers and are not claimed as implemented.",
+            "Static findings are heuristics; review evidence before enabling blocking enforcement."
+        ],
     }
