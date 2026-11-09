@@ -125,7 +125,7 @@ modes:
   - id: ai-model-evaluation
     label: AI 模型与 Agent 评测
     triggers: [model_evaluation, llm_evaluation, agent_evaluation, AI模型评测, 模型评测, LLM评测, Agent评测, 提示词评测]
-    skills: [software-engineering-standards]
+    skills: [software-engineering-standards, requirement-driven-testing]
     workflow: ai-evaluation
     quality_profile: ai-evaluation
   - id: incident-response
